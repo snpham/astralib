@@ -20,5 +20,6 @@ if __name__ == "__main__":
     matrix1 = transpose(m1=matrix1)
     print(mxm(m2=matrix2, m1=matrix1))
 
-
+    vector = [0, 1, 2]
+    print(skew_tilde(vector))
 
