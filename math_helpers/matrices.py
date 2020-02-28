@@ -41,6 +41,16 @@ def mxm(m2, m1):
     return m_out
 
 
+def mxv(m1, v1):
+    """multiplies vector by a matrix; currently for 4x4 matrices
+    """
+    v_out = np.zeros(len(v1))
+    for ii in range(len(v1)):
+        v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2] + m1[ii][3]*v1[3]
+    return v_out    
+
+    
+
 def rotate_euler(a1, a2, a3, sequence='321'):
 	if sequence == '321':
 		product1 = mxm(m2=rotate_y(a2), m1=rotate_z(a1))
