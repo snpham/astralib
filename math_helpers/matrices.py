@@ -34,6 +34,8 @@ def transpose(m1):
 
 
 def mxm(m2, m1):
+    """multiplies a matrix by a matrix
+    """
     m_out = np.zeros((len(m2),len(m1)))
     for ii in range(len(m2)):
         for jj in range(len(m1)):
@@ -42,14 +44,31 @@ def mxm(m2, m1):
 
 
 def mxv(m1, v1):
-    """multiplies vector by a matrix; currently for 4x4 matrices
+    """multiplies vector by a matrix; currently for 3x3 and 4x4 
+    matrices
     """
-    v_out = np.zeros(len(v1))
-    for ii in range(len(v1)):
-        v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2] + m1[ii][3]*v1[3]
-    return v_out    
+    if len(v1) == 3:
+        v_out = np.zeros(len(v1))
+        for ii in range(len(v1)):
+            v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2]
+        return v_out   
+    elif len(v1) == 4:
+        v_out = np.zeros(len(v1))
+        for ii in range(len(v1)):
+            v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2] + m1[ii][3]*v1[3]
+        return v_out    
 
-    
+
+def vxv(v1, v2):
+    """multiplies two vectors
+    """
+    vout = np.zeros(len(v1))
+    print(v1, v2)
+    vout[0] = v1[1]*v2[2] - v1[2]*v2[1]
+    vout[1] = -(v1[0]*v2[2] - v1[2]*v2[0])
+    vout[2] = v1[0]*v2[1] - v1[1]*v2[0]
+    return vout
+
 
 def rotate_euler(a1, a2, a3, sequence='321'):
 	if sequence == '321':
@@ -59,6 +78,15 @@ def rotate_euler(a1, a2, a3, sequence='321'):
 		product1 = mxm(m2=rotate_y(a2), m1=rotate_z(a1))
 		product2 = mxm(m2=rotate_z(a3), m1=product1)
 	return product2
+
+
+def matrix_multT(m2, m1):
+    """matrix addition with transpose
+    """
+    mright = transpose(m1)
+    print(mright)
+    mout = mxm(m2, mright)
+    return mout
 
 
 def skew_tilde(v1):

@@ -122,6 +122,44 @@ def qxq_transmute(q1st, q2nd):
     return v_out
 
 
+def quat_kde_fromq(qset, wset):
+    w1, w2, w3 = 0.5 * wset
+    matrix = [[0, -w1, -w2, -w3],
+              [w1,  0,  w3, -w2],
+              [w2,-w3,   0,  w1],
+              [w3, w2, -w1,   0]]
+    return mxv(matrix, qset)
+
+
+def quat_kde_fromw(qset, wset):
+    s1, b1, b2, b3 = 0.5 * qset
+    matrix = [[s1,-b1,-b2,-b3],
+              [b1, s1,-b3, b2],
+              [b2, b3, s1,-b1],
+              [b3,-b2, b1, s1]]
+    wset = [0, wset]
+    return mxv(matrix, wset)
+
+
+def quat2mrp(qset):
+    """computes the modified rodrigues parameters from quaternion sets
+    """
+    sigma1 = qset[1] / (1.+qset[0])
+    sigma2 = qset[2] / (1.+qset[0])
+    sigma3 = qset[3] / (1.+qset[0])
+    return [sigma1, sigma2, sigma3]
+
+
+def quat2mrps(qset):
+    """computes the shadow set modified rodrigues parameters from
+    quaternion sets
+    """
+    sigma1 = -qset[1] / (1.-qset[0])
+    sigma2 = -qset[2] / (1.-qset[0])
+    sigma3 = -qset[3] / (1.-qset[0])
+    return [sigma1, sigma2, sigma3]
+
+
 if __name__ == "__main__":
     from pprint import pprint as pp
     # testing principle rotation parameters
@@ -153,15 +191,21 @@ if __name__ == "__main__":
     # print(quat)
 
     # testing qxq and transmutation
-    q1st = [0., 1./np.sqrt(2.), 1./np.sqrt(2.), 0.]
-    q2nd = [0.5*np.sqrt(np.sqrt(3)/2+1), -0.5*np.sqrt(np.sqrt(3)/2+1), -np.sqrt(2)/(4*np.sqrt(2+np.sqrt(3))), np.sqrt(2)/(4*np.sqrt(2+np.sqrt(3)))]
-    # print(q1st)
-    # print(q2nd)
-    v_out = qxq(q1st, q2nd)
-    v_actual = [1/(2*np.sqrt(2))*np.sqrt(3), 1/(2*np.sqrt(2))*np.sqrt(3), 1/(2*np.sqrt(2))*1, 1/(2*np.sqrt(2))*1]
-    print(v_out)
-    print(v_actual)
-    dcm = quat2dcm(v_out)
-    dcm_actual = quat2dcm(v_actual)
-    pp(dcm)
-    pp(dcm_actual)
+    # q1st = [0., 1./np.sqrt(2.), 1./np.sqrt(2.), 0.]
+    # q2nd = [0.5*np.sqrt(np.sqrt(3)/2+1), -0.5*np.sqrt(np.sqrt(3)/2+1), -np.sqrt(2)/(4*np.sqrt(2+np.sqrt(3))), np.sqrt(2)/(4*np.sqrt(2+np.sqrt(3)))]
+    # # print(q1st)
+    # # print(q2nd)
+    # v_out = qxq(q1st, q2nd)
+    # v_actual = [1/(2*np.sqrt(2))*np.sqrt(3), 1/(2*np.sqrt(2))*np.sqrt(3), 1/(2*np.sqrt(2))*1, 1/(2*np.sqrt(2))*1]
+    # print(v_out)
+    # print(v_actual)
+    # dcm = quat2dcm(v_out)
+    # dcm_actual = quat2dcm(v_actual)
+    # pp(dcm)
+    # pp(dcm_actual)
+
+    #testing mrp's
+    qset = [0.961798, -0.14565, 0.202665, 0.112505]
+    sigmaset = quat2mrp(qset)
+    sigmasets = quat2mrps(qset)
+    print(sigmaset, sigmasets)
