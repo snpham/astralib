@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
+import os, sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
-from matrices import *
+from math_helpers.matrices import *
 
 
 def prv2dcm(e1, e2, e3, theta):
@@ -158,6 +160,25 @@ def quat2mrps(qset):
     sigma2 = -qset[2] / (1.-qset[0])
     sigma3 = -qset[3] / (1.-qset[0])
     return [sigma1, sigma2, sigma3]
+
+
+def mrp2dcm(sigmaset):
+    imatrix = np.eye(3)
+    sigma_skewmat = skew_tilde(v1=sigmaset)
+    # sigma_skewmat_sq = np.dot(sigma_skewmat,sigma_skewmat)
+    sigma_skewmat_sq = mxm(m2=sigma_skewmat, m1=sigma_skewmat)
+    ascalar = 8.0
+    amat = np.dot(ascalar, sigma_skewmat_sq)
+    sigmanorm = np.linalg.norm(sigmaset)
+    bscalar = 4.0 * ( 1 - sigmanorm**2)
+    bmat = np.dot(bscalar, sigma_skewmat)
+    cscalar = 1.0 / ((1.0 + sigmanorm**2)**2)
+    print(cscalar)
+    asubb = mxsub(m2=amat, m1=bmat)
+    print(asubb)
+    # dcm = np.dot(cscalar, asubb)
+    dcm = mxscalar(scalar=cscalar, m1=asubb)
+    return dcm
 
 
 if __name__ == "__main__":

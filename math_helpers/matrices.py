@@ -22,7 +22,7 @@ def rotate_z(angle):
     return matrix
 
 
-def transpose(m1):
+def mtranspose(m1):
     mt = np.zeros((len(m1),len(m1)))
     for ii in range(len(m1)):
         for jj in range(len(m1)):
@@ -33,23 +33,60 @@ def transpose(m1):
     return mt
 
 
-def mxm(m2, m1):
+def mxadd(m2, m1):
+    """matrix addition
+    """
     m_out = np.zeros((len(m2),len(m1)))
     for ii in range(len(m2)):
         for jj in range(len(m1)):
-            m_out[ii][jj] = m2[ii][0]*m1[0][jj] + m2[ii][1]*m1[1][jj] + m2[ii][2]*m1[2][jj]
+            m_out[ii][jj] = m2[ii][jj]+m1[ii][jj]
+    return m_out
+
+
+def mxsub(m2, m1):
+    """matrix subtraction
+    """
+    m_out = np.zeros((len(m2),len(m1)))
+    for ii in range(len(m2)):
+        for jj in range(len(m1)):
+            m_out[ii][jj] = m2[ii][jj]-m1[ii][jj]
+    return m_out
+
+
+def mxm(m2, m1):
+    """matrix multiplication; for 3x3
+    """
+    m_out = np.zeros((len(m2),len(m1)))
+    if len(m2) == 3 and len(m1) ==3:
+        for ii in range(len(m2)):
+            for jj in range(len(m1)):
+                m_out[ii][jj] = m2[ii][0]*m1[0][jj] + m2[ii][1]*m1[1][jj] + m2[ii][2]*m1[2][jj]
     return m_out
 
 
 def mxv(m1, v1):
-    """multiplies vector by a matrix; currently for 4x4 matrices
+    """multiplies vector by a matrix; currently for 3x3 and 4x4 matrices
     """
     v_out = np.zeros(len(v1))
-    for ii in range(len(v1)):
-        v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2] + m1[ii][3]*v1[3]
-    return v_out    
+    if len(v1) == 4:
+        for ii in range(len(v1)):
+            v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2] + m1[ii][3]*v1[3]
+        return v_out    
+    if len(v1) == 3:
+        for ii in range(len(v1)):
+            v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2]
+        return v_out    
 
-    
+
+def mxscalar(scalar, m1):
+    """scales a matrix by a scalar
+    """
+    m_out = np.zeros((len(m1),len(m1)))
+    for ii in range(len(m1)):
+        for jj in range(len(m1)):
+            m_out[ii][jj] = scalar * m1[ii][jj]
+    return m_out
+
 
 def rotate_euler(a1, a2, a3, sequence='321'):
 	if sequence == '321':
@@ -62,6 +99,8 @@ def rotate_euler(a1, a2, a3, sequence='321'):
 
 
 def skew_tilde(v1):
+    """generates a skewed cross-product matrix from a vector
+    """
     v_tilde = np.zeros((len(v1), len(v1)))
     v_tilde[0][1] = -v1[2]
     v_tilde[0][2] = v1[1]
@@ -113,7 +152,7 @@ if __name__ == '__main__':
     print(f'FN: {frotate}')
     if np.array_equal(frotate, frot):
         print("is equal")
-    ftranspose = transpose(frotate) 
+    ftranspose = mtranspose(frotate) 
     # print(rotate_sequence(a1, a2, a3, '313'))
 
     matrix = mxm(brotate, ftranspose)

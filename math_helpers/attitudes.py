@@ -16,9 +16,12 @@ def triad(v1, v2):
     t3 = matrices.vxv(t1, t2)
     tset = [t1, t2, t3]
     # transform matrix for new tset frame to v frame
-    t2vmatrix = matrices.transpose(tset)
+    t2vmatrix = matrices.mtranspose(tset)
     return tset, t2vmatrix
 
+
+def davenportq(vset, n):
+    pass
 
 
 
