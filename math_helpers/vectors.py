@@ -22,14 +22,28 @@ def vxm(v1, m1):
         return v_out   
 
 
-def vxv(v1, v2):
-    """multiplies two vectors
+def vcrossv(v1, v2):
+    """cross product of two vectors
     """
     vout = np.zeros(len(v1))
     print(v1, v2)
     vout[0] = v1[1]*v2[2] - v1[2]*v2[1]
     vout[1] = -(v1[0]*v2[2] - v1[2]*v2[0])
     vout[2] = v1[0]*v2[1] - v1[1]*v2[0]
+    return vout
+
+
+def vxv(v1, v2):
+    vout = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2]
+    return vout
+
+
+def vxscalar(scalar, v1):
+    """scales a vector by a scalar
+    """
+    vout = np.zeros((len(v1)))
+    for ii in range(len(v1)):
+        vout[ii] = scalar * v1[ii]
     return vout
 
 

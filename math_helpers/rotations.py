@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from math_helpers import matrices
+from math_helpers import matrices, vectors
 from numpy.linalg import norm
 import numpy as np
 
@@ -75,9 +75,9 @@ def triad(v1, v2):
     v2 secondary.
     """
     t1 = v1
-    v1xv2 = matrices.vxv(v1, v2)
+    v1xv2 = vectors.vcrossv(v1, v2)
     t2 = v1xv2 / norm(v1xv2)
-    t3 = matrices.vxv(t1, t2)
+    t3 = vectors.vcrossv(t1, t2)
     tset = [t1, t2, t3]
     # transform matrix for new tset frame to v frame
     t2vmatrix = matrices.mtranspose(tset)

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import os, sys
 import numpy as np
-from math_helpers import matrices
-from math_helpers import rotations
+from math_helpers import matrices, rotations
 from numpy.linalg import norm
 
 
