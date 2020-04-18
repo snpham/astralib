@@ -1,28 +1,11 @@
 #!/usr/bin/env python3
 import numpy as np
-
-def rotate_x(angle):
-    matrix = [[1.0,            0.0,           0.0],
-              [0.0,  np.cos(angle), np.sin(angle)],
-              [0.0, -np.sin(angle), np.cos(angle)]]
-    return matrix
-
-
-def rotate_y(angle):
-    matrix = [[np.cos(angle), 0.0, -np.sin(angle)],
-              [          0.0, 1.0,            0.0],
-              [np.sin(angle), 0.0,  np.cos(angle)]]
-    return matrix
-
-
-def rotate_z(angle):
-    matrix = [[ np.cos(angle), np.sin(angle), 0.0],
-              [-np.sin(angle), np.cos(angle), 0.0],
-              [           0.0,           0.0, 1.0]]
-    return matrix
+from math_helpers import rotations
 
 
 def mtranspose(m1):
+    """computes the transpose of a square matrix
+    """
     mt = np.zeros((len(m1),len(m1)))
     for ii in range(len(m1)):
         for jj in range(len(m1)):
@@ -54,7 +37,7 @@ def mxsub(m2, m1):
 
 
 def mxm(m2, m1):
-    """matrix multiplication; for 3x3
+    """matrix multiplication; currently for 3x3 matrices
     """
     m_out = np.zeros((len(m2),len(m1)))
     if len(m2) == 3 and len(m1) ==3:
@@ -75,7 +58,7 @@ def mxv(m1, v1):
     if len(v1) == 3:
         for ii in range(len(v1)):
             v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2]
-        return v_out    
+        return v_out     
 
 
 def mxscalar(scalar, m1):
@@ -86,16 +69,6 @@ def mxscalar(scalar, m1):
         for jj in range(len(m1)):
             m_out[ii][jj] = scalar * m1[ii][jj]
     return m_out
-
-
-def rotate_euler(a1, a2, a3, sequence='321'):
-	if sequence == '321':
-		product1 = mxm(m2=rotate_y(a2), m1=rotate_z(a1))
-		product2 = mxm(m2=rotate_x(a3), m1=product1)
-	if sequence == '313':
-		product1 = mxm(m2=rotate_y(a2), m1=rotate_z(a1))
-		product2 = mxm(m2=rotate_z(a3), m1=product1)
-	return product2
 
 
 def skew_tilde(v1):
@@ -110,52 +83,23 @@ def skew_tilde(v1):
     v_tilde[2][1] = v1[0]
     return v_tilde
 
-
-def dcm_rate(omega_tilde, dcm):
-    return -mxm(omega_tilde, dcm)
-
-
-def dcm_inverse(dcm, sequence='321'):
-    if sequence == '321':
-        angle1st = np.arctan2(dcm[0][1], dcm[0][0])
-        angle2nd = -np.arcsin(dcm[0][2])
-        angle3rd = np.arctan2(dcm[1][2], dcm[2][2])
-    if sequence == '313':
-        angle1st = np.arctan2(dcm[2][0], -dcm[2][1])
-        angle2nd = np.arccos(dcm[2][2])
-        angle3rd = np.arctan2(dcm[0][2], dcm[1][2])
-    return angle1st, angle2nd, angle3rd
-
-
-def rotate_sequence(a1st, a2nd, a3rd, sequence='321'):
-    if sequence == '321':
-        matrix = [[np.cos(a2nd)*np.cos(a1st), np.cos(a2nd)*np.sin(a1st), -np.sin(a2nd)],
-                  [np.sin(a3rd)*np.sin(a2nd)*np.cos(a1st)-np.cos(a3rd)*np.sin(a1st), np.sin(a3rd)*np.sin(a2nd)*np.sin(a1st)+np.cos(a3rd)*np.cos(a1st), np.sin(a3rd)*np.cos(a2nd)],
-                  [np.cos(a3rd)*np.sin(a2nd)*np.cos(a1st)+np.sin(a3rd)*np.sin(a1st), np.cos(a3rd)*np.sin(a2nd)*np.sin(a1st)-np.sin(a3rd)*np.cos(a1st), np.cos(a3rd)*np.cos(a2nd)]]
-    if sequence == '313':
-        matrix = [[ np.cos(a3rd)*np.cos(a1st)-np.sin(a3rd)*np.cos(a2nd)*np.sin(a1st),  np.cos(a3rd)*np.sin(a1st)+np.sin(a3rd)*np.cos(a2nd)*np.cos(a1st), np.sin(a3rd)*np.sin(a2nd)],
-                  [-np.sin(a3rd)*np.cos(a1st)-np.cos(a3rd)*np.cos(a2nd)*np.sin(a1st), -np.sin(a3rd)*np.sin(a1st)+np.cos(a3rd)*np.cos(a2nd)*np.cos(a1st), np.cos(a3rd)*np.sin(a2nd)],
-                  [np.sin(a2nd)*np.sin(a1st), -np.sin(a2nd)*np.cos(a1st), np.cos(a2nd)]]
-    return matrix
-    
-    
     
 if __name__ == '__main__':
     b1, b2, b3 = np.deg2rad([30, -45, 60])
 
-    brotate = rotate_euler(b1, b2, b3, '321')
+    brotate = rotations.rotate_euler(b1, b2, b3, '321')
         #print(f'BN: {brotate}')
 
     f1, f2, f3 = np.deg2rad([10., 25., -15.])
-    frotate = rotate_euler(f1, f2, f3, '321')
-    frot = rotate_sequence(f1, f2, f3, '321')
+    frotate = rotations.rotate_euler(f1, f2, f3, '321')
+    frot = rotations.rotate_sequence(f1, f2, f3, '321')
     print(f'FN: {frotate}')
     if np.array_equal(frotate, frot):
         print("is equal")
     ftranspose = mtranspose(frotate) 
-    # print(rotate_sequence(a1, a2, a3, '313'))
+    # print(rotations.rotate_sequence(a1, a2, a3, '313'))
 
     matrix = mxm(brotate, ftranspose)
     print(f'result={matrix}')
-    a1, a2, a3 = np.rad2deg(dcm_inverse(matrix, '321'))
+    a1, a2, a3 = np.rad2deg(rotations.dcm_inverse(matrix, '321'))
     print(a1, a2, a3)

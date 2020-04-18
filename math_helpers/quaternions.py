@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
-from math_helpers.matrices import *
+from math_helpers import matrices
+from math_helpers import rotations
+from numpy.linalg import norm
 
 
 def prv2dcm(e1, e2, e3, theta):
@@ -14,6 +15,7 @@ def prv2dcm(e1, e2, e3, theta):
            [e2*e1*z-e3*np.sin(theta), e2*e2*z+np.cos(theta), e2*e3*z+e1*np.sin(theta)],
            [e3*e1*z+e2*np.sin(theta), e3*e2*z-e1*np.sin(theta), e3*e3*z+np.cos(theta)]]
     return dcm
+
 
 def prv_angle(dcm):
     """compute the principle rotation angle from a dcm
@@ -110,7 +112,7 @@ def qxq(q1st, q2nd):
               [ b1,  s1,  b3, -b2],
               [ b2, -b3,  s1,  b1],
               [ b3,  b2, -b1,  s1]]
-    v_out = mxv(matrix, q1st)
+    v_out = matrices.mxv(matrix, q1st)
     return v_out
 
 
@@ -120,7 +122,7 @@ def qxq_transmute(q1st, q2nd):
               [ b1,  s1, -b3,  b2],
               [ b2,  b3,  s1, -b1],
               [ b3, -b2,  b1,  s1]]
-    v_out = mxv(matrix, q1st)    
+    v_out =  matrices.mxv(matrix, q1st)    
     return v_out
 
 
@@ -130,7 +132,7 @@ def quat_kde_fromq(qset, wset):
               [w1,  0,  w3, -w2],
               [w2,-w3,   0,  w1],
               [w3, w2, -w1,   0]]
-    return mxv(matrix, qset)
+    return  matrices.mxv(matrix, qset)
 
 
 def quat_kde_fromw(qset, wset):
@@ -140,7 +142,7 @@ def quat_kde_fromw(qset, wset):
               [b2, b3, s1,-b1],
               [b3,-b2, b1, s1]]
     wset = [0, wset]
-    return mxv(matrix, wset)
+    return  matrices.mxv(matrix, wset)
 
 
 def quat2mrp(qset):
@@ -163,21 +165,21 @@ def quat2mrps(qset):
 
 
 def mrp2dcm(sigmaset):
+    """Transforms a set of modified rodrigues parameters into a dcm
+    """
     imatrix = np.eye(3)
-    sigma_skewmat = skew_tilde(v1=sigmaset)
+    sigma_skewmat =  matrices.skew_tilde(v1=sigmaset)
     # sigma_skewmat_sq = np.dot(sigma_skewmat,sigma_skewmat)
-    sigma_skewmat_sq = mxm(m2=sigma_skewmat, m1=sigma_skewmat)
-    ascalar = 8.0
-    amat = np.dot(ascalar, sigma_skewmat_sq)
-    sigmanorm = np.linalg.norm(sigmaset)
-    bscalar = 4.0 * ( 1 - sigmanorm**2)
-    bmat = np.dot(bscalar, sigma_skewmat)
-    cscalar = 1.0 / ((1.0 + sigmanorm**2)**2)
-    print(cscalar)
-    asubb = mxsub(m2=amat, m1=bmat)
-    print(asubb)
+    sigma_skewmat_sq =  matrices.mxm(m2=sigma_skewmat, m1=sigma_skewmat)
+    # amat = np.dot(8.0, sigma_skewmat_sq)
+    amat =  matrices.mxscalar(scalar=8.0, m1=sigma_skewmat_sq)
+    bscalar = 4.0 * ( 1 - norm(sigmaset)**2)
+    # bmat = np.dot(bscalar, sigma_skewmat)
+    bmat =  matrices.mxscalar(scalar=bscalar, m1=sigma_skewmat)
+    cscalar = 1.0 / ((1.0 + norm(sigmaset)**2)**2)
+    asubb =  matrices.mxsub(m2=amat, m1=bmat)
     # dcm = np.dot(cscalar, asubb)
-    dcm = mxscalar(scalar=cscalar, m1=asubb)
+    dcm =  matrices.mxscalar(scalar=cscalar, m1=asubb)
     return dcm
 
 
@@ -185,7 +187,7 @@ if __name__ == "__main__":
     from pprint import pprint as pp
     # testing principle rotation parameters
     # deg = np.deg2rad([10, 25, -15])
-    # matrix = rotate_euler(deg[0], deg[1], deg[2], '321')
+    # matrix = rotations.rotate_euler(deg[0], deg[1], deg[2], '321')
     # angle = np.rad2deg(prv_angle(matrix))
     # axis = prv_axis(matrix)
     # print(matrix)
@@ -196,17 +198,17 @@ if __name__ == "__main__":
     # testing quaternions
     # b1, b2, b3 = np.deg2rad([30, -45, 60])
 
-    # brotate = rotate_euler(b1, b2, b3, '321')
+    # brotate = rotations.rotate_euler(b1, b2, b3, '321')
     #     #print(f'BN: {brotate}')
 
     # f1, f2, f3 = np.deg2rad([10., 25., -15.])
-    # frotate = rotate_euler(f1, f2, f3, '321')
-    # frot = rotate_sequence(f1, f2, f3, '321')
+    # frotate = rotations.rotate_euler(f1, f2, f3, '321')
+    # frot = rotations.rotate_sequence(f1, f2, f3, '321')
     # print(f'FN: {frotate}')
     # quats = dcm2quat_sheppard(frotate)
     # print(quats)
 
-    # a1, a2, a3 = dcm_inverse(frotate, sequence='313')
+    # a1, a2, a3 = rotations.dcm_inverse(frotate, sequence='313')
     # print(np.rad2deg(a1), np.rad2deg(a2), np.rad2deg(a3))
     # quat = euler2quat(a1, a2 , a3, sequence='313')
     # print(quat)
@@ -225,8 +227,8 @@ if __name__ == "__main__":
     # pp(dcm)
     # pp(dcm_actual)
 
-    #testing mrp's
-    qset = [0.961798, -0.14565, 0.202665, 0.112505]
-    sigmaset = quat2mrp(qset)
-    sigmasets = quat2mrps(qset)
-    print(sigmaset, sigmasets)
+    # #testing mrp's
+    # qset = [0.961798, -0.14565, 0.202665, 0.112505]
+    # sigmaset = quat2mrp(qset)
+    # sigmasets = quat2mrps(qset)
+    # print(sigmaset, sigmasets)
