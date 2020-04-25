@@ -6,6 +6,8 @@ import numpy as np
 
 def rotate_x(angle):
     """rotation about the x axis
+    :param angle: magnitude of angle of rotation (radians)
+    :return matrix: rotation matrix of "angle" about x-axis 
     """
     matrix = [[1.0,            0.0,           0.0],
               [0.0,  np.cos(angle), np.sin(angle)],
@@ -15,6 +17,8 @@ def rotate_x(angle):
 
 def rotate_y(angle):
     """rotation about the y axis
+    :param angle: magnitude of angle of rotation (radians)
+    :return matrix: rotation matrix of "angle" about y-axis 
     """
     matrix = [[np.cos(angle), 0.0, -np.sin(angle)],
               [          0.0, 1.0,            0.0],
@@ -24,6 +28,8 @@ def rotate_y(angle):
 
 def rotate_z(angle):
     """rotation about the z axis
+    :param angle: magnitude of angle of rotation (radians)
+    :return matrix: rotation matrix of "angle" about z-axis 
     """
     matrix = [[ np.cos(angle), np.sin(angle), 0.0],
               [-np.sin(angle), np.cos(angle), 0.0],
@@ -67,6 +73,15 @@ def rotate_euler(a1, a2, a3, sequence='321'):
         product1 = matrices.mxm(m2=rotate_y(a2), m1=rotate_z(a1))
         product2 = matrices.mxm(m2=rotate_z(a3), m1=product1)
     return product2
+
+
+def axisofr(Tmatrix):
+    vout = np.zeros(3)
+    vout[0] = Tmatrix[0][1]*Tmatrix[1][2] - (Tmatrix[1][1] -1)*Tmatrix[0][2]
+    vout[1] = Tmatrix[1][0]*Tmatrix[0][2] - (Tmatrix[0][0] -1)*Tmatrix[1][2]
+    vout[2] = (Tmatrix[0][0] - 1)*(Tmatrix[1][1] - 1) - Tmatrix[0][1]*Tmatrix[1][0]
+    phi = np.arccos((Tmatrix[0][0]+Tmatrix[1][1]+Tmatrix[2][2] - 1) / 2.)
+    return vout, phi
 
 
 def triad(v1, v2):

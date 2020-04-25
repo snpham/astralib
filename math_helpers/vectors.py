@@ -22,11 +22,14 @@ def vxm(v1, m1):
         return v_out   
 
 
+def vdotv(v1, v2):
+    return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2]
+
+
 def vcrossv(v1, v2):
     """cross product of two vectors
     """
     vout = np.zeros(len(v1))
-    print(v1, v2)
     vout[0] = v1[1]*v2[2] - v1[2]*v2[1]
     vout[1] = -(v1[0]*v2[2] - v1[2]*v2[0])
     vout[2] = v1[0]*v2[1] - v1[1]*v2[0]

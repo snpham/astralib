@@ -1,12 +1,37 @@
 #!/usr/bin/env python3
-import os, sys
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
-from math_helpers import matrices, rotations
+from math_helpers import matrices, rotations, vectors
 from numpy.linalg import norm
+
+
+def qxscalar(scalar, quat):
+    """quaternion scalar multiplication
+    :param scalar: scalar value
+    :param quat: quaternion value value
+    :return: scaled quaternion vector
+    """
+    return [scalar*q for q in quat]
+
+
+def qadd(quat1, quat2):
+    """quaternion addition
+    :param quat1: first quaternion
+    :param quat2: second quaternion
+    :return: sum of the two quaternions
+    """
+    return [q1+q2 for q1, q2 in zip(quat1, quat2)]
 
 
 def prv2dcm(e1, e2, e3, theta):
     """converts a principle rotation vector with an angle to a dcm
+    :param e1: first axis-component of principle rotation vector
+    :param e2: second axis-component of principle rotation vector
+    :param e3: third axis-component of principle rotation vector
+    :param theta: magnitude of the angle of rotation, (radians)
+    :return dcm: direction cosine matrix representing the fixed-axis
+                 rotation.
     """
     dcm = np.zeros([3,3])
     z = 1.0 - np.cos(theta)
@@ -25,13 +50,18 @@ def prv_angle(dcm):
 
 def prv_axis(dcm):
     """compute the principle rotation vector from a dcm
+    :param dcm: direction cosine matrix to extract rotation vector from
+    :return evec: principle rotation vector (eigvec corres. to the
+                  eigval of +1)
+    :return theta: magnitude of the angle of rotation (radians)
     """
     theta = prv_angle(dcm)
     factor = 1./(2.*np.sin(theta))
     e1 = factor * (dcm[1][2] - dcm[2][1])
     e2 = factor *(dcm[2][0] - dcm[0][2])
     e3 = factor *(dcm[0][1] - dcm[1][0])
-    return e1, e2, e3
+    evec = [e1, e2, e3]
+    return evec, theta
 
     
 def quat2dcm(qset):
@@ -113,6 +143,24 @@ def qxq(q1st, q2nd):
               [ b3,  b2, -b1,  s1]]
     v_out = matrices.mxv(matrix, q1st)
     return v_out
+
+
+def qxq2(quat1, quat2):
+    """alternative method for computing quaternion product
+    :param quat1: left quaternion
+    :param quat2: right quaternion
+    :return: v_out = quat1*quat2
+    """
+    p0, p1, p2, p3 = quat1
+    q0, q1, q2, q3 = quat2 
+    p0q0 = p0*q0
+    pdotq = vectors.vdotv(v1=[p1, p2, p3], v2=[q1, q2, q3])
+    p0q = vectors.vxscalar(scalar=p0, v1=[q1, q2, q3])
+    q0p = vectors.vxscalar(scalar=q0, v1=[p1, p2, p3])
+    pcrossr = vectors.vcrossv(v1=[p1, p2, p3], v2=[q1, q2, q3])
+    scalar = p0q0 - pdotq
+    complexq = [p0q[0]+q0p[0]+pcrossr[0], p0q[1]+q0p[1]+pcrossr[1], p0q[2]+q0p[2]+pcrossr[2]]
+    return np.array([scalar, complexq[0], complexq[1], complexq[2]])
 
 
 def qxq_transmute(q1st, q2nd):
@@ -231,3 +279,19 @@ if __name__ == "__main__":
     # sigmaset = quat2mrp(qset)
     # sigmasets = quat2mrps(qset)
     # print(sigmaset, sigmasets)
+
+    # testing quat addition, scalar mult
+    # q = [1, 0.2, 0.5, 0.4]
+    # scalar = 2
+    # q2 = qxscalar(scalar=scalar, quat=q)
+    # print(q2)
+    # s = qadd(q, q2)
+    # print(s)
+
+    # testing quat products
+    p1 = [3, 1, -2, 1]
+    q1 = [2, -1, 2, 3]
+    result = qxq2(quat1=p1, quat2=q1)
+    print(result)
+    result = qxq(q1st=p1, q2nd=q1)
+    print(result)

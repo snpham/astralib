@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # angmo = matrices.mxv(m1=inertia, v1=omega)
     # print(angmo)
 
-    # testing inertia matrix computation
+    # # testing inertia matrix computation
     # inertiacg = [[10., 1., -1.], [1., 5., 1], [-1., 1., 8.]]
     # r = [-0.5, 0.5, 0.25]
     # cg_tensor = mp.cg_tensor(rvec=r)
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # # inertianew[2][2] = inertiacg[2][2] + cg_scaled[2][2]
     # print(inertianew)
 
-    # inertia matrix frame transform
+    # # inertia matrix frame transform
     # Ic = [[10, 1, -1], [1, 5, 1], [-1, 1, 8]]
     # sigset = [0.1, 0.2, 0.3]
     # I_dcm = quaternions.mrp2dcm(sigset)
@@ -46,6 +46,9 @@ if __name__ == "__main__":
     # Tmatrix = matrices.mxadd(m2=np.eye(3), m1=I_dcm)
     # inertia_newframe = mp.T_inertiaframe(Imatrix=Ic, Tmatrix=Tmatrix)
     # print(inertia_newframe)
+    # eigvals, eigvecs = np.linalg.eig(a=Ic)
+    # print(eigvals)
+    # print(eigvecs)
 
     # kinetic energy
     # r = [[1, -1, 2], [-1, -3, 2], [2, -1, -1], [3, -1, -1]]
@@ -53,10 +56,10 @@ if __name__ == "__main__":
     # rdot = [[2, 1, 1], [0, -1, 1], [3, 2, -1], [0, 0, 1]]
     # # te = 0.5*
 
-    # inertiacg = [[10., 1., -1.], [1., 5., 1], [-1., 1., 8.]]
-    # w = [0.01, -0.01, 0.01]
-    # v1 = matrices.mxv(m1=inertiacg, v1=w)
-    # v2 = vectors.vxv(v1=v1, v2=w)
-    # trot = 0.5*v2
-    # print(trot)
+    inertiacg = [[10., 1., -1.], [1., 5., 1], [-1., 1., 8.]]
+    w = [0.01, -0.01, 0.01]
+    v1 = matrices.mxv(m1=inertiacg, v1=w)
+    v2 = vectors.vxv(v1=v1, v2=w)
+    trot = 0.5*v2
+    print(trot)
 

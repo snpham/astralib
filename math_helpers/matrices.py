@@ -38,6 +38,9 @@ def mxsub(m2, m1):
 
 def mxm(m2, m1):
     """matrix multiplication; currently for 3x3 matrices
+    :param m2: left matrix to be multiplied
+    :param m1: right matrix to be multiplied
+    :return m_out: matrix product m_out = [m2]*[m1]
     """
     m_out = np.zeros((len(m2),len(m1)))
     if len(m2) == 3 and len(m1) ==3:
@@ -49,6 +52,9 @@ def mxm(m2, m1):
 
 def mxv(m1, v1):
     """multiplies vector by a matrix; currently for 3x3 and 4x4 matrices
+    :param m1: nxn matrix to be multiplied
+    :param v1: vector of n rows to be multiplied
+    :return vout: resultant vector 
     """
     v_out = np.zeros(len(v1))
     if len(v1) == 4:
