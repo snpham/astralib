@@ -24,6 +24,87 @@ def qadd(quat1, quat2):
     return [q1+q2 for q1, q2 in zip(quat1, quat2)]
 
 
+def qxq(q1st, q2nd):
+    """computes the quaternion for a composite rotation of two
+    quaternion sets.
+    :param q1st: left quaternion
+    :param q2nd: right quaternion
+    :return v_out: v_out = q1st*q2nd
+    """
+    s1, b1, b2, b3 = q2nd
+    matrix = [[ s1, -b1, -b2, -b3],
+              [ b1,  s1,  b3, -b2],
+              [ b2, -b3,  s1,  b1],
+              [ b3,  b2, -b1,  s1]]
+    v_out = matrices.mxv(matrix, q1st)
+    return v_out
+
+
+def qxq2(quat1, quat2):
+    """alternative method for computing quaternion product
+    :param quat1: left quaternion
+    :param quat2: right quaternion
+    :return: v_out = quat1*quat2
+    """
+    p0, p1, p2, p3 = quat1
+    q0, q1, q2, q3 = quat2 
+    p0q0 = p0*q0
+    pdotq = vectors.vdotv(v1=[p1, p2, p3], v2=[q1, q2, q3])
+    p0q = vectors.vxscalar(scalar=p0, v1=[q1, q2, q3])
+    q0p = vectors.vxscalar(scalar=q0, v1=[p1, p2, p3])
+    pcrossr = vectors.vcrossv(v1=[p1, p2, p3], v2=[q1, q2, q3])
+    scalar = p0q0 - pdotq
+    complexq = [p0q[0]+q0p[0]+pcrossr[0], p0q[1]+q0p[1]+pcrossr[1], p0q[2]+q0p[2]+pcrossr[2]]
+    return np.array([scalar, complexq[0], complexq[1], complexq[2]])
+
+
+def q_operator_frame(quat, vec):
+    """used to express a vector in a reference frame as a vector in
+    the rotated frame, needs testing
+    """
+    q0, q1, q2, q3 = quat
+    wvec = np.zeros(3)
+    term1 = vectors.vxscalar(scalar=(2.*q0**2-1), v1=vec)
+    term2 = vectors.vxscalar(scalar=2.*vectors.vdotv(v1=vec, v2=[q1, q2, q3]), v1=[q1, q2, q3])
+    term3 = vectors.vxscalar(scalar=2.*q0, v1=vectors.vcrossv(v1=[q1, q2, q3], v2=vec))
+    wvec[0] = sum([term1[0], term2[0], term3[0]])
+    wvec[1] = sum([term1[1], term2[1], term3[1]])
+    wvec[2] = sum([term1[2], term2[2], term3[2]])
+    return wvec
+
+
+def qxq_transmute(q1st, q2nd):
+    s1, b1, b2, b3 = q1st
+    matrix = [[ s1, -b1, -b2, -b3],
+              [ b1,  s1, -b3,  b2],
+              [ b2,  b3,  s1, -b1],
+              [ b3, -b2,  b1,  s1]]
+    v_out =  matrices.mxv(matrix, q1st)    
+    return v_out
+
+
+def q_conjugate(quat):
+    """returns the conjugate of a quaternion
+    :param quat: quaternion set
+    :return: conjugate of quaternion
+    """
+    return np.array([quat[0], -quat[1], -quat[2], -quat[3]])
+
+
+def qxq_conjugate(quat1, quat2):
+    qleft = q_conjugate(quat2)
+    qright = q_conjugate(quat1)
+    return qxq(q1st=qleft, q2nd=qright)
+
+
+def q_norm(quat1):
+    """returns the norm of a quaternion q, (length of q)
+    :param quat1: quaternion set
+    :return: norm of the quaternion set
+    """
+    return np.sqrt(quat1[0]**2 + quat1[1]**2 + quat1[2]**2 + quat1[3]**2)
+
+
 def prv2dcm(e1, e2, e3, theta):
     """converts a principle rotation vector with an angle to a dcm
     :param e1: first axis-component of principle rotation vector
@@ -132,47 +213,6 @@ def euler2quat(a1, a2, a3, sequence='313'):
     return [s1, b1, b2, b3]
 
 
-def qxq(q1st, q2nd):
-    """computes the quaternion for a composite rotation of two
-    quaternion sets, v_out = [mq1st][vq2nd]
-    """
-    s1, b1, b2, b3 = q2nd
-    matrix = [[ s1, -b1, -b2, -b3],
-              [ b1,  s1,  b3, -b2],
-              [ b2, -b3,  s1,  b1],
-              [ b3,  b2, -b1,  s1]]
-    v_out = matrices.mxv(matrix, q1st)
-    return v_out
-
-
-def qxq2(quat1, quat2):
-    """alternative method for computing quaternion product
-    :param quat1: left quaternion
-    :param quat2: right quaternion
-    :return: v_out = quat1*quat2
-    """
-    p0, p1, p2, p3 = quat1
-    q0, q1, q2, q3 = quat2 
-    p0q0 = p0*q0
-    pdotq = vectors.vdotv(v1=[p1, p2, p3], v2=[q1, q2, q3])
-    p0q = vectors.vxscalar(scalar=p0, v1=[q1, q2, q3])
-    q0p = vectors.vxscalar(scalar=q0, v1=[p1, p2, p3])
-    pcrossr = vectors.vcrossv(v1=[p1, p2, p3], v2=[q1, q2, q3])
-    scalar = p0q0 - pdotq
-    complexq = [p0q[0]+q0p[0]+pcrossr[0], p0q[1]+q0p[1]+pcrossr[1], p0q[2]+q0p[2]+pcrossr[2]]
-    return np.array([scalar, complexq[0], complexq[1], complexq[2]])
-
-
-def qxq_transmute(q1st, q2nd):
-    s1, b1, b2, b3 = q1st
-    matrix = [[ s1, -b1, -b2, -b3],
-              [ b1,  s1, -b3,  b2],
-              [ b2,  b3,  s1, -b1],
-              [ b3, -b2,  b1,  s1]]
-    v_out =  matrices.mxv(matrix, q1st)    
-    return v_out
-
-
 def quat_kde_fromq(qset, wset):
     w1, w2, w3 = 0.5 * wset
     matrix = [[0, -w1, -w2, -w3],
@@ -228,6 +268,17 @@ def mrp2dcm(sigmaset):
     # dcm = np.dot(cscalar, asubb)
     dcm =  matrices.mxscalar(scalar=cscalar, m1=asubb)
     return dcm
+
+
+def mrpdot(sigmaset, wvec):
+    s = sigmaset
+    snorm = np.linalg.norm(s)
+    Tsigma = [[1-snorm**2+2*s[0]**2, 2*(s[0]*s[1]-s[2]),   2*(s[0]*s[2]+s[1])],
+              [2*(s[1]*s[0]+s[2]),   1-snorm**2+2*s[1]**2, 2*(s[1]*s[2]-s[0])],
+              [2*(s[2]*s[0]-s[1]),   2*(s[2]*s[1]+s[0]),   1-snorm**2+2*s[2]**2]]
+    Tsigma_scaled = matrices.mxscalar(scalar=1./4., m1=Tsigma)
+    sigmadot = matrices.mxv(m1=Tsigma_scaled, v1=wvec)
+    return sigmadot
 
 
 if __name__ == "__main__":
@@ -295,3 +346,10 @@ if __name__ == "__main__":
     print(result)
     result = qxq(q1st=p1, q2nd=q1)
     print(result)
+
+    # quaternion conjugate
+    print(q_conjugate(q1))
+    print(q_norm([2, -1, 2, 3]))
+
+    p1 = [1, 0, 0, 0]
+    print(qvqt(p1, [1,0,0]))

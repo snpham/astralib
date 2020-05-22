@@ -11,6 +11,14 @@ def vtranspose(v1):
     return vt
 
 
+def vxadd(v1, v2):
+    v_out = np.zeros(len(v1))
+    for ii in range(len(v1)):
+        v_out[ii] = v1[ii]+v2[ii]
+
+    return v_out   
+
+
 def vxm(v1, m1):
     """multiplies vector by a matrix; currently for length 3 vectors
     """
