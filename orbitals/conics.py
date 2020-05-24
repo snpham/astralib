@@ -81,6 +81,23 @@ def get_rv_frm_elements(p, e, incl, raan, argp, tanom, object='earth'):
     return r, v
 
 
+def T_ijk2topo(lon, lat, frame='sez'):
+    if frame == 'sez':
+        m1 = rot.rotate_z(lon)
+        m2 = rot.rotate_y(lat)
+        mat = mat.mxm(m2=m2, m1=m1)
+    return mat
+
+
+def T_pqw2ijk(raan, incl, argp):
+    s, c = np.sin, np.cos
+    rot_mat = [[c(raan)*c(argp)-s(raan)*s(argp)*c(incl), -c(raan)*s(argp)-s(raan)*c(argp)*c(incl), s(raan)*s(incl)],
+               [s(raan)*c(argp)+c(raan)*s(argp)*c(incl), -s(raan)*s(argp)+c(raan)*c(argp)*c(incl), -c(raan)*s(incl)],
+               [s(argp)*s(incl), c(argp)*s(incl), c(incl)]]
+    return rot_mat
+
+
+
 if __name__ == "__main__":
     
     from pprint import pprint as pp

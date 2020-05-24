@@ -7,6 +7,8 @@ from math_helpers import rotations
 
 def mtranspose(m1):
     """computes the transpose of a square matrix
+    :param m1: rotation matrix
+    :return mt: m1 transpose
     """
     mt = np.zeros((len(m1),len(m1)))
     for ii in range(len(m1)):
@@ -20,6 +22,9 @@ def mtranspose(m1):
 
 def mxadd(m2, m1):
     """matrix addition
+    :param m2: left matrix
+    :param m1: right matrix
+    :return m_out: matrix m_out = m2 + m1
     """
     m_out = np.zeros((len(m2),len(m1)))
     for ii in range(len(m2)):
@@ -30,6 +35,9 @@ def mxadd(m2, m1):
 
 def mxsub(m2, m1):
     """matrix subtraction
+    :param m2: left matrix
+    :param m1: right matrix
+    :return m_out: matrix m_out = m2 - m1
     """
     m_out = np.zeros((len(m2),len(m1)))
     for ii in range(len(m2)):
@@ -53,10 +61,10 @@ def mxm(m2, m1):
 
 
 def mxv(m1, v1):
-    """multiplies vector by a matrix; currently for 3x3 and 4x4 matrices
+    """multiplies vector by a matrix; currently for 3x3, 4x4 matrices
     :param m1: nxn matrix to be multiplied
     :param v1: vector of n rows to be multiplied
-    :return vout: resultant vector 
+    :return vout: resultant vector v_out = [m1]*v1
     """
     v_out = np.zeros(len(v1))
     if len(v1) == 4:
@@ -71,6 +79,9 @@ def mxv(m1, v1):
 
 def mxscalar(scalar, m1):
     """scales a matrix by a scalar
+    :param scalar: scalar component to multiply
+    :param m1: nxn matrix being scaled
+    :return m_out: resultant matrix m_out = scalar*[m1]
     """
     m_out = np.zeros((len(m1),len(m1)))
     for ii in range(len(m1)):
@@ -81,6 +92,8 @@ def mxscalar(scalar, m1):
 
 def skew_tilde(v1):
     """generates a skewed cross-product matrix from a vector
+    :param v1: vector to skew
+    :return v_tilde: skewed matrix for v1
     """
     v_tilde = np.zeros((len(v1), len(v1)))
     v_tilde[0][1] = -v1[2]
@@ -93,21 +106,4 @@ def skew_tilde(v1):
 
     
 if __name__ == '__main__':
-    b1, b2, b3 = np.deg2rad([30, -45, 60])
-
-    brotate = rotations.rotate_euler(b1, b2, b3, '321')
-        #print(f'BN: {brotate}')
-
-    f1, f2, f3 = np.deg2rad([10., 25., -15.])
-    frotate = rotations.rotate_euler(f1, f2, f3, '321')
-    frot = rotations.rotate_sequence(f1, f2, f3, '321')
-    print(f'FN: {frotate}')
-    if np.array_equal(frotate, frot):
-        print("is equal")
-    ftranspose = mtranspose(frotate) 
-    # print(rotations.rotate_sequence(a1, a2, a3, '313'))
-
-    matrix = mxm(brotate, ftranspose)
-    print(f'result={matrix}')
-    a1, a2, a3 = np.rad2deg(rotations.dcm_inverse(matrix, '321'))
-    print(a1, a2, a3)
+    pass
