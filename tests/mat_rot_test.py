@@ -16,19 +16,19 @@ def test_mxm():
 
 
 def test_euler_rotation():
-    """321; tests rotate_x, rotate_y, rotate_z, rotate_euler,
-    get_euler_angles, and rotate_sequence functions
+    """321; tests rotate_x, rotate_y, rotate_z, euler2dcm,
+    dcm2euler, and euler2dcm functions
     """
     # euler angles for n2b, n2f
     b1, b2, b3 = np.deg2rad([30, -45, 60])
     f1, f2, f3 = np.deg2rad([10., 25., -15.])
     # compute rotation matrices
-    T_n2b = rotations.rotate_euler(b1, b2, b3, '321')
-    T_n2f = rotations.rotate_euler(f1, f2, f3, '321')
+    T_n2b = rotations.euler2dcm(b1, b2, b3, '321')
+    T_n2f = rotations.euler2dcm(f1, f2, f3, '321')
     T_f2b = mat.mxm(m2=T_n2b, m1=mat.mtranspose(T_n2f))
-    T_n2b2 = rotations.rotate_sequence(b1, b2, b3, '321')
-    T_n2f2 = rotations.rotate_sequence(f1, f2, f3, '321')
-    # comparing rotate_euler and rotate_sequence functions
+    T_n2b2 = rotations.euler2dcm(b1, b2, b3, '321')
+    T_n2f2 = rotations.euler2dcm(f1, f2, f3, '321')
+    # comparing euler2dcm and euler2dcm functions
     assert np.array_equal(T_n2b, T_n2b2)
     assert np.array_equal(T_n2f, T_n2f2)
     T_f2b_truth = ([ 0.303371,-0.0049418, 0.952859], 
@@ -37,13 +37,13 @@ def test_euler_rotation():
     # comparing rotation matrix product with truth
     assert np.allclose(T_f2b, T_f2b_truth)
     # computing euler angles from T matrix
-    a1, a2, a3 = rotations.get_euler_angles(dcm=T_f2b_truth, sequence='321')
+    a1, a2, a3 = rotations.dcm2euler(dcm=T_f2b_truth, sequence='321')
     a1st, a2nd, a3rd = [np.rad2deg(angle) for angle in [a1, a2, a3]]
     # comparing computed angle with truth
     # FIXME 3rd angle is -79 deg in book
     assert np.allclose([a1st, a2nd, a3rd], ([-0.933242, -72.3373, 79.9635]))
     # get back matrix from angles
-    T_f2b = rotations.rotate_euler(a1, a2, a3, '321')
+    T_f2b = rotations.euler2dcm(a1, a2, a3, '321')
     assert np.allclose(T_f2b, T_f2b_truth)
 
 

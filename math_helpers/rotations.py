@@ -41,7 +41,7 @@ def rotate_z(angle):
     return matrix
 
 
-def rotate_euler(a1st, a2nd, a3rd, sequence='321'):
+def euler2dcm(a1st, a2nd, a3rd, sequence='321'):
     """euler rotation sequence utilizing rotate functions
     :param a1st: angle for first rotation axis (rad)
     :param a2nd: angle for second rotation axis (rad)
@@ -59,7 +59,7 @@ def rotate_euler(a1st, a2nd, a3rd, sequence='321'):
     return T2
     
 
-def rotate_sequence(a1st, a2nd, a3rd, sequence='321'):
+def euler2dcm2(a1st, a2nd, a3rd, sequence='321'):
     """euler rotation sequence utilizing predefined matrix
     :param a1st: angle for first rotation axis (rad)
     :param a2nd: angle for second rotation axis (rad)
@@ -80,7 +80,7 @@ def rotate_sequence(a1st, a2nd, a3rd, sequence='321'):
     return matrix
 
 
-def get_euler_angles(dcm, sequence='321'):
+def dcm2euler(dcm, sequence='321'):
     """compute euler angles from a rotation matrix
     :param dcm: direction cosine matrix
     :param sequence: euler sequence; default='321'
@@ -237,7 +237,7 @@ def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
     """
     if sequence == '321':
         w_o2b = wvec_frm_eulerrates_o2b(aset=aset, rates=rates, sequence='321')
-        eulerdcm = rotate_sequence(aset[0], aset[1], aset[2], sequence='321')
+        eulerdcm = euler2dcm(aset[0], aset[1], aset[2], sequence='321')
         w_n2o = vectors.vxscalar(scalar=Omega, v1=mat.mtranspose(eulerdcm)[1])
 
     return vectors.vxadd(v1=w_o2b, v2=w_n2o)
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     # tveci, t2i = triad(v1, v2)
     # print(tveci)
     # print(t2i)
-    # # bn_actual = rotate_euler(a1=np.deg2rad(30), a2=np.deg2rad(20), a3=np.deg2rad(-10), 
+    # # bn_actual = euler2dcm(a1=np.deg2rad(30), a2=np.deg2rad(20), a3=np.deg2rad(-10), 
     # #                            sequence='321')
     # # v1out_a = mat.mxv(bn_actual, v1)
     # # v2out_a = mat.mxv(bn_actual, v2)

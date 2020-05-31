@@ -30,7 +30,6 @@ def qxq(quat1, quat2):
     :param quat1: left quaternion
     :param quat2: right quaternion
     :return q_out: q_out = quat1*quat2
-    in work
     """
     s1, b1, b2, b3 = quat2
     matrix = [[ s1, -b1, -b2, -b3],
@@ -42,11 +41,11 @@ def qxq(quat1, quat2):
 
 
 def qxq2(quat1, quat2):
-    """alternative method for computing quaternion product
+    """computes the quaternion for a composite rotation of two
+    quaternion sets.
     :param quat1: left quaternion
     :param quat2: right quaternion
-    :return: v_out = quat1*quat2
-    in work
+    :return q_out: q_out = quat1*quat2
     """
     p0, p1, p2, p3 = quat1
     q0, q1, q2, q3 = quat2 
@@ -60,19 +59,39 @@ def qxq2(quat1, quat2):
     return [scalar, complexq[0], complexq[1], complexq[2]]
 
 
-def q_operator_frame(quat, vec):
+def q_operator_vector(quat, v1):
     """used to express a vector in a reference frame as a vector in
-    the rotated frame;
-    :param quat: quaternion set for a given frame rotation
-    :param vec: vector expressed in a reference frame to be rotated
-    :return wvec: vector vec, expressed in the rotated frame
-    in work
+    the rotated frame;  equivalent to a rotation of the vector 
+    through an angle about the quaternion axis of rotation
+    :param quat: quaternion set for a given vector rotation
+    :param v1: vector expressed in a reference frame to be rotated
+    :return wvec: wvec = qvq*; rotated vector wvec, expressed in the
+                  fixed reference frame; 
     """
     q0, q1, q2, q3 = quat
     wvec = np.zeros(3)
-    term1 = vectors.vxscalar(scalar=(2.*q0**2-1), v1=vec)
-    term2 = vectors.vxscalar(scalar=2.*vectors.vdotv(v1=vec, v2=[q1, q2, q3]), v1=[q1, q2, q3])
-    term3 = vectors.vxscalar(scalar=2.*q0, v1=vectors.vcrossv(v1=[q1, q2, q3], v2=vec))
+    term1 = vectors.vxscalar(scalar=(2.*q0**2-1), v1=v1)
+    term2 = vectors.vxscalar(scalar=2.*vectors.vdotv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
+    term3 = vectors.vxscalar(scalar=2.*q0, v1=vectors.vcrossv(v1=[q1, q2, q3], v2=v1))
+    wvec[0] = sum([term1[0], term2[0], term3[0]])
+    wvec[1] = sum([term1[1], term2[1], term3[1]])
+    wvec[2] = sum([term1[2], term2[2], term3[2]])
+    return wvec
+
+
+def q_operator_frame(quat, v1):
+    """coordinate frame rotation operator; used to express a vector
+    in a reference frame as a vector in the rotated frame; 
+    :param quat: quaternion set for a given vector rotation
+    :param v1: fixed vector expressed in a reference frame
+    :return wvec: wvec = q*vq; vector wvec, expressed in the rotated
+                  frame;
+    """
+    q0, q1, q2, q3 = quat
+    wvec = np.zeros(3)
+    term1 = vectors.vxscalar(scalar=(2.*q0**2-1), v1=v1)
+    term2 = vectors.vxscalar(scalar=2.*vectors.vdotv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
+    term3 = vectors.vxscalar(scalar=2.*q0, v1=vectors.vcrossv(v1=v1, v2=[q1, q2, q3]))
     wvec[0] = sum([term1[0], term2[0], term3[0]])
     wvec[1] = sum([term1[1], term2[1], term3[1]])
     wvec[2] = sum([term1[2], term2[2], term3[2]])
@@ -127,9 +146,11 @@ def prv2dcm(e1, e2, e3, theta):
 
     
 def quat2dcm(qset):
-    """converts a quaternion set into a dcm
+    """converts a quaternion set into a dcm; performs a coordinate
+    transformation of a vector in inertial axes into body axes
     :param qset: unit quaternion set
-    :return dcm: direction cosine matrix for a givecn quaternion set
+    :return dcm: direction cosine matrix for a given quaternion set;
+                 rotates a vector in inertial axes
     """
     s1, q1, q2, q3 = qset
     dcm = [[s1*s1+q1*q1-q2*q2-q3*q3, 2*(q1*q2+s1*q3), 2*(q1*q3-s1*q2)],
@@ -213,6 +234,20 @@ def euler2quat(a1st, a2nd, a3rd, sequence='313'):
         b2 = c(a1/2.)*s(a2/2.)*c(a3/2.)+s(a1/2.)*c(a2/2.)*s(a3/2.)
         b3 = s(a1/2.)*c(a2/2.)*c(a3/2.)-c(a1/2.)*s(a2/2.)*s(a3/2.)
     return [s1, b1, b2, b3]
+
+
+def quat2euler(qset, sequence='321'):
+    """returns an euler angle set for a given sequence and quaternion
+    :param qset: quaternion set to extract euler angles from
+    :param sequence: euler angle sequence requested
+    :return a1st: angle for first axis rotation (rad)
+    :return a2nd: angle for second axis rotation (rad)
+    :return a3rd: angle for third axis rotation (rad)
+    in work
+    """
+    dcm = quat2dcm(qset)
+    a1st, a2nd, a3rd = rotations.dcm2euler(dcm=dcm, sequence=sequence)
+    return [a1st, a2nd, a3rd]
 
 
 def quat2mrp(qset):

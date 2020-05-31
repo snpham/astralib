@@ -13,6 +13,41 @@ def test_quat_add_scalar():
     assert quaternions.qadd(quat1=[1, 0, 0, 0], quat2=[1, 0, 0, 0]) == [2, 0, 0, 0]
 
 
+def test_qxq():
+    """tests qxq and qxq2
+    """
+    # given two quaternions
+    quat1 = [3, 1, -2, 1]
+    quat2 = [2, -1, 2, 3]
+    qset = quaternions.qxq(quat1, quat2)
+    qset_truth = [8, -9, -2, 11]
+    assert np.allclose(qset, qset_truth)
+    qset = quaternions.qxq2(quat1, quat2)
+    assert np.allclose(qset, qset_truth)
+
+
+def test_qvq():
+    """tests quaternion operators
+    """
+    # given a vector rotation quaternion and vector in a reference
+    # frame
+    quat = [np.sqrt(3)/2, 0, 0, 1/2]
+    v1 = [1, 0, 0]
+    # compute and test quaternion operator
+    wvec = quaternions.q_operator_vector(quat, v1)
+    wvec_truth = [1/2, np.sqrt(3)/2, 0]
+    assert np.allclose(wvec, wvec_truth)
+    # 2nd test - rotating over pi/3 - vector operator
+    quat = [1/2, 1/2, 1/2, 1/2]
+    wvec = quaternions.q_operator_vector(quat, v1)
+    wvec_truth = [0, 1, 0]
+    assert np.allclose(wvec, wvec_truth)    
+    # 3rd test - using frame operator
+    wvec = quaternions.q_operator_frame(quat, v1)
+    wvec_truth = [0, 0, 1]
+    assert np.allclose(wvec, wvec_truth)    
+
+
 def test_sheppard():
     # given a dcm
     T_dcm = [[ 0.892539,  0.157379, -0.422618], 
