@@ -26,6 +26,13 @@ def vdotv(v1, v2):
     return v_out
 
 
+def norm(v1):
+    """returns the magnitude of the two vectors
+    in work
+    """
+    return np.linalg.norm(v1)
+
+
 def vcrossv(v1, v2):
     """cross product of two vectors of length 3
     :param v1: first vector (top)
@@ -51,6 +58,15 @@ def vxv(v1, v2):
         for jj in range(len(v1)):
             m_out[ii][jj] = v1[ii]*v2[jj]
     return m_out
+
+
+def v_cross(v1):
+    """returns skew symmetric matrix
+    """
+    v_tilde = [[    0., -v1[2],  v1[1]],
+               [ v1[2],     0., -v1[0]],
+               [-v1[1],  v1[0],     0]]
+    return v_tilde
 
 
 def vxscalar(scalar, v1):

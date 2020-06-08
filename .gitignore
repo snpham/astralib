@@ -2,4 +2,4 @@ notebooks/.ipynb_checkpoints/*
 */*.pyc
 *.pyc
 .vscode
-math_helpers/__pycache__
+*/__pycache__

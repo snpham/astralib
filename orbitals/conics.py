@@ -9,29 +9,21 @@ from math_helpers import matrices as mat
 
 
 def get_orbital_elements(rvec, vvec, object='earth'):
+    """in work
+    """
+    k = Keplerian(rvec, vvec, center=object)
 
-    h_vec = vec.vcrossv(v1=rvec, v2=vvec)
-    node_vec = vec.vcrossv(v1=[0,0,1], v2=h_vec)
-
-    r_mag = np.linalg.norm(rvec)
-    v_mag = np.linalg.norm(vvec)
-    h_mag = np.linalg.norm(h_vec)
-    node_mag = np.linalg.norm(node_vec)
+    node_vec = vec.vcrossv(v1=[0,0,1], v2=k.h_vec)
+    node_mag = vec.norm(node_vec)
     r_dot_v = vec.vdotv(v1=rvec, v2=vvec)
-    
-    if object == 'earth':
-        mu = 3.986004418e14 * 1e-9 # km^3*s^-2
-    scalar1 = v_mag**2 - mu/r_mag
-    term1 = vec.vxscalar(scalar=scalar1, v1=rvec)
-    term2 = vec.vxscalar(scalar=r_dot_v, v1=vvec)
-    ecc_vec = vec.vxscalar(scalar=1/mu, v1=vec.vxadd(v1=term1, v2=-term2))
 
-    p = h_mag**2/mu
-    e = np.linalg.norm(ecc_vec)
-    i = np.arccos(h_vec[2]/h_mag)
-    tanom = np.arccos(vec.vdotv(ecc_vec, rvec)/(e*r_mag))
+
+    p = k.h_mag**2/(k.mu)
+    e = vec.norm(k.ecc_vec)
+    i = k.incl
+    tanom = k.true_anom
     if vec.vdotv(rvec, vvec) < 0:
-        tanom = np.pi + tanom
+        tanom += np.pi
 
     print(f'Orbital Elements:\n',
           f'Semi-latus Rectum: {p:0.6f} km\n',
@@ -40,7 +32,7 @@ def get_orbital_elements(rvec, vvec, object='earth'):
     if i == 0:
         raan = 'nan'
         argp = 'nan'
-        lperi = np.arccos(vec.vdotv(ecc_vec, [1.0,0.0,0.0])/e)
+        lperi = np.arccos(vec.vdotv(k.ecc_vec, [1.,0.,0.])/e)
         arglat = 'nan'
         tlong = lperi + tanom
 
@@ -54,10 +46,10 @@ def get_orbital_elements(rvec, vvec, object='earth'):
         raan = np.arccos(vec.vdotv(node_vec, [1.0, 0.0, 0.0])/node_mag)
         if node_vec[1] < 0:
             raan = np.pi + raan
-        argp = np.arccos(vec.vdotv(v1=node_vec, v2=ecc_vec)/(node_mag*e))
-        if ecc_vec[2] < 0:
+        argp = np.arccos(vec.vdotv(v1=node_vec, v2=k.ecc_vec)/(node_mag*e))
+        if k.ecc_vec[2] < 0:
             argp = np.pi + argp
-        arglat = np.arccos(vec.vdotv(node_vec, rvec)/(node_mag*r_mag))
+        arglat = np.arccos(vec.vdotv(node_vec, rvec)/(node_mag*k.r_mag))
         if rvec[2] < 0:
             arglat = np.pi + arglat
         tlong = raan + arglat
@@ -70,6 +62,45 @@ def get_orbital_elements(rvec, vvec, object='earth'):
 
 
     return p, e, i, raan, argp, tanom, arglat, tlong
+
+
+def bplane_targeting(rvec, vvec, center='earth'):
+    """Compute BdotT and BdotR for a given b-plane targeting;
+    in work
+    """
+    k = Keplerian(rvec, vvec, center=center)
+
+    e_mag = vec.norm(k.e_vec)
+    if e_mag <= 1:
+        raise ValueError(f'e_mag = {e_mag}, non-hyperbolic orbit')
+
+    # unit vector normal to eccentricity vector and orbit normal
+    n_hat = vec.vcrossv(k.h_hat, k.e_hat)
+
+    # semiminor axis
+    semi_minor = k.h_mag**2/(k.mu*np.sqrt(e_mag**2-1))
+
+    # computing incoming asymptote and B-vector
+    evec_term = vec.vxscalar(1/e_mag, k.e_vec)
+    nvec_term = vec.vxscalar(np.sqrt(1-(1/e_mag)**2), n_hat)
+    S = vec.vxadd(evec_term, nvec_term)
+    evec_term = vec.vxscalar(semi_minor*np.sqrt(1-(1/e_mag)**2), k.e_vec)
+    nvec_term = vec.vxscalar(semi_minor/e_mag, n_hat)
+    B = vec.vxadd(evec_term, -nvec_term)
+
+    # T and R vector
+    T = vec.vxscalar(1/np.sqrt(S[0]**2+S[1]**2), [S[1], -S[0], 0.])
+    R = vec.vcrossv(v1=S, v2=T)
+
+    # BdotT and BdotR
+    B_t = vec.vdotv(v1=B, v2=T)
+    B_r = vec.vdotv(v1=B, v2=R)
+
+    # angle between B and T
+    theta = np.arccos(B_t/vec.norm(B_t))
+    
+    return B_t, B_r, theta
+
 
 
 def get_rv_frm_elements(p, e, incl, raan, argp, tanom, object='earth'):
@@ -147,11 +178,9 @@ def coplanar_transfer(p, e, r1, r2, object='earth'):
     """
 
     if (p/(1-e)) < r2:
-        print("Error: transfer orbit apogee is smaller than r2")
-        exit()
+        raise ValueError("Error: transfer orbit apogee is smaller than r2")
     elif (p/(1+e)) > r1:
-        print("Error: transfer orbit perigee is larger than r1")
-        exit()
+        raise ValueError("Error: transfer orbit perigee is larger than r1")
 
     if object == 'earth':
         mu = 398600.4418
@@ -168,6 +197,54 @@ def coplanar_transfer(p, e, r1, r2, object='earth'):
     cos_phi2 = h_transfer/(r2*v2) # angle b/t v1 and v1_circular
     dv2 = np.sqrt(v2**2+v2_circular**2 - 2*v2*v2_circular*cos_phi2)
     return dv1, dv2
+
+
+class Keplerian(object):
+    """Classical Keplerian elements; rvec, vvec must be in km, km/s
+    in work
+    """
+
+    def __init__(self, rvec, vvec, center='earth'):
+
+        self.rvec = rvec
+        self.vvec = vvec
+        self.r_mag = vec.norm(rvec)
+        self.v_mag = vec.norm(vvec)
+
+        # angular momentun; orbit normal direction
+        self.h_vec = vec.vcrossv(rvec, vvec)
+        self.h_mag = vec.norm(self.h_vec)
+        self.h_hat = self.h_vec/self.h_mag
+
+        if center.lower() == 'earth':
+            self.mu = 3.986004418e14 * 1e-9 # km^3*s^-2
+        elif center.lower() == 'mars':
+            self.mu = 4.282837e13 * 1e-9 # km^3*s^-2
+
+        self.e_vec = self.ecc_vec
+        self.e_hat = self.e_vec/vec.norm(self.vvec)
+
+    @property
+    def ecc_vec(self):
+        """eccentricity vector"""
+        scalar1 = self.v_mag**2/self.mu - self.r_mag
+        term1 = vec.vxscalar(scalar=scalar1, v1=self.rvec)
+        term2 = -vec.vxscalar(scalar=vec.vdotv(v1=self.rvec, v2=self.vvec)/self.mu, 
+                              v1=self.vvec)
+        eccentricity_vec = vec.vxadd(v1=term1, v2=term2) # points to orbit periapsis
+        return eccentricity_vec
+
+    @property
+    def incl(self):
+        """inclination"""
+        return np.arccos(self.h_vec[2]/self.h_mag)
+
+    @property
+    def true_anom(self):
+        """true anomaly"""
+        e = vec.norm(self.e_vec)
+        return np.arccos(vec.vdotv(self.e_vec, self.rvec)/(e*self.r_mag))
+
 
 
 if __name__ == "__main__":
@@ -213,3 +290,8 @@ if __name__ == "__main__":
     r1 = 7028.137
     r2 = 42158.137
     print(hohmann_transfer(r1, r2))
+
+    rvec = [-299761, -440886, -308712]
+    vvec = [1.343, 1.899, 1.329]
+    bdott, bdotr, theta = bplane_targeting(rvec, vvec, center='mars')
+    print(bdott, bdotr, np.rad2deg(theta))

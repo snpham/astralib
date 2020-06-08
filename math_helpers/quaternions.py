@@ -360,10 +360,10 @@ if __name__ == "__main__":
     # pp(dcm_actual)
 
     #testing mrp's
-    qset = [0.961798, -0.14565, 0.202665, 0.112505]
-    sigmaset = quat2mrp(qset)
-    sigmasets = quat2mrps(qset)
-    print(sigmaset, sigmasets)
+    # qset = [0.961798, -0.14565, 0.202665, 0.112505]
+    # sigmaset = quat2mrp(qset)
+    # sigmasets = quat2mrps(qset)
+    # print(sigmaset, sigmasets)
 
     # testing quat addition, scalar mult
     # q = [1, 0.2, 0.5, 0.4]
@@ -387,3 +387,13 @@ if __name__ == "__main__":
 
     # p1 = [1, 0, 0, 0]
     # print(qvqt(p1, [1,0,0]))
+    frame_T_trn_c2ils= [7.11390093e-06, 8.66068429e-01, 4.12538558e-05, 4.99925468e-01]
+    frame_T_hrn_c2ils= [ 2.58902171e-01, -3.42011688e-05,  9.65903548e-01, -2.41405936e-05]
+    vec = [0, 0, 1]
+    result = q_operator_frame(frame_T_hrn_c2ils, vec)
+    print(result)
+    result = np.rad2deg(quat2euler(frame_T_hrn_c2ils, sequence='321'))
+    print(result)
+    dcm = quat2dcm(frame_T_hrn_c2ils)
+    axis, angle = rotations.prv_axis(dcm)
+    print(axis, np.rad2deg(angle))
