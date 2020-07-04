@@ -53,9 +53,11 @@ def euler2dcm(a1st, a2nd, a3rd, sequence='321'):
     if sequence == '321':
         T1 = mat.mxm(m2=rotate_y(a2), m1=rotate_z(a1))
         T2 = mat.mxm(m2=rotate_x(a3), m1=T1)
-    if sequence == '313':
+    elif sequence == '313':
         T1 = mat.mxm(m2=rotate_y(a2), m1=rotate_z(a1))
         T2 = mat.mxm(m2=rotate_z(a3), m1=T1)
+    else:
+         raise ValueError(f'euler sequence not yet implemented')
     return T2
     
 
@@ -73,10 +75,12 @@ def euler2dcm2(a1st, a2nd, a3rd, sequence='321'):
         matrix = [[c(a2)*c(a1),                   c(a2)*s(a1),                  -s(a2)],
                   [s(a3)*s(a2)*c(a1)-c(a3)*s(a1), s(a3)*s(a2)*s(a1)+c(a3)*c(a1), s(a3)*c(a2)],
                   [c(a3)*s(a2)*c(a1)+s(a3)*s(a1), c(a3)*s(a2)*s(a1)-s(a3)*c(a1), c(a3)*c(a2)]]
-    if sequence == '313':
+    elif sequence == '313':
         matrix = [[ c(a3)*c(a1)-s(a3)*c(a2)*s(a1),  c(a3)*s(a1)+s(a3)*c(a2)*c(a1), s(a3)*s(a2)],
                   [-s(a3)*c(a1)-c(a3)*c(a2)*s(a1), -s(a3)*s(a1)+c(a3)*c(a2)*c(a1), c(a3)*s(a2)],
                   [ s(a2)*s(a1),                   -s(a2)*c(a1),                   c(a2)]]
+    else:
+        raise ValueError(f'euler sequence not yet implemented')           
     return matrix
 
 
@@ -90,10 +94,12 @@ def dcm2euler(dcm, sequence='321'):
         angle1st = np.arctan2(dcm[0][1],dcm[0][0])
         angle2nd = -np.arcsin(dcm[0][2])
         angle3rd = np.arctan2(dcm[1][2],dcm[2][2])
-    if sequence == '313':
+    elif sequence == '313':
         angle1st = np.arctan2(dcm[2][0],-dcm[2][1])
         angle2nd = -np.arccos(dcm[2][2])
         angle3rd = np.arctan2(dcm[0][2],dcm[1][2])
+    else:
+        raise ValueError(f'euler sequence not yet implemented')
     return angle1st, angle2nd, angle3rd
 
 
@@ -133,20 +139,6 @@ def axisofr(Tmatrix):
     vout[2] = (Tmatrix[0][0] - 1)*(Tmatrix[1][1] - 1) - Tmatrix[0][1]*Tmatrix[1][0]
     phi = np.arccos((Tmatrix[0][0]+Tmatrix[1][1]+Tmatrix[2][2] - 1) / 2.)
     return vout, phi
-
-
-def dcm_inverse(dcm, sequence='321'):
-    """in work
-    """
-    if sequence == '321':
-        angle1st = np.arctan2(dcm[0][1], dcm[0][0])
-        angle2nd = -np.arcsin(dcm[0][2])
-        angle3rd = np.arctan2(dcm[1][2], dcm[2][2])
-    if sequence == '313':
-        angle1st = np.arctan2(dcm[2][0], -dcm[2][1])
-        angle2nd = np.arccos(dcm[2][2])
-        angle3rd = np.arctan2(dcm[0][2], dcm[1][2])
-    return angle1st, angle2nd, angle3rd
 
 
 def dcm_rate(omega_tilde, dcm):
@@ -216,6 +208,8 @@ def wvec_frm_eulerrates_o2b(aset, rates, sequence='321'):
         matrix = [[-s(aset[1]),            0.0,        1.0],
                   [s(aset[2])*c(aset[1]),  c(aset[2]), 0.0],
                   [c(aset[2])*c(aset[1]), -s(aset[2]), 0.0]]
+    else:
+        raise ValueError(f'euler sequence not yet implemented')
     return mat.mxv(m1=matrix, v1=rates)
 
 
@@ -229,6 +223,8 @@ def eulerrates_frm_wvec_o2b(aset, wvec, sequence='321'):
                   [0.0,        c(aset[2])*c(aset[1]), -s(aset[2])*c(aset[1])],
                   [c(aset[1]), s(aset[2])*s(aset[1]),  c(aset[2])*s(aset[1])]]
         mxwvec = mat.mxv(m1=matrix, v1=wvec)
+    else:
+        raise ValueError(f'euler sequence not yet implemented')
     return vectors.vxscalar(scalar=1/c(aset[1]), v1=mxwvec)
 
 
@@ -239,7 +235,8 @@ def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
         w_o2b = wvec_frm_eulerrates_o2b(aset=aset, rates=rates, sequence='321')
         eulerdcm = euler2dcm(aset[0], aset[1], aset[2], sequence='321')
         w_n2o = vectors.vxscalar(scalar=Omega, v1=mat.mtranspose(eulerdcm)[1])
-
+    else:
+        raise ValueError(f'euler sequence not yet implemented')
     return vectors.vxadd(v1=w_o2b, v2=w_n2o)
 
 
@@ -250,7 +247,8 @@ def eulerrates_frm_wvec_n2b(aset, wvec, Omega, sequence='321'):
         rates_o2b = eulerrates_frm_wvec_o2b(aset=aset, wvec=wvec, sequence='321')
         term2 = vectors.vxscalar(scalar=Omega/np.cos(aset[1]), \
             v1=[np.sin(aset[1])*np.sin(aset[0]), np.cos(aset[1])*np.cos(aset[0]), np.sin(aset[0])])
-
+    else:
+        raise ValueError(f'euler sequence not yet implemented')vdf 
     return vectors.vxadd(v1=rates_o2b, v2=-term2)
 
 
