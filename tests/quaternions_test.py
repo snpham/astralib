@@ -48,7 +48,10 @@ def test_qvq():
     assert np.allclose(wvec, wvec_truth)    
 
 
-def test_sheppard():
+def test_quat2dcm():
+    """tests quat2dcm and sheppards method
+    """
+    # sheppard
     # given a dcm
     T_dcm = [[ 0.892539,  0.157379, -0.422618], 
              [-0.275451,  0.932257, -0.234570], 
@@ -57,6 +60,44 @@ def test_sheppard():
     quat = quaternions.dcm2quat_sheppard(T_dcm)
     quat_truth = (0.961798, -0.145650, 0.202665, 0.112505)
     assert np.allclose(quat, quat_truth)
+
+    # quat2dcm basic
+    qset = [0.235702, 0.471405, -0.471405, 0.707107]
+    dcm = quaternions.quat2dcm(qset)
+    dcm_true = [[-0.444444, -0.111112, 0.888889], 
+                [-0.777778, -0.444444, -0.444445], 
+                [0.444445, -0.888889, 0.111110]]
+    assert np.allclose(dcm, dcm_true)
+
+    # 2nd quat2dcm and sheppard test
+    bn = [[-0.529403, -0.467056, 0.708231], 
+          [-0.474115, -0.529403, -0.703525], 
+          [0.703525, -0.708231, 0.0588291]]
+    epset = quaternions.dcm2quat(bn)
+    epset_true = [0.0024254, 0.4850696, -0.4850696, 0.7276048]
+    assert np.allclose(epset, epset_true, rtol=0, atol=1e-02) # not accurate
+    epset = quaternions.dcm2quat_sheppard(bn)
+    assert np.allclose(epset, epset_true,rtol=0, atol=1e-06)
+
+    # 3rd quat2dcm/sheppard test
+    q_bn = [0.774597,0.258199,0.516398,0.258199]
+    q_fb = [0.359211,0.898027,0.179605,0.179605]
+    dcm_bn = quaternions.quat2dcm(q_bn)
+    dcm_fb = quaternions.quat2dcm(q_fb)
+    dcm_fn = matrices.mxm(dcm_fb, dcm_bn)
+    q_fn = quaternions.dcm2quat_sheppard(dcm_fn)
+    q_fn = quaternions.dcm2quat(dcm_fn)
+    q_fn_true = [0.0927449, -0.8347526, -0.5101265, 0.1855009]
+    assert np.allclose(q_fn, q_fn_true)
+
+
+def test_euler2quat():
+    """tests euler2quat function
+    """
+    aset = np.deg2rad([20, 10, -10])
+    quat = quaternions.euler2quat(aset[0], aset[1], aset[2], sequence='321')
+    quat_true = [0.9760079, -0.1005818, 0.0704281, 0.1798098]
+    assert np.allclose(quat, quat_true)
 
 
 def test_mrps():

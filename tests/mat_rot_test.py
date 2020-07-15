@@ -16,8 +16,8 @@ def test_mxm():
 
 
 def test_euler_rotation():
-    """321; tests rotate_x, rotate_y, rotate_z, euler2dcm,
-    dcm2euler, and euler2dcm functions
+    """321 and 313; tests rotate_x, rotate_y, rotate_z, euler2dcm,
+    euler2dcm2, dcm2euler, and euler2dcm functions
     """
     # euler angles for n2b, n2f
     b1, b2, b3 = np.deg2rad([30, -45, 60])
@@ -46,6 +46,61 @@ def test_euler_rotation():
     T_f2b = rotations.euler2dcm(a1, a2, a3, '321')
     assert np.allclose(T_f2b, T_f2b_truth)
 
+    # another dcm rotation test
+    dcm = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    dcmx = rotations.rotate_x(np.deg2rad(90))
+    dcmy = rotations.rotate_y(np.deg2rad(-90))
+    dcmy = mat.mtranspose(dcmy)
+    br = mat.mxm(dcmx, dcmy)
+    br_true = [[0.0, 0.0, -1.0],
+               [1.0, 0.0, 0.0], 
+               [0.0, -1.0, 0.0]]
+    assert np.allclose(br, br_true)
+
+    # manual composite rotation
+    sqrt = np.sqrt
+    bn = [[1/3, 2/3, -2/3], [0, 1/sqrt(2), 1/sqrt(2)], [4/(3*sqrt(2)), -1/(3*sqrt(2)), 1/(3*sqrt(2))]]
+    fn = [[3/4, -2/4, sqrt(3)/4],[-1/2, 0, sqrt(3)/2], [-sqrt(3)/4, -2*sqrt(3)/4, -1/4]]
+    nf = mat.mtranspose(fn)
+    bf = mat.mxm(bn, nf)
+    bf_true = [[-0.37200847, -0.74401694, -0.55502117], 
+               [-0.04736717, 0.61237244, -0.78914913], 
+               [0.92701998, -0.26728038, -0.26304971]]
+    assert np.allclose(bf, bf_true)
+
+    # testing 313 sequence
+    angles = np.deg2rad((10, 20, 30))
+    dcm1 = rotations.euler2dcm(angles[0], angles[1], angles[2], sequence='321')
+    eulers = np.rad2deg(rotations.dcm2euler(dcm1, sequence='313'))
+    eulers_true = [40.64234205, 35.53134776, -36.05238873]
+    assert np.allclose(eulers, eulers_true)
+
+    # testing 313 sequence with composite rotation
+    ang2 = np.deg2rad((-5, 5, 5))
+    dcm_BN = rotations.euler2dcm2(angles[0], angles[1], angles[2], sequence='321')
+    dcm_RN = rotations.euler2dcm2(ang2[0], ang2[1], ang2[2], sequence='321')
+    dcm_NR = matrices.mtranspose(dcm_RN)
+    dcm = matrices.mxm(dcm_BN, dcm_NR)
+    eulers = np.rad2deg(rotations.dcm2euler(dcm, sequence='321'))
+    eulers_true = [13.22381821, 16.36834338, 23.61762825]
+    assert np.allclose(eulers, eulers_true)
+
+
+def test_dcm_rates():
+    """tests dcm_rate function
+    """
+    bn = [[-0.87097, 0.45161, 0.19355], 
+          [-0.19355, -0.67742, 0.70968], 
+          [0.45161, 0.58065, 0.67742]]
+    wbn = [0.1, 0.2, 0.3]
+    wbn_tl = matrices.skew_tilde(wbn)
+    rates = rotations.dcm_rate(omega_tilde=wbn_tl, dcm=bn)
+    rates_true = [[-0.148387, -0.319356,  0.07742], 
+                  [ 0.306452, -0.077418,  0.009677], 
+                  [-0.154839,  0.158064, -0.032258]]
+    assert np.allclose(rates, rates_true)
+
+
 
 def test_prv():
     """tests principal rotation axis and angle 
@@ -65,6 +120,26 @@ def test_prv():
     evec_truth =(-0.532035, 0.740302, 0.410964)
     assert np.allclose(phi_deg, 31.7762)
     assert np.allclose(evec, evec_truth)
+
+    # second prv axis test
+    dcm = [[0.925417, 0.336824, 0.173648],
+           [0.0296956, -0.521281, 0.852869],
+           [0.377786, -0.784102, -0.492404]]
+    e, angle = rotations.prv_axis(dcm)
+    e_true = [0.975550, 0.121655, 0.183032]
+    angle_true = 2.146152
+    assert np.allclose(e, e_true)
+    assert np.allclose(angle, angle_true)
+
+    # third prv axis test
+    angles = np.deg2rad((20, -10, 120))
+    e, angle = rotations.prv_axis(rotations.euler2dcm( \
+            angles[0], angles[1], angles[2], sequence='321'))
+    e_true = [0.975550, 0.121655, 0.183032]
+    angle_true = 2.146152
+    assert np.allclose(e, e_true)
+    assert np.allclose(angle, angle_true)
+
 
 
 def test_triad_method():

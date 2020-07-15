@@ -96,7 +96,7 @@ def dcm2euler(dcm, sequence='321'):
         angle3rd = np.arctan2(dcm[1][2],dcm[2][2])
     elif sequence == '313':
         angle1st = np.arctan2(dcm[2][0],-dcm[2][1])
-        angle2nd = -np.arccos(dcm[2][2])
+        angle2nd = np.arccos(dcm[2][2])
         angle3rd = np.arctan2(dcm[0][2],dcm[1][2])
     else:
         raise ValueError(f'euler sequence not yet implemented')
@@ -137,12 +137,17 @@ def axisofr(Tmatrix):
     vout[0] = Tmatrix[0][1]*Tmatrix[1][2] - (Tmatrix[1][1] -1)*Tmatrix[0][2]
     vout[1] = Tmatrix[1][0]*Tmatrix[0][2] - (Tmatrix[0][0] -1)*Tmatrix[1][2]
     vout[2] = (Tmatrix[0][0] - 1)*(Tmatrix[1][1] - 1) - Tmatrix[0][1]*Tmatrix[1][0]
-    phi = np.arccos((Tmatrix[0][0]+Tmatrix[1][1]+Tmatrix[2][2] - 1) / 2.)
+    phi = prv_angle(Tmatrix)
     return vout, phi
 
 
 def dcm_rate(omega_tilde, dcm):
-    """in work
+    """returns the DCM differential kinematic equation showing how
+    the dcm evolve over time.
+    :param omega_tilde: body angular velocity vector in skewed
+                        symmetric matrix form
+    :param dcm: direction cosine matrix of a rotation
+    :return dcm_dot = -[~w][dcm]
     """
     return -mat.mxm(omega_tilde, dcm)
 
@@ -222,10 +227,10 @@ def eulerrates_frm_wvec_o2b(aset, wvec, sequence='321'):
         matrix = [[0.0,        s(aset[2]),             c(aset[2])],
                   [0.0,        c(aset[2])*c(aset[1]), -s(aset[2])*c(aset[1])],
                   [c(aset[1]), s(aset[2])*s(aset[1]),  c(aset[2])*s(aset[1])]]
-        mxwvec = mat.mxv(m1=matrix, v1=wvec)
+        matrix = mat.mxscalar(scalar=1/c(aset[1]), m1=matrix)
     else:
         raise ValueError(f'euler sequence not yet implemented')
-    return vectors.vxscalar(scalar=1/c(aset[1]), v1=mxwvec)
+    return mat.mxv(m1=matrix, v1=wvec)
 
 
 def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
@@ -248,38 +253,18 @@ def eulerrates_frm_wvec_n2b(aset, wvec, Omega, sequence='321'):
         term2 = vectors.vxscalar(scalar=Omega/np.cos(aset[1]), \
             v1=[np.sin(aset[1])*np.sin(aset[0]), np.cos(aset[1])*np.cos(aset[0]), np.sin(aset[0])])
     else:
-        raise ValueError(f'euler sequence not yet implemented')vdf 
+        raise ValueError(f'euler sequence not yet implemented')
     return vectors.vxadd(v1=rates_o2b, v2=-term2)
 
 
 if __name__ == "__main__":
-    pass
-    # #testing triad method
-    # v1 = [1, 0, 0]
-    # v2 = [0, 0, 1]
-    # tveci, t2i = triad(v1, v2)
-    # print(tveci)
-    # print(t2i)
-    # # bn_actual = euler2dcm(a1=np.deg2rad(30), a2=np.deg2rad(20), a3=np.deg2rad(-10), 
-    # #                            sequence='321')
-    # # v1out_a = mat.mxv(bn_actual, v1)
-    # # v2out_a = mat.mxv(bn_actual, v2)
-    # v1out = [0.8190, -0.5282, 0.2242]
-    # v2out = [-0.3138, -0.1584, 0.9362]
-    # # print(v1out, v2out)
-    # tvec, tmatrix = triad(v1out, v2out)
-    # # print(tvec)
-    # # print(tmatrix)
-    # bn = mat.mxm(m2=tmatrix, m1=t2i)
-    # print(bn)
-    # bn_error = mat.mxm(m2=bn, m1=mat.mtranspose(bn_actual))
-    # print(bn_error)
+    
+    angles = np.deg2rad((20, -10, 120))
+    axis, angle = prv_axis(euler2dcm(angles[0], angles[1], angles[2], sequence='321'))
+    print(angle, axis)
 
-    # aset = [1.0, 0.0, 0.0]
-    # rates = [1.0, 0.0, 0.0]
-    # sequence = '321'
-    # w_n2b = wvec_frm_eulerrates_n2b(aset=aset, rates=rates, Omega=0.0, sequence='321')
-    # print(w_n2b)
-    # wvec = [1.0, 0.0, 0.0]
-    # rates_n2b = eulerrates_frm_wvec_n2b(aset=aset, wvec=wvec, Omega=0.0, sequence='321')
-    # print(rates_n2b)
+    bn = [[1, 0, 0], [0, 0, 1], [0, -1, 0]]
+    dcm = mat.mxm(bn, bn)
+    print(dcm)
+    axis, angle = axisofr(dcm)
+    print(angle, axis)

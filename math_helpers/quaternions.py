@@ -163,13 +163,13 @@ def dcm2quat(dcm):
     """converts a dcm into a quaternion set; note singularties exist
     when s1=0, use sheppard's method if possible
     :param dcm: direction cosine matrix to extract quaternions from
-    :return: quaternion set for a given dcm
-    in work
+    :return: quaternion set for a given dcm;
+             w = q*vq returns vector v in the w frame
     """
     trace = dcm[0][0] + dcm[1][1] + dcm[2][2]
     s1 = 1./2. * np.sqrt(trace + 1)
     if s1 == 0:
-        print("s1=0, singularity exists")
+        raise ValueError("s1=0, singularity exists")
     b1 = (dcm[1][2]-dcm[2][1]) / (4.*s1)
     b2 = (dcm[2][0]-dcm[0][2]) / (4.*s1)
     b3 = (dcm[0][1]-dcm[1][0]) / (4.*s1)
@@ -180,7 +180,8 @@ def dcm2quat_sheppard(dcm):
     """converts a dcm to quaternions based on sheppard's method;
     see pg 110, Analytical Mechanics of Space Systems
     :param dcm: direction cosine matrix to extract quaternions from
-    :return: quaternion set for a given dcm
+    :return: frame transform quaternion set for a given dcm; 
+             w = q*vq returns vector v in the w frame
     """
     trace = dcm[0][0] + dcm[1][1] + dcm[2][2]
     s1_sq = 1./4. * (1+trace)
@@ -188,7 +189,6 @@ def dcm2quat_sheppard(dcm):
     b2_sq = 1./4. * (1+2*dcm[1][1]-trace)
     b3_sq = 1./4. * (1+2*dcm[2][2]-trace)
     quats = [s1_sq, b1_sq, b2_sq, b3_sq]
-    print(quats)
     if np.argmax(quats) == 0:
         s1 = np.sqrt(s1_sq)
         b1 = (dcm[1][2]-dcm[2][1])/(4.*s1)
@@ -339,61 +339,4 @@ def quat_kde_fromw(qset, wset):
 
 if __name__ == "__main__":
 
-
-    # a1, a2, a3 = rotations.dcm_inverse(frotate, sequence='313')
-    # print(np.rad2deg(a1), np.rad2deg(a2), np.rad2deg(a3))
-    # quat = euler2quat(a1, a2 , a3, sequence='313')
-    # print(quat)
-
-    # testing qxq and transmutation
-    # q1st = [0., 1./np.sqrt(2.), 1./np.sqrt(2.), 0.]
-    # q2nd = [0.5*np.sqrt(np.sqrt(3)/2+1), -0.5*np.sqrt(np.sqrt(3)/2+1), -np.sqrt(2)/(4*np.sqrt(2+np.sqrt(3))), np.sqrt(2)/(4*np.sqrt(2+np.sqrt(3)))]
-    # # print(q1st)
-    # # print(q2nd)
-    # v_out = qxq(q1st, q2nd)
-    # v_actual = [1/(2*np.sqrt(2))*np.sqrt(3), 1/(2*np.sqrt(2))*np.sqrt(3), 1/(2*np.sqrt(2))*1, 1/(2*np.sqrt(2))*1]
-    # print(v_out)
-    # print(v_actual)
-    # dcm = quat2dcm(v_out)
-    # dcm_actual = quat2dcm(v_actual)
-    # pp(dcm)
-    # pp(dcm_actual)
-
-    #testing mrp's
-    # qset = [0.961798, -0.14565, 0.202665, 0.112505]
-    # sigmaset = quat2mrp(qset)
-    # sigmasets = quat2mrps(qset)
-    # print(sigmaset, sigmasets)
-
-    # testing quat addition, scalar mult
-    # q = [1, 0.2, 0.5, 0.4]
-    # scalar = 2
-    # q2 = qxscalar(scalar=scalar, quat=q)
-    # print(q2)
-    # s = qadd(q, q2)
-    # print(s)
-
-    # # testing quat products
-    # p1 = [3, 1, -2, 1]
-    # q1 = [2, -1, 2, 3]
-    # result = qxq2(quat1=p1, quat2=q1)
-    # print(result)
-    # result = qxq(q1st=p1, q2nd=q1)
-    # print(result)
-
-    # # quaternion conjugate
-    # print(q_conjugate(q1))
-    # print(q_norm([2, -1, 2, 3]))
-
-    # p1 = [1, 0, 0, 0]
-    # print(qvqt(p1, [1,0,0]))
-    frame_T_trn_c2ils= [7.11390093e-06, 8.66068429e-01, 4.12538558e-05, 4.99925468e-01]
-    frame_T_hrn_c2ils= [ 2.58902171e-01, -3.42011688e-05,  9.65903548e-01, -2.41405936e-05]
-    vec = [0, 0, 1]
-    result = q_operator_frame(frame_T_hrn_c2ils, vec)
-    print(result)
-    result = np.rad2deg(quat2euler(frame_T_hrn_c2ils, sequence='321'))
-    print(result)
-    dcm = quat2dcm(frame_T_hrn_c2ils)
-    axis, angle = rotations.prv_axis(dcm)
-    print(axis, np.rad2deg(angle))
+    pass
