@@ -100,7 +100,30 @@ def test_euler2quat():
     assert np.allclose(quat, quat_true)
 
 
+def test_crps():
+    """tests crp2dcm and dcm2crp functions
+    """
+    # crp to dcm
+    sigmas = [0.1, 0.2, 0.3]
+    dcm = quaternions.crp2dcm(sigmas)
+    dcm_true = [[ 0.77192982,  0.56140351, -0.29824561],
+                [-0.49122807,  0.8245614,  0.28070175],
+                [ 0.40350877, -0.07017544,  0.9122807 ]]
+    assert np.allclose(dcm, dcm_true)
+
+    # dcm to crp's
+    dcm = [[0.333333,-0.666667,0.666667],
+           [0.871795,0.487179,0.0512821],
+           [-0.358974,0.564103,0.74359]]
+    crp = quaternions.dcm2crp(dcm)
+    crp_true = [-0.2,  -0.4, -0.6]
+    assert np.allclose(crp, crp_true)
+
+
+
 def test_mrps():
+    """tests quatmrp, quat2mrps, get_mrp_shadowset, dcm2mrp
+    """
     # given euler parameters b
     qset = [0.961798, -0.145650, 0.202665, 0.112505]
     # compute and test quat to mrp and mrp shadowset
@@ -110,3 +133,17 @@ def test_mrps():
     sigma_sh_truth = (3.81263, -5.30509, -2.945)
     assert np.allclose(sigma, sigma_truth)
     assert np.allclose(sigma_sh, sigma_sh_truth)
+
+    # mrp shadow set
+    sigma = [0.1, 0.2, 0.3]
+    shadow = quaternions.get_mrp_shadowset(sigma)
+    shadow_true = [-0.7142857, -1.4285714, -2.1428571]
+    assert np.allclose(shadow, shadow_true)
+
+    # dcm to mrp
+    dcm = [[0.763314, 0.0946746, -0.639053],
+	       [-0.568047, -0.372781, -0.733728],
+          [-0.307692, 0.923077, -0.230769]]
+    mrp = quaternions.dcm2mrp(dcm)
+    mrp_true = [-0.5,  0.1,  0.2]
+    assert np.allclose(mrp, mrp_true)

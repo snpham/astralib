@@ -41,7 +41,7 @@ def rotate_z(angle):
     return matrix
 
 
-def euler2dcm(a1st, a2nd, a3rd, sequence='321'):
+def euler2dcm(angles, sequence='321'):
     """euler rotation sequence utilizing rotate functions
     :param a1st: angle for first rotation axis (rad)
     :param a2nd: angle for second rotation axis (rad)
@@ -49,7 +49,7 @@ def euler2dcm(a1st, a2nd, a3rd, sequence='321'):
     :param sequence: euler sequence; default='321'
     :return: transformation matrix of rotation sequence
     """
-    a1, a2, a3 = a1st, a2nd, a3rd
+    a1, a2, a3 = angles[0], angles[1], angles[2]
     if sequence == '321':
         T1 = mat.mxm(m2=rotate_y(a2), m1=rotate_z(a1))
         T2 = mat.mxm(m2=rotate_x(a3), m1=T1)
@@ -61,7 +61,7 @@ def euler2dcm(a1st, a2nd, a3rd, sequence='321'):
     return T2
     
 
-def euler2dcm2(a1st, a2nd, a3rd, sequence='321'):
+def euler2dcm2(angles, sequence='321'):
     """euler rotation sequence utilizing predefined matrix
     :param a1st: angle for first rotation axis (rad)
     :param a2nd: angle for second rotation axis (rad)
@@ -70,7 +70,7 @@ def euler2dcm2(a1st, a2nd, a3rd, sequence='321'):
     :return: transformation matrix of rotation sequence
     """
     s, c = np.sin, np.cos
-    a1, a2, a3 = a1st, a2nd, a3rd
+    a1, a2, a3 =  angles[0], angles[1], angles[2]
     if sequence == '321':
         matrix = [[c(a2)*c(a1),                   c(a2)*s(a1),                  -s(a2)],
                   [s(a3)*s(a2)*c(a1)-c(a3)*s(a1), s(a3)*s(a2)*s(a1)+c(a3)*c(a1), s(a3)*c(a2)],
@@ -155,28 +155,28 @@ def dcm_rate(omega_tilde, dcm):
 def triad(v1, v2):
     """TRIAD attitude estimation method. Uses two vector observations, 
     v1 and v2, to establish a frame tset with v1 being primary and
-    v2 secondary.
-    :param v1: first inertial vector measurement
-    :param v2: second inertial vector meansurement
-    return tset: 3x3 matrix with t1, t2, t3 as columns 0, 1, 2;
-    return t2vmatrix: transpose of triad frame vectors tset; rows 
-                      represents triad vectors in terms of inertial
-                      basis vectors
+    v2 secondary. Resultant frame will be same as input v frame.
+    :param v1: primary vector measurement in v frame
+    :param v2: secondary vector meansurement in v frame
+    return tset: t1, t2, t3 in the v frame;
+    return AT_matrix: transpose of triad frame vectors tset; each
+                      column represent each t vector in the v frame;
+                      i.e.: [BbarT] = [t1bar_B t2bar_B t3bar_B]
+                            [NT] = [t1_N t2_N t3_N]
     """
     t1 = np.array(v1)
-    v1xv2 = vectors.vcrossv(v1, v2)
-    t2 = v1xv2 / norm(v1xv2)
+    t2 = vectors.vcrossv(v1, v2) / norm(vectors.vcrossv(v1, v2))
     t3 = vectors.vcrossv(t1, t2)
     tset = [t1, t2, t3]
-    # transform matrix for new tset frame to v frame
-    t2vmatrix = mat.mtranspose(tset)
-    return tset, t2vmatrix
+    # transform to v frame matrix
+    AT_matrix = mat.mtranspose(tset)
+    return tset, AT_matrix
 
 
 def davenportq(vset_nrtl, vset_body, weights, sensors=2):
     """solving Wahba's problem using quaternions; see pg 147
-    :param vset_nrtl: inertial sensor measurement vectors
-    :param vset_body: sensor measurement vectors in body frame
+    :param vset_nrtl: inertial sensor measurement vectors set
+    :param vset_body: sensor measurement vectors set in body frame 
     :param weights: weights for each sensor measurement
     :sensors: number of sensors computed; default=2
     :return qset: quaternion set for optimal attitude estimate
@@ -238,7 +238,7 @@ def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
     """
     if sequence == '321':
         w_o2b = wvec_frm_eulerrates_o2b(aset=aset, rates=rates, sequence='321')
-        eulerdcm = euler2dcm(aset[0], aset[1], aset[2], sequence='321')
+        eulerdcm = euler2dcm(aset, sequence='321')
         w_n2o = vectors.vxscalar(scalar=Omega, v1=mat.mtranspose(eulerdcm)[1])
     else:
         raise ValueError(f'euler sequence not yet implemented')
@@ -259,12 +259,4 @@ def eulerrates_frm_wvec_n2b(aset, wvec, Omega, sequence='321'):
 
 if __name__ == "__main__":
     
-    angles = np.deg2rad((20, -10, 120))
-    axis, angle = prv_axis(euler2dcm(angles[0], angles[1], angles[2], sequence='321'))
-    print(angle, axis)
-
-    bn = [[1, 0, 0], [0, 0, 1], [0, -1, 0]]
-    dcm = mat.mxm(bn, bn)
-    print(dcm)
-    axis, angle = axisofr(dcm)
-    print(angle, axis)
+    pass

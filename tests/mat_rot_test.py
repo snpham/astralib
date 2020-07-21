@@ -20,14 +20,14 @@ def test_euler_rotation():
     euler2dcm2, dcm2euler, and euler2dcm functions
     """
     # euler angles for n2b, n2f
-    b1, b2, b3 = np.deg2rad([30, -45, 60])
-    f1, f2, f3 = np.deg2rad([10., 25., -15.])
+    b = np.deg2rad([30, -45, 60])
+    f = np.deg2rad([10., 25., -15.])
     # compute rotation matrices
-    T_n2b = rotations.euler2dcm(b1, b2, b3, '321')
-    T_n2f = rotations.euler2dcm(f1, f2, f3, '321')
+    T_n2b = rotations.euler2dcm(b, '321')
+    T_n2f = rotations.euler2dcm(f, '321')
     T_f2b = mat.mxm(m2=T_n2b, m1=mat.mtranspose(T_n2f))
-    T_n2b2 = rotations.euler2dcm(b1, b2, b3, '321')
-    T_n2f2 = rotations.euler2dcm(f1, f2, f3, '321')
+    T_n2b2 = rotations.euler2dcm(b, '321')
+    T_n2f2 = rotations.euler2dcm(f, '321')
     # comparing euler2dcm and euler2dcm functions
     assert np.array_equal(T_n2b, T_n2b2)
     assert np.array_equal(T_n2f, T_n2f2)
@@ -37,13 +37,13 @@ def test_euler_rotation():
     # comparing rotation matrix product with truth
     assert np.allclose(T_f2b, T_f2b_truth)
     # computing euler angles from T matrix
-    a1, a2, a3 = rotations.dcm2euler(dcm=T_f2b_truth, sequence='321')
-    a1st, a2nd, a3rd = [np.rad2deg(angle) for angle in [a1, a2, a3]]
+    a1 = rotations.dcm2euler(dcm=T_f2b_truth, sequence='321')
+    a1st = [np.rad2deg(angle) for angle in a1]
     # comparing computed angle with truth
     # FIXME 3rd angle is -79 deg in book
-    assert np.allclose([a1st, a2nd, a3rd], ([-0.933242, -72.3373, 79.9635]))
+    assert np.allclose(a1st, ([-0.933242, -72.3373, 79.9635]))
     # get back matrix from angles
-    T_f2b = rotations.euler2dcm(a1, a2, a3, '321')
+    T_f2b = rotations.euler2dcm(a1, '321')
     assert np.allclose(T_f2b, T_f2b_truth)
 
     # another dcm rotation test
@@ -70,15 +70,15 @@ def test_euler_rotation():
 
     # testing 313 sequence
     angles = np.deg2rad((10, 20, 30))
-    dcm1 = rotations.euler2dcm(angles[0], angles[1], angles[2], sequence='321')
+    dcm1 = rotations.euler2dcm(angles, sequence='321')
     eulers = np.rad2deg(rotations.dcm2euler(dcm1, sequence='313'))
     eulers_true = [40.64234205, 35.53134776, -36.05238873]
     assert np.allclose(eulers, eulers_true)
 
     # testing 313 sequence with composite rotation
     ang2 = np.deg2rad((-5, 5, 5))
-    dcm_BN = rotations.euler2dcm2(angles[0], angles[1], angles[2], sequence='321')
-    dcm_RN = rotations.euler2dcm2(ang2[0], ang2[1], ang2[2], sequence='321')
+    dcm_BN = rotations.euler2dcm2(angles, sequence='321')
+    dcm_RN = rotations.euler2dcm2(ang2, sequence='321')
     dcm_NR = matrices.mtranspose(dcm_RN)
     dcm = matrices.mxm(dcm_BN, dcm_NR)
     eulers = np.rad2deg(rotations.dcm2euler(dcm, sequence='321'))
@@ -134,7 +134,7 @@ def test_prv():
     # third prv axis test
     angles = np.deg2rad((20, -10, 120))
     e, angle = rotations.prv_axis(rotations.euler2dcm( \
-            angles[0], angles[1], angles[2], sequence='321'))
+            angles, sequence='321'))
     e_true = [0.975550, 0.121655, 0.183032]
     angle_true = 2.146152
     assert np.allclose(e, e_true)
@@ -146,31 +146,101 @@ def test_triad_method():
     """tests TRIAD algorithm, mxv, mtranspose, and vcrossv 
     functions
     """
-    # given a dcm of Body relative to Nertial
-    T_dcm = [[ 0.8138,  0.4698, -0.3420], 
-             [-0.5438,  0.8232, -0.1632], 
-             [ 0.2049,  0.3188,  0.9254]]
-    v1 = [1, 0, 0] # first known inertial vector
-    v2 = [0, 0, 1] # second known inertial vector
+    # truth values
+    BNangles_true = np.deg2rad((30, 20, -10))
+    BN_true = rotations.euler2dcm(BNangles_true, sequence='321')
+    BN_truth = [[ 0.81379768,  0.46984631, -0.34202014],
+               [-0.54383814,  0.82317294, -0.16317591],
+               [ 0.20487413,  0.31879578,  0.92541658]]
+    assert np.allclose(BN_true, BN_truth)
+    # true observation vectors in inertial frame
+    v1_N = [1, 0, 0] # first known inertial vector
+    v2_N = [0, 0, 1] # second known inertial vector
     # compute and test vectors in Body frame
-    v1_B = matrices.mxv(m1=T_dcm, v1=v1)
-    v2_B = matrices.mxv(m1=T_dcm, v1=v2)
-    v1_B_truth = [0.8138, -0.5438, 0.2049]
-    v2_B_truth = [-0.3420, -0.1632, 0.9254]
-    assert np.allclose(v1_B, v1_B_truth)
-    assert np.allclose(v2_B, v2_B_truth)
-    # setting offset to simulate estimation
+    # true observation vectors in body frame
+    v1_B_true = mat.mxv(BN_true, v1_N)
+    v2_B_true = mat.mxv(BN_true, v2_N)
+    v1_B_truth = [0.81379768, -0.54383814,  0.20487413]
+    v2_B_truth = [-0.34202014, -0.16317591,  0.92541658]
+    assert np.allclose(v1_B_true, v1_B_truth)
+    assert np.allclose(v2_B_true, v2_B_truth)
+    # set up random measured attitude states
     v1_B = [0.8190, -0.5282, 0.2242]
     v2_B = [-0.3138, -0.1584, 0.9362]
+    v1_B = v1_B / np.linalg.norm(v1_B)
+    v2_B = v2_B / np.linalg.norm(v2_B)
     # compute and test TRIAD method function
-    tset, Tmat = rotations.triad(v1=v1_B, v2=v2_B)
-    tset = [np.round(t, 4) for t in tset]
-    t1_truth = (0.8190, -0.5282, 0.2242)
-    t2_truth = (-0.4593, -0.8376, -0.2957)
-    t3_truth = (0.344, 0.1392, -0.9286)
-    assert np.allclose(tset[0], t1_truth)
-    assert np.allclose(tset[1], t2_truth)
-    assert np.allclose(tset[2], t3_truth)
+    # estimated observation vectors in body frame
+    tset_B, BbarT = rotations.triad(v1_B, v2_B)
+    t1_truth = (0.81899104, -0.52819422,  0.22419755)
+    t2_truth = (-0.45928237, -0.83763943, -0.29566855)
+    t3_truth = (0.34396712,  0.13917991, -0.92860948)
+    assert np.allclose(tset_B[0], t1_truth)
+    assert np.allclose(tset_B[1], t2_truth)
+    assert np.allclose(tset_B[2], t3_truth)
+    # estimated observation vectors in inertial frame
+    tset_N, NBarT = rotations.triad(v1_N, v2_N)
+    t1_truth = (1, 0, 0)
+    t2_truth = (0, -1, 0)
+    t3_truth = (0, 0, -1)
+    assert np.allclose(tset_N[0], t1_truth)
+    assert np.allclose(tset_N[1], t2_truth)
+    assert np.allclose(tset_N[2], t3_truth)
+    # transforms estimated attitude from the inertial to body frame
+    BbarN = mat.mxm(BbarT, matrices.mtranspose(NBarT))
+    BbarN_truth = [[ 0.81899104,  0.45928237, -0.34396712],
+                   [-0.52819422,  0.83763943, -0.13917991],
+                   [ 0.22419755,  0.29566855,  0.92860948]]
+    assert np.allclose(BbarN, BbarN_truth)
+    # compare the estimated body frame attitude with true attitude
+    # should be near identity
+    BbarB = mat.mxm(BbarN, matrices.mtranspose(BN_true))
+    BbarB_truth = [[ 0.99992882, -0.0112026,  -0.00410552],
+                   [ 0.0113209,   0.99948509,  0.03002319],
+                   [ 0.00376707, -0.03006753,  0.99954077]]
+    assert np.allclose(BbarB, BbarB_truth, rtol=0, atol=1e-04)
+    # determine the magnitude of angle error
+    prv_e, prv_a = rotations.prv_axis(BbarB)
+    error = np.rad2deg(prv_a)
+    assert np.allclose(error, 1.8525322)    
+
+    # test 2 of triad method
+    # true observation vectors in inertial frame
+    v1_N = [-0.1517, -0.9669, 0.2050]
+    v2_N = [-0.8393, 0.4494, -0.3044]
+    v1_N = v1_N / np.linalg.norm(v1_N)
+    v1_N = v1_N / np.linalg.norm(v1_N)
+    # set up random measured attitude states
+    v1_B = [0.8273, 0.5541, -0.0920]
+    v2_B = [-0.8285, 0.5522, -0.0955]
+    v1_B = v1_B / np.linalg.norm(v1_B)
+    v2_B = v2_B / np.linalg.norm(v2_B)
+    # estimated observation vectors in body frame
+    tset_B, BbarT = rotations.triad(v1_B, v2_B)
+    # estimated observation vectors in inertial frame
+    tset_N, NBarT = rotations.triad(v1_N, v2_N)
+    # transforms estimated attitude from the inertial to body frame
+    BbarN = matrices.mxm(BbarT, matrices.mtranspose(NBarT))
+    BbarN_true = [[ 0.41555875, -0.85509088,  0.31004921],
+                  [-0.83393237, -0.49427603, -0.24545471],
+                  [ 0.36313597, -0.15655922, -0.91848869]]
+    assert np.allclose(BbarN, BbarN_true)
+
+    # test 3 - testing error estimation
+    BN_true = [[0.963592, 0.187303, 0.190809],
+               [-0.223042, 0.956645, 0.187303],
+               [-0.147454, -0.223042, 0.963592]]
+    BbarN = [[0.969846, 0.17101, 0.173648],
+             [-0.200706, 0.96461, 0.17101],
+             [-0.138258, -0.200706, 0.969846]]
+    # compare the estimated body frame attitude with true attitude
+    # should be near identity
+    BbarB = matrices.mxm(BbarN, matrices.mtranspose(BN_true))
+    # determine the magnitude of angle error
+    prv_e, prv_a = rotations.prv_axis(BbarB)
+    error = np.rad2deg(prv_a)
+    error_true = 1.8349476
+    assert np.allclose(error, error_true)
 
 
 def test_davenportq_method():
@@ -178,42 +248,61 @@ def test_davenportq_method():
     mtranspose, and quat2dcm functions
     """
     # given inertial sensor measurements
-    v1 = [1, 0, 0] # first known inertial vector
-    v2 = [0, 0, 1] # second known inertial vector
+    v1_N = [1, 0, 0] # first known inertial vector
+    v2_N = [0, 0, 1] # second known inertial vector
     v1_B = [0.8190, -0.5282, 0.2242] # setting offset to simulate estimation
     v2_B = [-0.3138, -0.1584, 0.9362] # setting offset to simulate estimation
-    vset_nrtl = [v1, v2]
+    v1_B = v1_B / np.linalg.norm(v1_B)
+    v2_B = v2_B / np.linalg.norm(v2_B)
+    vset_nrtl = [v1_N, v2_N]
     vset_body = [v1_B, v2_B]
     weights = [1, 1]
     # compute and test quaternion output
     qset = rotations.davenportq(vset_nrtl, vset_body, weights, sensors=2)
-    qset_truth = [0.9481, -0.1172, 0.1414, 0.2597]
-    assert np.allclose(qset, qset_truth, rtol=0, atol=1e-04)
+    qset_truth = [0.94806851, -0.11720728,  0.14137123,  0.2596974]
+    assert np.allclose(qset, qset_truth)
+    # truth values
+    angles = np.deg2rad([30, 20, -10])
+    BN_true = [[0.813798, 0.469846, -0.34202],
+               [-0.543838, 0.823173, -0.163176],
+               [0.204874, 0.318796, 0.925417]]
+    v1_B_true = mat.mxv(BN_true, v1_N)
+    v2_B_true = mat.mxv(BN_true, v2_N)
+    v1_B_truth = [0.813798, -0.543838,  0.204874]
+    v2_B_truth = [-0.34202,  -0.163176,  0.925417]
+    assert np.allclose(v1_B_true, v1_B_truth)
+    assert np.allclose(v2_B_true, v2_B_truth)
+    # get the dcm
+    BbarN = quaternions.quat2dcm(qset)
+    BbarN_true = [[ 0.8251428, 0.4592823,  -0.3289360],
+                  [-0.5255613, 0.8376394, -0.1488135],
+                  [ 0.2071823, 0.2956685, 0.9325532]]    
+    assert np.allclose(BbarN, BbarN_true)
+    # error
+    BbarB = matrices.mxm(BbarN, matrices.mtranspose(BN_true))
+    prv_e, prv_a = rotations.prv_axis(BbarB)
+    prv_a = np.rad2deg(prv_a)
+    prv_a_truth = 1.6954989
+    assert np.allclose(prv_a, prv_a_truth)
 
-
-
+    # daven-q test 2
+    v1B = [0.8273, 0.5541, -0.0920]
+    v2B = [-0.8285, 0.5522, -0.0955]
+    v1N = [-0.1517, -0.9669, 0.2050]
+    v2N = [-0.8393, 0.4494, -0.3044]
+    v1B = v1B / np.linalg.norm(v1B)
+    v2B = v2B / np.linalg.norm(v2B)
+    v1N = v1N / np.linalg.norm(v1N)
+    v2N = v2N / np.linalg.norm(v2N)
+    w1, w2 = 2, 1
+    daven_q = rotations.davenportq([v1N, v2N], [v1B, v2B], [w1, w2], sensors=2)
+    BbarN = quaternions.quat2dcm(daven_q)
+    BbarN_true = [[ 0.4158105, -0.8549593,  0.3100744],
+                  [-0.8338152, -0.4945165, -0.2453681],
+                  [ 0.3631167, -0.1565181, -0.9185033]]
+    assert np.allclose(BbarN, BbarN_true)
 
 
 if __name__ == "__main__":
 
-
-
-
-
-    ## euler rotations
-    angle = np.deg2rad(90)
-    print(rotations.rotate_x(angle))
-    print(rotations.rotate_y(angle))
-    print(rotations.rotate_z(angle))
-
-    # matrix multiplication
-    matrix1 = [[0, 1, 0], [1, 0, 0], [0, 0, -1]]
-    matrix2 = [[1/2, np.sqrt(3)/2, 0], [0, 0, 1], [np.sqrt(3)/2, -1/2, 0]]
-    print(np.vstack(matrix1))
-    print(np.vstack(matrix2))
-    matrix1 = mat.mtranspose(m1=matrix1)
-    print(mat.mxm(m2=matrix2, m1=matrix1))
-
-    vector = [0, 1, 2]
-    print(mat.skew_tilde(vector))
-
+    pass

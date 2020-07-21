@@ -250,6 +250,39 @@ def quat2euler(qset, sequence='321'):
     return [a1st, a2nd, a3rd]
 
 
+def crp2dcm(qset):
+    """converts a classical rodriguez parameter set into a dcm; 
+    :param qset:  classical rodriguez parameter set
+    :return dcm: direction cosine matrix for a given set;
+    """
+    q1, q2, q3 = qset
+    matrix = [[1+q1*q1-q2*q2-q3*q3, 2*(q1*q2+q3), 2*(q1*q3-q2)],
+           [2*(q1*q2-q3), 1-q1*q1+q2*q2-q3*q3, 2*(q2*q3+q1)],
+           [2*(q1*q3+q2), 2*(q2*q3-q1), 1-q1*q1-q2*q2+q3*q3]]
+    inner = vectors.vdotv(qset, qset)
+    scalar = 1/(1+inner)
+    dcm = matrices.mxscalar(scalar=scalar, m1=matrix)
+    return dcm
+
+
+def dcm2crp(dcm):
+    """converts a dcm into a classical rodriguez parameters set
+    :param dcm: direction cosine matrix
+    :return crpset: CRP set for a given dcm
+    """
+    zeta = np.sqrt(dcm[0][0]+dcm[1][1]+dcm[2][2] + 1)
+    crp = np.zeros(3)
+    crp[0] = 1/zeta**2*(dcm[1][2] - dcm[2][1])
+    crp[1] = 1/zeta**2*(dcm[2][0] - dcm[0][2])
+    crp[2] = 1/zeta**2*(dcm[0][1] - dcm[1][0])
+
+    # matrix method
+    # dcm_T = matrices.mtranspose(m1=dcm)
+    # zeta = np.sqrt(dcm[0][0]+dcm[1][1]+dcm[2][2] + 1)
+    # crpset = matrices.mxscalar(scalar=1/zeta**2, m1=matrices.mxsub(dcm_T, dcm))
+    return crp
+
+
 def quat2mrp(qset):
     """computes the modified rodrigues parameters from quaternion sets
     :param qset: euler parameter (quaternion) set b0, b1, b2, b3
@@ -271,6 +304,30 @@ def quat2mrps(qset):
     sigma2 = -qset[2] / (1.-qset[0])
     sigma3 = -qset[3] / (1.-qset[0])
     return [sigma1, sigma2, sigma3]
+
+
+def get_mrp_shadowset(mrpset):
+    """return the shadow set of a given modified rodrigues parameter
+    set
+    :param mrpset: modified rodrigues parameter set
+    :return: shadow set of the given MRP set
+    """
+    return [-s/(np.linalg.norm(mrpset)**2) for s in mrpset]
+
+
+def dcm2mrp(dcm):
+    """transform a modified rodrigues parameter set to a dcm
+    :param dcm: direction cosine matrix
+    :return sigma: MRP set
+    in work
+    """
+    zeta = np.sqrt(dcm[0][0] + dcm[1][1] + dcm[2][2] + 1)
+    sigma = np.zeros(3)
+    scalar = 1/(zeta*(zeta+2))
+    sigma[0] = scalar*(dcm[1][2] - dcm[2][1])
+    sigma[1] = scalar*(dcm[2][0] - dcm[0][2])
+    sigma[2] = scalar*(dcm[0][1] - dcm[1][0])
+    return sigma
 
 
 def mrp2dcm(sigmaset):
@@ -312,6 +369,29 @@ def mrpdot(sigmaset, wvec):
     return sigmadot
 
 
+def mrpxmrp(sigmaset1, sigmaset2):
+    """in work
+    """
+    q1 = np.array(sigmaset1)
+    q2 = np.array(sigmaset2)
+    sig1_norm = norm(sigmaset1)
+    sig2_norm = norm(sigmaset2)
+    scalar1 = 1 - sig1_norm**2
+    scalar2 = 1 - sig2_norm**2
+    scalar3 = 2.
+    denom = 1 + sig1_norm**2*sig2_norm**2-2*vectors.vdotv(sigmaset1, sigmaset2)
+    term1 = vectors.vxscalar(scalar1, sigmaset2)
+    term2 = vectors.vxscalar(scalar2, sigmaset1)
+    term3 = vectors.vxscalar(2, vectors.vcrossv(sigmaset2, sigmaset1))
+    numer = vectors.vxadd(term1, vectors.vxadd(term2, -term3))
+    sigma = vectors.vxscalar(denom, numer)
+
+    # q = (1-(q1.T*q1))*q2+(1-(q2*q2.T))*q1+2*np.cross(q1.T,q2.T).T;
+    # q = q/(1+q1.T*q1 * q2.T*q2-2*q1.T*q2);
+
+    return q
+
+
 def quat_kde_fromq(qset, wset):
     """in work
     """
@@ -339,4 +419,14 @@ def quat_kde_fromw(qset, wset):
 
 if __name__ == "__main__":
 
-    pass
+    sigma1 = [0.1, 0.2, 0.3]
+    sigma2 = [-0.1, 0.3, 0.1]
+    sigma = mrpxmrp(sigma1, sigma2)
+    print(sigma)
+
+    dcm1 = mrp2dcm(sigma1)
+    dcm2 = mrp2dcm(sigma2)
+    dcm = matrices.mxm(dcm2, dcm1)
+    sigma = dcm2mrp(dcm)
+    print(sigma)
+
