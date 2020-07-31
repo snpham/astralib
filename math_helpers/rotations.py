@@ -173,12 +173,15 @@ def triad(v1, v2):
     return tset, AT_matrix
 
 
-def davenportq(vset_nrtl, vset_body, weights, sensors=2):
-    """solving Wahba's problem using quaternions; see pg 147
+def davenportq(vset_nrtl, vset_body, weights, sensors=2, quest=False):
+    """solving Wahba's problem to find the attitude estimate using quaternions; 
+       see pg 147
     :param vset_nrtl: inertial sensor measurement vectors set
     :param vset_body: sensor measurement vectors set in body frame 
     :param weights: weights for each sensor measurement
-    :sensors: number of sensors computed; default=2
+    :param sensors: number of sensors computed; default=2
+    :param quest: boolean to pick between computing eigval/eigvecs
+                  or use QUEST method
     :return qset: quaternion set for optimal attitude estimate
                   satisfying Wahba's problem
     """
@@ -198,10 +201,74 @@ def davenportq(vset_nrtl, vset_body, weights, sensors=2):
         K[ii+1][0] = Z[ii][0]
         for jj in range(3):
             K[ii+1][jj+1] = Kterm4[ii][jj]
+    if quest:
+        return quest_method(sigma, K, S, Z, weights)
     eigvals, eigvecs = np.linalg.eig(K)
     qset = eigvecs[:, np.argmax(eigvals)]
     dcm = quaternions.quat2dcm(qset=qset)
     return qset
+
+
+def quest_method(sigma, K, S, Z, weights):
+    """solving Wahba's problem using davenport-q method but implementing
+    the Quaternion Estimator (QUEST) into finding the optimal lambda (eigval)
+    :param sigma: scalar = trace([B])
+    :param K: 4x4 matrix
+    :param S: 3x3 matrix [S] = [B] + [B].T
+    :param Z: 1x3 column vector [Z] = [B23-B32 B31-B13 B12-B21].T
+    :param weights: weights for each sensor measurement
+    :return crp_opt: optimal CRP based on given parameters
+    """
+    lambda0 = sum(weights)
+    print(f'initial lambda = {lambda0}')
+    term1 = np.linalg.inv(mat.mxsub(mat.mxscalar(lambda0+sigma, np.eye(3,3)), S))
+    qvec = mat.mxv(term1, np.vstack(Z))
+    print(f'initial crp = {qvec}')
+
+    lam_opt = questf(K, lambda0)
+    print(f'optimal lambda = {lam_opt}')
+
+    term1 = np.linalg.inv(mat.mxsub(mat.mxscalar(lambda0+sigma, np.eye(3,3)), S))
+    crp_opt = mat.mxv(term1, np.vstack(Z))
+    print(f'optimal CRP = {crp_opt}')
+
+    return crp_opt
+
+
+def questf(K, lambda0):
+    """Eigenvalue finder for QUEST method
+    :param K: 4x4 matrix
+    :param lambda0: initial eigenvalue estimate; sum of the sensor
+                    weights
+    :return xval: optimal lambda (eigenvalue)
+    """
+    import scipy.optimize as opt
+    lam = lambda0
+    for ii in range(4):
+        det = qfunc(lam, K)
+        print(f'determinant for ({lam}) = {det}')
+        xval = opt.newton(qfunc, x0=lam, args=(K,))
+        print(f'iteration {ii}: {xval}')
+        lam = xval
+    return xval
+
+
+def qfunc(s, K):
+    """determinant function for Quaternion Estimator (QUEST) attitude 
+    estimator method
+    :param s: current lambda value
+    :param K: 4x4 matrix
+    return: function to compute the QUEST determinant
+    """
+    return np.linalg.det(mat.mxsub(K, mat.mxscalar(s, np.eye(4,4))))
+
+
+def olae_method():
+    """Optimal Linear Attitude Estimator (OLAE) deterministic 
+    attitude estimation method
+    in work
+    """
+    pass
 
 
 def wvec_frm_eulerrates_o2b(aset, rates, sequence='321'):

@@ -303,6 +303,65 @@ def test_davenportq_method():
     assert np.allclose(BbarN, BbarN_true)
 
 
+def test_quest_method():
+    # quest using example 1
+    BN_true = [[ 0.813798, 0.469846, -0.34202],
+               [-0.543838, 0.823173, -0.163176],
+               [ 0.204874, 0.318796,  0.925417]]
+    v1_N = [1, 0, 0]
+    v2_N = [0, 0, 1]
+    # set up random measured attitude states
+    v1_B = [0.8190, -0.5282, 0.2242]
+    v2_B = [-0.3138, -0.1584, 0.9362]
+    v1_B = v1_B / np.linalg.norm(v1_B)
+    v2_B = v2_B / np.linalg.norm(v2_B)
+
+    w1, w2 = 1, 1
+    # setting up davenport function to bypass eigval/eigvec computation
+    # and use quest method
+    crp = rotations.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=True)
+    crp_truth = [-0.1236021, 0.1491002, 0.2738740]
+    assert np.allclose(crp, crp_truth)
+    BbarN = quaternions.crp2dcm(crp)
+    BbarN_truth = [[ 0.8251927, 0.4592204, -0.3288972],
+                   [-0.5254815, 0.8376930, -0.1487934],
+                   [ 0.2071859, 0.2956127,  0.9325701]]
+    assert np.allclose(BbarN, BbarN_truth)
+    BbarB = matrices.mxm(BbarN, matrices.mtranspose(BN_true))
+    BbarB_truth = [[ 0.9997925, -0.0170851,  0.0110910],
+                   [ 0.0168412,  0.9996226,  0.0216997],
+                   [-0.0114576, -0.0215082,  0.9997034]]
+    assert np.allclose(BbarB, BbarB_truth)
+    axis, ang = rotations.prv_axis(BbarB)
+    mag = np.rad2deg(np.linalg.norm(ang))
+    mag_truth = 1.7009912
+    assert np.allclose(mag, mag_truth)
+
+    # test 2
+        # quest example 2
+    w1, w2 = 2, 1
+    v1_B = [0.8273, 0.5541, -0.0920]
+    v2_B = [-0.8285, 0.5522, -0.0955]
+    v1_B = v1_B / np.linalg.norm(v1_B)
+    v2_B = v2_B / np.linalg.norm(v2_B)
+    v1_N = [-0.1517, -0.9669, 0.2050]
+    v2_N = [-0.8393, 0.4494, -0.3044]
+    v1_N = v1_N / np.linalg.norm(v1_N)
+    v2_N = v2_N / np.linalg.norm(v2_N)
+    crp = rotations.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=True)
+    crp_truth = [-31.83404638,  19.00448853,  -7.57577844]
+    assert np.allclose(crp, crp_truth)
+    BbarN = quaternions.crp2dcm(crp)
+    BbarN_truth = [[ 0.41581032, -0.85495964,  0.31007386],
+                   [-0.83381256, -0.49451739, -0.24537555],
+                   [ 0.36312311, -0.15651379, -0.91850152]]
+    assert np.allclose(BbarN, BbarN_truth)    
+    qset_davenport = rotations.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=False)
+    BbarN_davenport = quaternions.quat2dcm(qset_davenport)
+    assert np.allclose(BbarN, BbarN_davenport, rtol=0, atol=1e-05)
+
+
+
 if __name__ == "__main__":
 
     pass

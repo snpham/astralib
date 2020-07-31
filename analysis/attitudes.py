@@ -12,6 +12,8 @@ import numpy as np
 
 if __name__ == "__main__":
 
+    # davenportq example 1
+    print('-- davenportq example 1 --------------')
     #1 true observation vectors in inertial frame
     v1_N = [-0.1517, -0.9669, 0.2050]
     v2_N = [-0.8393, 0.4494, -0.3044]
@@ -90,6 +92,7 @@ if __name__ == "__main__":
     print(np.rad2deg(prv_a))
 
     # daven-q example 2
+    print('\n-- davenportq example 2 --------------')
     v1B = [0.8273, 0.5541, -0.0920]
     v2B = [-0.8285, 0.5522, -0.0955]
     v1N = [-0.1517, -0.9669, 0.2050]
@@ -102,3 +105,42 @@ if __name__ == "__main__":
     daven_q = rot.davenportq([v1N, v2N], [v1B, v2B], [w1, w2], sensors=2)
     BbarN = quaternions.quat2dcm(daven_q)
     print(BbarN)
+
+
+    # quest using example 1
+    print('\n-- Quest Method --------------')
+    w1, w2 = 1, 1
+    crp = rot.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=True)
+    print(crp)
+    BbarN = quaternions.crp2dcm(crp)
+    print(BbarN)
+    BbarB = mat.mxm(BbarN, mat.mtranspose(BN_true))
+    print(BbarB)
+    axis, ang = rot.prv_axis(BbarB)
+    mag = np.rad2deg(np.linalg.norm(ang))
+    print(mag)
+
+    # quest example 2
+    print('\n-- Quest Method example 2--------------')
+    w1, w2 = 2, 1
+    v1_B = [0.8273, 0.5541, -0.0920]
+    v2_B = [-0.8285, 0.5522, -0.0955]
+    v1_B = v1_B / np.linalg.norm(v1_B)
+    v2_B = v2_B / np.linalg.norm(v2_B)
+    v1_N = [-0.1517, -0.9669, 0.2050]
+    v2_N = [-0.8393, 0.4494, -0.3044]
+    v1_N = v1_N / np.linalg.norm(v1_N)
+    v2_N = v2_N / np.linalg.norm(v2_N)
+    crp = rot.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=True)
+    print(crp)
+    BbarN = quaternions.crp2dcm(crp)
+    print(BbarN)
+    qset = rot.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=False)
+    print(qset)
+    dcm = quaternions.quat2dcm(qset)
+    print(dcm)
+
+
+    # Optimal Linear Attitude Estimator
+    print('\n-- Quest Method example 2--------------')
+    
