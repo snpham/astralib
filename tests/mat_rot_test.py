@@ -244,7 +244,7 @@ def test_triad_method():
 
 
 def test_davenportq_method():
-    """tests davenport algorithm, mxscalar, vxv, mxadd, mxsub,
+    """tests davenport algorithm, mxscalar, vxvT, mxadd, mxsub,
     mtranspose, and quat2dcm functions
     """
     # given inertial sensor measurements

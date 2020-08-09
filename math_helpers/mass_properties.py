@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from math_helpers import matrices
+from math_helpers import matrices, vectors
 from numpy.linalg import norm
 import numpy as np
 
@@ -20,6 +20,10 @@ def cg_tensor(rvec):
     r_skew_t = matrices.mtranspose(m1=r_skew)
     cg_tensor = matrices.mxm(m2=r_skew, m1=r_skew_t)
     return cg_tensor
+
+
+def rotational_kenergy(I_cg, w):
+    return 0.5* vectors.vTxv(w, v2=matrices.mxv(I_cg, w))
 
 
 if __name__ == "__main__":

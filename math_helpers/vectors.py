@@ -14,7 +14,7 @@ def vxadd(v1, v2):
     return v_out   
 
 
-def vdotv(v1, v2):
+def vTxv(v1, v2):
     """vector dot product
     :param v1: first vector
     :param v2: second vector
@@ -46,7 +46,7 @@ def vcrossv(v1, v2):
     return v_out
 
 
-def vxv(v1, v2):
+def vxvT(v1, v2):
     """vector multiplication
     :param v1: first row vector;
     :param v2: second row vector;

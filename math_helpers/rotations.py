@@ -188,7 +188,7 @@ def davenportq(vset_nrtl, vset_body, weights, sensors=2, quest=False):
     B = np.zeros((3,3))
     for s in range(sensors):
         m1 = mat.mxscalar(scalar=weights[s], \
-                          m1=vectors.vxv(v1=vset_body[s], v2=vset_nrtl[s]))
+                          m1=vectors.vxvT(v1=vset_body[s], v2=vset_nrtl[s]))
         B = mat.mxadd(m2=m1, m1=B)
     S = mat.mxadd(m2=B, m1=mat.mtranspose(m1=B))
     sigma = B[0][0] + B[1][1] + B[2][2]

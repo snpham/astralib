@@ -15,14 +15,14 @@ def get_orbital_elements(rvec, vvec, object='earth'):
 
     node_vec = vec.vcrossv(v1=[0,0,1], v2=k.h_vec)
     node_mag = vec.norm(node_vec)
-    r_dot_v = vec.vdotv(v1=rvec, v2=vvec)
+    r_dot_v = vec.vTxv(v1=rvec, v2=vvec)
 
 
     p = k.h_mag**2/(k.mu)
     e = vec.norm(k.ecc_vec)
     i = k.incl
     tanom = k.true_anom
-    if vec.vdotv(rvec, vvec) < 0:
+    if vec.vTxv(rvec, vvec) < 0:
         tanom += np.pi
 
     print(f'Orbital Elements:\n',
@@ -32,7 +32,7 @@ def get_orbital_elements(rvec, vvec, object='earth'):
     if i == 0:
         raan = 'nan'
         argp = 'nan'
-        lperi = np.arccos(vec.vdotv(k.ecc_vec, [1.,0.,0.])/e)
+        lperi = np.arccos(vec.vTxv(k.ecc_vec, [1.,0.,0.])/e)
         arglat = 'nan'
         tlong = lperi + tanom
 
@@ -43,13 +43,13 @@ def get_orbital_elements(rvec, vvec, object='earth'):
               f'Argument of Latitude: Undefined\n',
               f'True longitude at epoch: {np.rad2deg(tlong):0.6f} deg')
     else:
-        raan = np.arccos(vec.vdotv(node_vec, [1.0, 0.0, 0.0])/node_mag)
+        raan = np.arccos(vec.vTxv(node_vec, [1.0, 0.0, 0.0])/node_mag)
         if node_vec[1] < 0:
             raan = np.pi + raan
-        argp = np.arccos(vec.vdotv(v1=node_vec, v2=k.ecc_vec)/(node_mag*e))
+        argp = np.arccos(vec.vTxv(v1=node_vec, v2=k.ecc_vec)/(node_mag*e))
         if k.ecc_vec[2] < 0:
             argp = np.pi + argp
-        arglat = np.arccos(vec.vdotv(node_vec, rvec)/(node_mag*k.r_mag))
+        arglat = np.arccos(vec.vTxv(node_vec, rvec)/(node_mag*k.r_mag))
         if rvec[2] < 0:
             arglat = np.pi + arglat
         tlong = raan + arglat
@@ -93,8 +93,8 @@ def bplane_targeting(rvec, vvec, center='earth'):
     R = vec.vcrossv(v1=S, v2=T)
 
     # BdotT and BdotR
-    B_t = vec.vdotv(v1=B, v2=T)
-    B_r = vec.vdotv(v1=B, v2=R)
+    B_t = vec.vTxv(v1=B, v2=T)
+    B_r = vec.vTxv(v1=B, v2=R)
 
     # angle between B and T
     theta = np.arccos(B_t/vec.norm(B_t))
@@ -229,7 +229,7 @@ class Keplerian(object):
         """eccentricity vector"""
         scalar1 = self.v_mag**2/self.mu - self.r_mag
         term1 = vec.vxscalar(scalar=scalar1, v1=self.rvec)
-        term2 = -vec.vxscalar(scalar=vec.vdotv(v1=self.rvec, v2=self.vvec)/self.mu, 
+        term2 = -vec.vxscalar(scalar=vec.vTxv(v1=self.rvec, v2=self.vvec)/self.mu, 
                               v1=self.vvec)
         eccentricity_vec = vec.vxadd(v1=term1, v2=term2) # points to orbit periapsis
         return eccentricity_vec
@@ -243,7 +243,7 @@ class Keplerian(object):
     def true_anom(self):
         """true anomaly"""
         e = vec.norm(self.e_vec)
-        return np.arccos(vec.vdotv(self.e_vec, self.rvec)/(e*self.r_mag))
+        return np.arccos(vec.vTxv(self.e_vec, self.rvec)/(e*self.r_mag))
 
 
 
