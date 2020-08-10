@@ -9,59 +9,100 @@ from math_helpers import matrices as mat
 
 
 def get_orbital_elements(rvec, vvec, object='earth'):
-    """in work
+    """computes Keplerian elements from positon/velocity vectors
+    :param rvec: positional vectors of spacecraft (km)
+    :param vvec: velocity vectors of spacecraft (km/s)
+    :param center: center object of orbit; default = earth
+    :return sma: semi-major axis (km)
+    :return e: eccentricity
+    :return i: inclination (rad)
+    :return raan: right ascending node (rad)
+    :return aop: argument of periapsis (rad)
+    :return ta: true anomaly (rad)
     """
+
+    # get Keplerian class
     k = Keplerian(rvec, vvec, center=object)
 
-    node_vec = vec.vcrossv(v1=[0,0,1], v2=k.h_vec)
-    node_mag = vec.norm(node_vec)
+    # K vector and rv inner product
+    node_mag = vec.norm(k.node_vec)
     r_dot_v = vec.vTxv(v1=rvec, v2=vvec)
 
+    # eccentricity, semi-major axis, semi-parameter
+    e = k.e_mag
+    if e != 1:
+        zeta = k.v_mag**2/2. - k.mu/k.r_mag
+        sma = -k.mu/(2*zeta)
+        p = sma*(1-e**2)
+    else:
+        sma = float('inf')
+        p = k.h_mag**2/(k.mu)
 
-    p = k.h_mag**2/(k.mu)
-    e = vec.norm(k.ecc_vec)
-    i = k.incl
-    tanom = k.true_anom
+    if e == 0:
+        lperi = float('nan')
+    else:
+        lperi = np.arccos(vec.vTxv(k.eccentricity_vector, [1.,0.,0.])/k.e_mag)
+
+    # inclination, true anomaly
+    i = k.inclination
+    ta = k.true_anomaly
     if vec.vTxv(rvec, vvec) < 0:
-        tanom += np.pi
+        ta = 2*np.pi - ta
 
     print(f'Orbital Elements:\n',
+          f'Semi-major axis: {sma:0.06f} km\n',
           f'Semi-latus Rectum: {p:0.6f} km\n',
           f'Eccentricity: {e:0.6f}\n',
           f'Inclination: {np.rad2deg(i):0.6f} deg')
-    if i == 0:
-        raan = 'nan'
-        argp = 'nan'
-        lperi = np.arccos(vec.vTxv(k.ecc_vec, [1.,0.,0.])/e)
-        arglat = 'nan'
-        tlong = lperi + tanom
 
-        print(f' RAAN: Undefined\n',
-              f'Argument of Periapsis: Undefined\n',
-              f'Longitude of Periapsis: {np.rad2deg(lperi):0.6f} deg\n',
-              f'True Anomaly: {np.rad2deg(tanom):0.6f} deg\n',
-              f'Argument of Latitude: Undefined\n',
-              f'True longitude at epoch: {np.rad2deg(tlong):0.6f} deg')
+    # determine if inclination exists
+    if i == 0:
+        raan = float('nan')
+        aop = float('nan')
+        arglat = float('nan')
+        tlong = lperi + ta
     else:
-        raan = np.arccos(vec.vTxv(node_vec, [1.0, 0.0, 0.0])/node_mag)
-        if node_vec[1] < 0:
-            raan = np.pi + raan
-        argp = np.arccos(vec.vTxv(v1=node_vec, v2=k.ecc_vec)/(node_mag*e))
-        if k.ecc_vec[2] < 0:
-            argp = np.pi + argp
-        arglat = np.arccos(vec.vTxv(node_vec, rvec)/(node_mag*k.r_mag))
+        # right ascending node
+        raan = k.raan
+        if k.node_vec[1] < 0:
+            raan = 2*np.pi - raan
+
+        # argument of periapsis
+        aop = k.aop
+        if k.eccentricity_vector[2] < 0:
+            aop = 2*np.pi - aop
+
+        # argument of latitude, true longitude at epoch
+        arglat = np.arccos(vec.vTxv(k.node_vec, rvec)/(node_mag*k.r_mag))
         if rvec[2] < 0:
             arglat = np.pi + arglat
         tlong = raan + arglat
 
-        print(f' RAAN: {np.rad2deg(raan):0.6f} deg\n',
-              f'Argument of Periapsis: {np.rad2deg(argp):0.6f} deg\n',
-              f'True Anomaly: {np.rad2deg(tanom):0.6f} deg\n',
-              f'Argument of Latitude: {np.rad2deg(arglat):0.6f} deg\n',
-              f'True longitude at epoch: {np.rad2deg(tlong):0.6f} deg')
+    print(f' RAAN: {np.rad2deg(raan):0.6f} deg\n',
+            f'Argument of Periapsis: {np.rad2deg(aop):0.6f} deg\n',
+            f'Longitude of Periapsis: {np.rad2deg(lperi):0.6f} deg\n',
+            f'True Anomaly: {np.rad2deg(ta):0.6f} deg\n',
+            f'Argument of Latitude: {np.rad2deg(arglat):0.6f} deg\n',
+            f'True longitude at epoch: {np.rad2deg(tlong):0.6f} deg')
+
+    return sma, e, i, raan, aop, ta
 
 
-    return p, e, i, raan, argp, tanom, arglat, tlong
+def get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
+    if object == 'earth':
+        mu = 3.986004418e14 * 1e-9 # km^3*s^-2
+    s, c = np.sin, np.cos
+    r = [p/(1+e*c(ta))*c(ta), p/(1+e*c(ta))*s(ta), 0]
+    v = [-np.sqrt(mu/p)*s(ta), np.sqrt(mu/p)*(e+c(ta)), 0]
+    
+    # get 313 transformation matrix
+    m1 = rot.rotate_z(-aop)
+    m2 = rot.rotate_x(-i)
+    m3 = rot.rotate_z(-raan)
+    T_ijk_pqw = mat.mxm(m2=m3, m1=mat.mxm(m2=m2, m1=m1))
+    r_ijk = mat.mxv(m1=T_ijk_pqw, v1=r)
+    v_ijk = mat.mxv(m1=T_ijk_pqw, v1=v)
+    return r_ijk, v_ijk
 
 
 def bplane_targeting(rvec, vvec, center='earth'):
@@ -100,16 +141,6 @@ def bplane_targeting(rvec, vvec, center='earth'):
     theta = np.arccos(B_t/vec.norm(B_t))
     
     return B_t, B_r, theta
-
-
-
-def get_rv_frm_elements(p, e, incl, raan, argp, tanom, object='earth'):
-    if object == 'earth':
-        mu = 3.986004418e14 * 1e-9 # km^3*s^-2
-    s, c = np.sin, np.cos
-    r = [p/(1+e*c(tanom))*c(tanom), p/(1+e*c(tanom))*s(tanom)]
-    v = [-np.sqrt(mu/p)*s(tanom), np.sqrt(mu/p)*(e+c(tanom))]
-    return r, v
 
 
 def T_ijk2topo(lon, lat, frame='sez'):
@@ -200,12 +231,22 @@ def coplanar_transfer(p, e, r1, r2, object='earth'):
 
 
 class Keplerian(object):
-    """Classical Keplerian elements; rvec, vvec must be in km, km/s
-    in work
+    """Class to compute classical Keplerian elements from
+    position/velocity vectors. 
+    :param rvec: positional vectors of spacecraft (km)
+    :param vvec: velocity vectors of spacecraft (km/s)
+    :param center: center object of orbit; default = earth
     """
 
     def __init__(self, rvec, vvec, center='earth'):
 
+        # determine gravitational constant
+        if center.lower() == 'earth':
+            self.mu = 3.986004418e14 * 1e-9 # km^3*s^-2
+        elif center.lower() == 'mars':
+            self.mu = 4.282837e13 * 1e-9 # km^3*s^-2
+
+        # position and veloccity
         self.rvec = rvec
         self.vvec = vvec
         self.r_mag = vec.norm(rvec)
@@ -216,18 +257,19 @@ class Keplerian(object):
         self.h_mag = vec.norm(self.h_vec)
         self.h_hat = self.h_vec/self.h_mag
 
-        if center.lower() == 'earth':
-            self.mu = 3.986004418e14 * 1e-9 # km^3*s^-2
-        elif center.lower() == 'mars':
-            self.mu = 4.282837e13 * 1e-9 # km^3*s^-2
+        # node vector K
+        self.node_vec = vec.vcrossv(v1=[0,0,1], v2=self.h_vec)
+        self.node_mag = vec.norm(self.node_vec)
+        # eccentricity vector
+        self.e_vec = self.eccentricity_vector
+        self.e_mag = vec.norm(self.e_vec)
+        self.e_hat = self.e_vec/self.e_mag
 
-        self.e_vec = self.ecc_vec
-        self.e_hat = self.e_vec/vec.norm(self.vvec)
 
     @property
-    def ecc_vec(self):
+    def eccentricity_vector(self):
         """eccentricity vector"""
-        scalar1 = self.v_mag**2/self.mu - self.r_mag
+        scalar1 = self.v_mag**2/self.mu - 1./self.r_mag
         term1 = vec.vxscalar(scalar=scalar1, v1=self.rvec)
         term2 = -vec.vxscalar(scalar=vec.vTxv(v1=self.rvec, v2=self.vvec)/self.mu, 
                               v1=self.vvec)
@@ -235,16 +277,24 @@ class Keplerian(object):
         return eccentricity_vec
 
     @property
-    def incl(self):
+    def inclination(self):
         """inclination"""
         return np.arccos(self.h_vec[2]/self.h_mag)
 
     @property
-    def true_anom(self):
+    def true_anomaly(self):
         """true anomaly"""
-        e = vec.norm(self.e_vec)
-        return np.arccos(vec.vTxv(self.e_vec, self.rvec)/(e*self.r_mag))
+        return np.arccos(vec.vTxv(self.e_vec, self.rvec)/(self.e_mag*self.r_mag))
 
+    @property
+    def raan(self):
+        """right ascending node"""
+        return np.arccos(vec.vTxv(self.node_vec, [1.0, 0.0, 0.0])/self.node_mag)
+
+    @property
+    def aop(self):
+        """argument_of_periapse"""
+        return np.arccos(vec.vTxv(self.node_vec, self.e_vec)/(self.node_mag*self.e_mag))
 
 
 if __name__ == "__main__":
@@ -277,7 +327,7 @@ if __name__ == "__main__":
     print(np.linalg.norm(p2j))
 
     # get r,v from orbital elements
-    rv = get_rv_frm_elements(p=14351, e=0.5, incl=np.rad2deg(45), raan=np.rad2deg(30), argp=0, tanom=0)
+    rv = get_rv_frm_elements(p=14351, e=0.5, i=np.rad2deg(45), raan=np.rad2deg(30), aop=0, ta=0)
     print(rv) # r=[9567.2, 0], v=[0, 7.9054]
 
     # testing specifc energy function
@@ -295,3 +345,16 @@ if __name__ == "__main__":
     vvec = [1.343, 1.899, 1.329]
     bdott, bdotr, theta = bplane_targeting(rvec, vvec, center='mars')
     print(bdott, bdotr, np.rad2deg(theta))
+
+
+    print('\n\n')
+
+    r = [8773.8938, -11873.3568, -6446.7067]
+    v =  [4.717099, 0.714936, 0.388178]
+    # elements = Keplerian(r, v)
+    elements = get_orbital_elements(r, v)
+
+    sma, e, i, raan, aop, ta = elements
+    p = sma*(1-e**2)
+    r, v = get_rv_frm_elements(p, e, i, raan, aop, ta)
+    print(r, v)

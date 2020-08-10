@@ -29,3 +29,34 @@ def test_coplanar_transfer():
     dv_tot_truth = 7.086
     dv_tot = dv1 + dv2
     assert np.allclose(dv_tot, dv_tot_truth,  atol=1e-03)
+
+def test_keplerian():
+    """tests Keplerian class, and get_orbital_elements and 
+    get_rv_from_elements functions
+    """
+    
+    # orbital positon/velocity
+    r = [8773.8938, -11873.3568, -6446.7067]
+    v =  [4.717099, 0.714936, 0.388178]
+
+    # compute orbital elements
+    sma, e, i, raan, aop, ta = conics.get_orbital_elements(r, v)
+    sma_truth = 14999.997238
+    e_truth = 0.400000
+    i_truth = np.deg2rad(28.499996)
+    raan_truth = np.deg2rad(0.000012)
+    aop_truth = np.deg2rad(179.999958)
+    ta_truth = np.deg2rad(123.000032)
+    elements = [sma, e, i, raan, aop, ta]
+    elements_truth = [sma_truth, e_truth, i_truth, raan_truth, aop_truth, ta_truth]
+    assert np.allclose(elements, elements_truth)
+
+    # get semi-perimeter
+    p = sma*(1-e**2)
+
+    # get back position/velocity vectors
+    r_ijk, v_ijk = conics.get_rv_frm_elements(p, e, i, raan, aop, ta)
+    r_ijk_truth = [8773.893798, -11873.356801, -6446.706699]
+    v_ijk_truth = [4.717099, 0.714936, 0.388178]
+    assert np.allclose(r_ijk, r_ijk_truth)
+    assert np.allclose(v_ijk, v_ijk_truth)
