@@ -392,7 +392,7 @@ def mrpxmrp(sigmaset1, sigmaset2):
     return q
 
 
-def quat_kde_fromq(qset, wset):
+def quat_kde_from_w(qset, wset):
     """in work
     """
     w1, w2, w3 = 0.5 * wset
@@ -404,7 +404,7 @@ def quat_kde_fromq(qset, wset):
     return quat_kde
 
 
-def quat_kde_fromw(qset, wset):
+def quat_kde_from_q(qset, wset):
     """in work
     """
     s1, b1, b2, b3 = 0.5 * qset

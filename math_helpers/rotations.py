@@ -280,24 +280,13 @@ def wvec_frm_eulerrates_o2b(aset, rates, sequence='321'):
         matrix = [[-s(aset[1]),            0.0,        1.0],
                   [s(aset[2])*c(aset[1]),  c(aset[2]), 0.0],
                   [c(aset[2])*c(aset[1]), -s(aset[2]), 0.0]]
+    elif sequence == '313':
+        matrix = [[s(aset[2])*s(aset[1]),  c(aset[2]),  0.0],
+                  [c(aset[2])*s(aset[1]),  -s(aset[2]), 0.0],
+                  [c(aset[1]),             0.0,         1.0]]
     else:
         raise ValueError(f'euler sequence not yet implemented')
     return mat.mxv(m1=matrix, v1=rates)
-
-
-def eulerrates_frm_wvec_o2b(aset, wvec, sequence='321'):
-    """orbit to body frame; in work
-    """
-    s, c = np.sin, np.cos
-    
-    if sequence == '321':
-        matrix = [[0.0,        s(aset[2]),             c(aset[2])],
-                  [0.0,        c(aset[2])*c(aset[1]), -s(aset[2])*c(aset[1])],
-                  [c(aset[1]), s(aset[2])*s(aset[1]),  c(aset[2])*s(aset[1])]]
-        matrix = mat.mxscalar(scalar=1/c(aset[1]), m1=matrix)
-    else:
-        raise ValueError(f'euler sequence not yet implemented')
-    return mat.mxv(m1=matrix, v1=wvec)
 
 
 def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
@@ -312,6 +301,23 @@ def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
     return vectors.vxadd(v1=w_o2b, v2=w_n2o)
 
 
+def eulerrates_frm_wvec_o2b(aset, wvec, sequence='321'):
+    """orbit to body frame; in work
+    """
+    s, c = np.sin, np.cos
+    
+    if sequence == '321':
+        # use the 321 (phi, theta, psi) euler sequence
+        matrix = [[0.0,        s(aset[2]),             c(aset[2])],
+                  [0.0,        c(aset[2])*c(aset[1]), -s(aset[2])*c(aset[1])],
+                  [c(aset[1]), s(aset[2])*s(aset[1]),  c(aset[2])*s(aset[1])]]
+        # multiply by the current body angular velocity vector
+        matrix = mat.mxscalar(scalar=1/c(aset[1]), m1=matrix)
+    else:
+        raise ValueError(f'euler sequence not yet implemented')
+    return mat.mxv(m1=matrix, v1=wvec)
+
+
 def eulerrates_frm_wvec_n2b(aset, wvec, Omega, sequence='321'):
     """inertial to orbit to body frame; o2 = orbit normal; in work
     """
@@ -322,6 +328,33 @@ def eulerrates_frm_wvec_n2b(aset, wvec, Omega, sequence='321'):
     else:
         raise ValueError(f'euler sequence not yet implemented')
     return vectors.vxadd(v1=rates_o2b, v2=-term2)
+
+
+def crprates_frm_wvec_o2b(qset, wvec):
+    """orbit to body frame; in work
+    """
+    q1, q2, q3 = qset
+
+    matrix = [[1+q1**2, q1*q2-q3, q1*q3+q2], 
+              [q2*q1+q3, 1+q2**2, q2*q3-q1],
+              [q3*q1-q2, q3*q2+q1, 1+q3**2]]
+    matrix = mat.mxscalar(0.5, matrix)
+
+    return mat.mxv(matrix, wvec)
+
+
+def mrprates_frm_wvec_o2b(sigmas, wvec):
+    """orbit to body frame; in work
+    """
+    s1, s2, s3 = sigmas
+    s = np.linalg.norm(sigmas)
+
+    matrix = [[1-s**2+2*s1**2, 2*(s1*s2-s3), 2*(s1*s3+s2)], 
+              [2*(s2*s1+s3), 1-s**2+2*s2**2, 2*(s2*s3-s1)],
+              [2*(s3*s1-s2), 2*(s3*s2+s1), 1-s**2+2*s3**2]]
+    matrix = mat.mxscalar(1/4, matrix)
+
+    return mat.mxv(matrix, wvec)
 
 
 if __name__ == "__main__":
