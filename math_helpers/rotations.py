@@ -3,7 +3,8 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from math_helpers import matrices as mat
-from math_helpers import vectors, quaternions
+from math_helpers import vectors as vec
+from math_helpers import quaternions as quat
 from numpy.linalg import norm
 import numpy as np
 
@@ -16,7 +17,7 @@ def rotate_x(angle):
     matrix = [[1.0,            0.0,           0.0],
               [0.0,  np.cos(angle), np.sin(angle)],
               [0.0, -np.sin(angle), np.cos(angle)]]
-    return matrix
+    return np.array(matrix)
 
 
 def rotate_y(angle):
@@ -27,7 +28,7 @@ def rotate_y(angle):
     matrix = [[np.cos(angle), 0.0, -np.sin(angle)],
               [          0.0, 1.0,            0.0],
               [np.sin(angle), 0.0,  np.cos(angle)]]
-    return matrix
+    return np.array(matrix)
 
 
 def rotate_z(angle):
@@ -38,7 +39,7 @@ def rotate_z(angle):
     matrix = [[ np.cos(angle), np.sin(angle), 0.0],
               [-np.sin(angle), np.cos(angle), 0.0],
               [           0.0,           0.0, 1.0]]
-    return matrix
+    return np.array(matrix)
 
 
 def euler2dcm(angles, sequence='321'):
@@ -58,7 +59,7 @@ def euler2dcm(angles, sequence='321'):
         T2 = mat.mxm(m2=rotate_z(a3), m1=T1)
     else:
          raise ValueError(f'euler sequence not yet implemented')
-    return T2
+    return np.array(T2)
     
 
 def euler2dcm2(angles, sequence='321'):
@@ -81,7 +82,7 @@ def euler2dcm2(angles, sequence='321'):
                   [ s(a2)*s(a1),                   -s(a2)*c(a1),                   c(a2)]]
     else:
         raise ValueError(f'euler sequence not yet implemented')           
-    return matrix
+    return np.array(matrix)
 
 
 def dcm2euler(dcm, sequence='321'):
@@ -126,17 +127,16 @@ def prv_axis(dcm):
     e1 = factor * (dcm[1][2] - dcm[2][1])
     e2 = factor *(dcm[2][0] - dcm[0][2])
     e3 = factor *(dcm[0][1] - dcm[1][0])
-    evec = [e1, e2, e3]
+    evec = np.array([e1, e2, e3])
     return evec, phi
 
 
 def axisofr(Tmatrix):
     """in work
     """
-    vout = np.zeros(3)
-    vout[0] = Tmatrix[0][1]*Tmatrix[1][2] - (Tmatrix[1][1] -1)*Tmatrix[0][2]
-    vout[1] = Tmatrix[1][0]*Tmatrix[0][2] - (Tmatrix[0][0] -1)*Tmatrix[1][2]
-    vout[2] = (Tmatrix[0][0] - 1)*(Tmatrix[1][1] - 1) - Tmatrix[0][1]*Tmatrix[1][0]
+    vout = np.array([Tmatrix[0][1]*Tmatrix[1][2] - (Tmatrix[1][1] -1)*Tmatrix[0][2],
+                     Tmatrix[1][0]*Tmatrix[0][2] - (Tmatrix[0][0] -1)*Tmatrix[1][2],
+                    (Tmatrix[0][0] - 1)*(Tmatrix[1][1] - 1) - Tmatrix[0][1]*Tmatrix[1][0]])
     phi = prv_angle(Tmatrix)
     return vout, phi
 
@@ -149,7 +149,7 @@ def dcm_rate(omega_tilde, dcm):
     :param dcm: direction cosine matrix of a rotation
     :return dcm_dot = -[~w][dcm]
     """
-    return -mat.mxm(omega_tilde, dcm)
+    return np.array(-mat.mxm(omega_tilde, dcm))
 
 
 def triad(v1, v2):
@@ -165,11 +165,11 @@ def triad(v1, v2):
                             [NT] = [t1_N t2_N t3_N]
     """
     t1 = np.array(v1)
-    t2 = vectors.vcrossv(v1, v2) / norm(vectors.vcrossv(v1, v2))
-    t3 = vectors.vcrossv(t1, t2)
+    t2 = vec.vcrossv(v1, v2) / norm(vec.vcrossv(v1, v2))
+    t3 = vec.vcrossv(t1, t2)
     tset = [t1, t2, t3]
     # transform to v frame matrix
-    AT_matrix = mat.mtranspose(tset)
+    AT_matrix = np.array(mat.mT(tset))
     return tset, AT_matrix
 
 
@@ -188,9 +188,9 @@ def davenportq(vset_nrtl, vset_body, weights, sensors=2, quest=False):
     B = np.zeros((3,3))
     for s in range(sensors):
         m1 = mat.mxscalar(scalar=weights[s], \
-                          m1=vectors.vxvT(v1=vset_body[s], v2=vset_nrtl[s]))
+                          m1=vec.vxvT(v1=vset_body[s], v2=vset_nrtl[s]))
         B = mat.mxadd(m2=m1, m1=B)
-    S = mat.mxadd(m2=B, m1=mat.mtranspose(m1=B))
+    S = mat.mxadd(m2=B, m1=mat.mT(m1=B))
     sigma = B[0][0] + B[1][1] + B[2][2]
     Z = [[B[1][2]-B[2][1]], [B[2][0]-B[0][2]], [B[0][1]-B[1][0]]]
     K = np.zeros((4,4))
@@ -205,8 +205,8 @@ def davenportq(vset_nrtl, vset_body, weights, sensors=2, quest=False):
         return quest_method(sigma, K, S, Z, weights)
     eigvals, eigvecs = np.linalg.eig(K)
     qset = eigvecs[:, np.argmax(eigvals)]
-    dcm = quaternions.quat2dcm(qset=qset)
-    return qset
+    dcm = quat.quat2dcm(qset=qset)
+    return np.array(qset)
 
 
 def quest_method(sigma, K, S, Z, weights):
@@ -232,7 +232,7 @@ def quest_method(sigma, K, S, Z, weights):
     crp_opt = mat.mxv(term1, np.vstack(Z))
     print(f'optimal CRP = {crp_opt}')
 
-    return crp_opt
+    return np.array(crp_opt)
 
 
 def questf(K, lambda0):
@@ -286,7 +286,7 @@ def wvec_frm_eulerrates_o2b(aset, rates, sequence='321'):
                   [c(aset[1]),             0.0,         1.0]]
     else:
         raise ValueError(f'euler sequence not yet implemented')
-    return mat.mxv(m1=matrix, v1=rates)
+    return np.array(mat.mxv(m1=matrix, v1=rates))
 
 
 def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
@@ -295,10 +295,10 @@ def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
     if sequence == '321':
         w_o2b = wvec_frm_eulerrates_o2b(aset=aset, rates=rates, sequence='321')
         eulerdcm = euler2dcm(aset, sequence='321')
-        w_n2o = vectors.vxscalar(scalar=Omega, v1=mat.mtranspose(eulerdcm)[1])
+        w_n2o = vec.vxscalar(scalar=Omega, v1=mat.mT(eulerdcm)[1])
     else:
         raise ValueError(f'euler sequence not yet implemented')
-    return vectors.vxadd(v1=w_o2b, v2=w_n2o)
+    return np.array(vec.vxadd(v1=w_o2b, v2=w_n2o))
 
 
 def eulerrates_frm_wvec_o2b(aset, wvec, sequence='321'):
@@ -308,14 +308,14 @@ def eulerrates_frm_wvec_o2b(aset, wvec, sequence='321'):
     
     if sequence == '321':
         # use the 321 (phi, theta, psi) euler sequence
-        matrix = [[0.0,        s(aset[2]),             c(aset[2])],
-                  [0.0,        c(aset[2])*c(aset[1]), -s(aset[2])*c(aset[1])],
-                  [c(aset[1]), s(aset[2])*s(aset[1]),  c(aset[2])*s(aset[1])]]
+        matrix = np.array([[0.0,        s(aset[2]),             c(aset[2])],
+                          [0.0,        c(aset[2])*c(aset[1]), -s(aset[2])*c(aset[1])],
+                          [c(aset[1]), s(aset[2])*s(aset[1]),  c(aset[2])*s(aset[1])]])
         # multiply by the current body angular velocity vector
         matrix = mat.mxscalar(scalar=1/c(aset[1]), m1=matrix)
     else:
         raise ValueError(f'euler sequence not yet implemented')
-    return mat.mxv(m1=matrix, v1=wvec)
+    return np.array(mat.mxv(m1=matrix, v1=wvec))
 
 
 def eulerrates_frm_wvec_n2b(aset, wvec, Omega, sequence='321'):
@@ -323,11 +323,11 @@ def eulerrates_frm_wvec_n2b(aset, wvec, Omega, sequence='321'):
     """
     if sequence == '321':
         rates_o2b = eulerrates_frm_wvec_o2b(aset=aset, wvec=wvec, sequence='321')
-        term2 = vectors.vxscalar(scalar=Omega/np.cos(aset[1]), \
+        term2 = vec.vxscalar(scalar=Omega/np.cos(aset[1]), \
             v1=[np.sin(aset[1])*np.sin(aset[0]), np.cos(aset[1])*np.cos(aset[0]), np.sin(aset[0])])
     else:
         raise ValueError(f'euler sequence not yet implemented')
-    return vectors.vxadd(v1=rates_o2b, v2=-term2)
+    return np.array(vec.vxadd(v1=rates_o2b, v2=-term2))
 
 
 def crprates_frm_wvec_o2b(qset, wvec):
@@ -335,12 +335,12 @@ def crprates_frm_wvec_o2b(qset, wvec):
     """
     q1, q2, q3 = qset
 
-    matrix = [[1+q1**2, q1*q2-q3, q1*q3+q2], 
-              [q2*q1+q3, 1+q2**2, q2*q3-q1],
-              [q3*q1-q2, q3*q2+q1, 1+q3**2]]
+    matrix = np.array([[1+q1**2, q1*q2-q3, q1*q3+q2], 
+                      [q2*q1+q3, 1+q2**2, q2*q3-q1],
+                      [q3*q1-q2, q3*q2+q1, 1+q3**2]])
     matrix = mat.mxscalar(0.5, matrix)
 
-    return mat.mxv(matrix, wvec)
+    return np.array(mat.mxv(matrix, wvec)) 
 
 
 def mrprates_frm_wvec_o2b(sigmas, wvec):
@@ -349,12 +349,12 @@ def mrprates_frm_wvec_o2b(sigmas, wvec):
     s1, s2, s3 = sigmas
     s = np.linalg.norm(sigmas)
 
-    matrix = [[1-s**2+2*s1**2, 2*(s1*s2-s3), 2*(s1*s3+s2)], 
-              [2*(s2*s1+s3), 1-s**2+2*s2**2, 2*(s2*s3-s1)],
-              [2*(s3*s1-s2), 2*(s3*s2+s1), 1-s**2+2*s3**2]]
+    matrix = np.array([[1-s**2+2*s1**2, 2*(s1*s2-s3), 2*(s1*s3+s2)], 
+                       [2*(s2*s1+s3), 1-s**2+2*s2**2, 2*(s2*s3-s1)],
+                       [2*(s3*s1-s2), 2*(s3*s2+s1), 1-s**2+2*s3**2]])
     matrix = mat.mxscalar(1/4, matrix)
 
-    return mat.mxv(matrix, wvec)
+    return np.array(mat.mxv(matrix, wvec))
 
 
 if __name__ == "__main__":

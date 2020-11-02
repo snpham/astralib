@@ -2,7 +2,9 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
-from math_helpers import matrices, rotations, vectors
+from math_helpers import matrices as mat
+from math_helpers import rotations as rot
+from math_helpers import vectors as vec
 from numpy.linalg import norm
 
 
@@ -36,8 +38,8 @@ def qxq(quat1, quat2):
               [ b1,  s1,  b3, -b2],
               [ b2, -b3,  s1,  b1],
               [ b3,  b2, -b1,  s1]]
-    v_out = matrices.mxv(matrix, quat1)
-    return v_out
+    v_out = mat.mxv(matrix, quat1)
+    return np.array(v_out)
 
 
 def qxq2(quat1, quat2):
@@ -50,13 +52,13 @@ def qxq2(quat1, quat2):
     p0, p1, p2, p3 = quat1
     q0, q1, q2, q3 = quat2 
     p0q0 = p0*q0
-    pdotq = vectors.vTxv(v1=[p1, p2, p3], v2=[q1, q2, q3])
-    p0q = vectors.vxscalar(scalar=p0, v1=[q1, q2, q3])
-    q0p = vectors.vxscalar(scalar=q0, v1=[p1, p2, p3])
-    pcrossr = vectors.vcrossv(v1=[p1, p2, p3], v2=[q1, q2, q3])
+    pdotq = vec.vTxv(v1=[p1, p2, p3], v2=[q1, q2, q3])
+    p0q = vec.vxscalar(scalar=p0, v1=[q1, q2, q3])
+    q0p = vec.vxscalar(scalar=q0, v1=[p1, p2, p3])
+    pcrossr = vec.vcrossv(v1=[p1, p2, p3], v2=[q1, q2, q3])
     scalar = p0q0 - pdotq
     complexq = [p0q[0]+q0p[0]+pcrossr[0], p0q[1]+q0p[1]+pcrossr[1], p0q[2]+q0p[2]+pcrossr[2]]
-    return [scalar, complexq[0], complexq[1], complexq[2]]
+    return np.array([scalar, complexq[0], complexq[1], complexq[2]])
 
 
 def q_operator_vector(quat, v1):
@@ -70,13 +72,13 @@ def q_operator_vector(quat, v1):
     """
     q0, q1, q2, q3 = quat
     wvec = np.zeros(3)
-    term1 = vectors.vxscalar(scalar=(2.*q0**2-1), v1=v1)
-    term2 = vectors.vxscalar(scalar=2.*vectors.vTxv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
-    term3 = vectors.vxscalar(scalar=2.*q0, v1=vectors.vcrossv(v1=[q1, q2, q3], v2=v1))
+    term1 = vec.vxscalar(scalar=(2.*q0**2-1), v1=v1)
+    term2 = vec.vxscalar(scalar=2.*vec.vTxv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
+    term3 = vec.vxscalar(scalar=2.*q0, v1=vec.vcrossv(v1=[q1, q2, q3], v2=v1))
     wvec[0] = sum([term1[0], term2[0], term3[0]])
     wvec[1] = sum([term1[1], term2[1], term3[1]])
     wvec[2] = sum([term1[2], term2[2], term3[2]])
-    return wvec
+    return np.array(wvec)
 
 
 def q_operator_frame(quat, v1):
@@ -89,13 +91,13 @@ def q_operator_frame(quat, v1):
     """
     q0, q1, q2, q3 = quat
     wvec = np.zeros(3)
-    term1 = vectors.vxscalar(scalar=(2.*q0**2-1), v1=v1)
-    term2 = vectors.vxscalar(scalar=2.*vectors.vTxv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
-    term3 = vectors.vxscalar(scalar=2.*q0, v1=vectors.vcrossv(v1=v1, v2=[q1, q2, q3]))
+    term1 = vec.vxscalar(scalar=(2.*q0**2-1), v1=v1)
+    term2 = vec.vxscalar(scalar=2.*vec.vTxv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
+    term3 = vec.vxscalar(scalar=2.*q0, v1=vec.vcrossv(v1=v1, v2=[q1, q2, q3]))
     wvec[0] = sum([term1[0], term2[0], term3[0]])
     wvec[1] = sum([term1[1], term2[1], term3[1]])
     wvec[2] = sum([term1[2], term2[2], term3[2]])
-    return wvec
+    return np.array(wvec)
 
 
 def qxq_transmute(q1st, q2nd):
@@ -106,8 +108,8 @@ def qxq_transmute(q1st, q2nd):
               [ b1,  s1, -b3,  b2],
               [ b2,  b3,  s1, -b1],
               [ b3, -b2,  b1,  s1]]
-    v_out =  matrices.mxv(matrix, q1st)    
-    return v_out
+    v_out =  mat.mxv(matrix, q1st)    
+    return np.array(v_out)
 
 
 def q_conjugate(quat):
@@ -116,7 +118,7 @@ def q_conjugate(quat):
     :return: conjugate of quaternion q_conj = quat*
     in work
     """
-    return [quat[0], -quat[1], -quat[2], -quat[3]]
+    return np.array([quat[0], -quat[1], -quat[2], -quat[3]])
 
 
 def q_norm(quat1):
@@ -125,7 +127,7 @@ def q_norm(quat1):
     :return: norm of the quaternion set
     in work
     """
-    return np.sqrt(quat1[0]**2 + quat1[1]**2 + quat1[2]**2 + quat1[3]**2)
+    return np.array(np.sqrt(quat1[0]**2 + quat1[1]**2 + quat1[2]**2 + quat1[3]**2))
 
 
 def prv2dcm(e1, e2, e3, theta):
@@ -142,7 +144,7 @@ def prv2dcm(e1, e2, e3, theta):
     dcm = [[e1*e1*z+np.cos(theta), e1*e2*z+e3*np.sin(theta), e1*e3*z-e2*np.sin(theta)],
            [e2*e1*z-e3*np.sin(theta), e2*e2*z+np.cos(theta), e2*e3*z+e1*np.sin(theta)],
            [e3*e1*z+e2*np.sin(theta), e3*e2*z-e1*np.sin(theta), e3*e3*z+np.cos(theta)]]
-    return dcm
+    return np.array(dcm)
 
     
 def quat2dcm(qset):
@@ -156,7 +158,7 @@ def quat2dcm(qset):
     dcm = [[s1*s1+q1*q1-q2*q2-q3*q3, 2*(q1*q2+s1*q3), 2*(q1*q3-s1*q2)],
            [2*(q1*q2-s1*q3), s1*s1-q1*q1+q2*q2-q3*q3, 2*(q2*q3+s1*q1)],
            [2*(q1*q3+s1*q2), 2*(q2*q3-s1*q1), s1*s1-q1*q1-q2*q2+q3*q3]]
-    return dcm
+    return np.array(dcm)
 
 
 def dcm2quat(dcm):
@@ -173,7 +175,7 @@ def dcm2quat(dcm):
     b1 = (dcm[1][2]-dcm[2][1]) / (4.*s1)
     b2 = (dcm[2][0]-dcm[0][2]) / (4.*s1)
     b3 = (dcm[0][1]-dcm[1][0]) / (4.*s1)
-    return [s1, b1, b2, b3]
+    return np.array([s1, b1, b2, b3])
 
 
 def dcm2quat_sheppard(dcm):
@@ -209,7 +211,7 @@ def dcm2quat_sheppard(dcm):
         s1 = (dcm[0][1]-dcm[1][0])/(4.*b3)
         b1 = (dcm[2][0]+dcm[0][2])/(4.*b3)
         b2 = (dcm[1][2]+dcm[2][1])/(4.*b3)
-    return [s1, b1, b2, b3]
+    return np.array([s1, b1, b2, b3])
 
 
 def euler2quat(a1st, a2nd, a3rd, sequence='313'):
@@ -233,7 +235,7 @@ def euler2quat(a1st, a2nd, a3rd, sequence='313'):
         b1 = c(a1/2.)*c(a2/2.)*s(a3/2.)-s(a1/2.)*s(a2/2.)*c(a3/2.)
         b2 = c(a1/2.)*s(a2/2.)*c(a3/2.)+s(a1/2.)*c(a2/2.)*s(a3/2.)
         b3 = s(a1/2.)*c(a2/2.)*c(a3/2.)-c(a1/2.)*s(a2/2.)*s(a3/2.)
-    return [s1, b1, b2, b3]
+    return np.array([s1, b1, b2, b3])
 
 
 def quat2euler(qset, sequence='321'):
@@ -246,8 +248,8 @@ def quat2euler(qset, sequence='321'):
     in work
     """
     dcm = quat2dcm(qset)
-    a1st, a2nd, a3rd = rotations.dcm2euler(dcm=dcm, sequence=sequence)
-    return [a1st, a2nd, a3rd]
+    a1st, a2nd, a3rd = rot.dcm2euler(dcm=dcm, sequence=sequence)
+    return np.array([a1st, a2nd, a3rd])
 
 
 def crp2dcm(qset):
@@ -259,10 +261,10 @@ def crp2dcm(qset):
     matrix = [[1+q1*q1-q2*q2-q3*q3, 2*(q1*q2+q3), 2*(q1*q3-q2)],
            [2*(q1*q2-q3), 1-q1*q1+q2*q2-q3*q3, 2*(q2*q3+q1)],
            [2*(q1*q3+q2), 2*(q2*q3-q1), 1-q1*q1-q2*q2+q3*q3]]
-    inner = vectors.vTxv(qset, qset)
+    inner = vec.vTxv(qset, qset)
     scalar = 1/(1+inner)
-    dcm = matrices.mxscalar(scalar=scalar, m1=matrix)
-    return dcm
+    dcm = mat.mxscalar(scalar=scalar, m1=matrix)
+    return np.array(dcm)
 
 
 def dcm2crp(dcm):
@@ -277,10 +279,10 @@ def dcm2crp(dcm):
     crp[2] = 1/zeta**2*(dcm[0][1] - dcm[1][0])
 
     # matrix method
-    # dcm_T = matrices.mtranspose(m1=dcm)
+    # dcm_T = mat.mT(m1=dcm)
     # zeta = np.sqrt(dcm[0][0]+dcm[1][1]+dcm[2][2] + 1)
-    # crpset = matrices.mxscalar(scalar=1/zeta**2, m1=matrices.mxsub(dcm_T, dcm))
-    return crp
+    # crpset = mat.mxscalar(scalar=1/zeta**2, m1=mat.mxsub(dcm_T, dcm))
+    return np.array(crp)
 
 
 def quat2mrp(qset):
@@ -291,7 +293,7 @@ def quat2mrp(qset):
     sigma1 = qset[1] / (1.+qset[0])
     sigma2 = qset[2] / (1.+qset[0])
     sigma3 = qset[3] / (1.+qset[0])
-    return [sigma1, sigma2, sigma3]
+    return np.array([sigma1, sigma2, sigma3])
 
 
 def quat2mrps(qset):
@@ -303,16 +305,16 @@ def quat2mrps(qset):
     sigma1 = -qset[1] / (1.-qset[0])
     sigma2 = -qset[2] / (1.-qset[0])
     sigma3 = -qset[3] / (1.-qset[0])
-    return [sigma1, sigma2, sigma3]
+    return np.array([sigma1, sigma2, sigma3])
 
 
-def get_mrp_shadowset(mrpset):
+def mrp_shadow(mrpset):
     """return the shadow set of a given modified rodrigues parameter
     set
     :param mrpset: modified rodrigues parameter set
     :return: shadow set of the given MRP set
     """
-    return [-s/(np.linalg.norm(mrpset)**2) for s in mrpset]
+    return np.array([-s/(np.linalg.norm(mrpset)**2) for s in mrpset])
 
 
 def dcm2mrp(dcm):
@@ -327,7 +329,7 @@ def dcm2mrp(dcm):
     sigma[0] = scalar*(dcm[1][2] - dcm[2][1])
     sigma[1] = scalar*(dcm[2][0] - dcm[0][2])
     sigma[2] = scalar*(dcm[0][1] - dcm[1][0])
-    return sigma
+    return np.array(np.array(sigma))
 
 
 def mrp2dcm(sigmaset):
@@ -337,19 +339,19 @@ def mrp2dcm(sigmaset):
     in work
     """
     imatrix = np.eye(3)
-    sigma_skewmat =  matrices.skew_tilde(v1=sigmaset)
+    sigma_skewmat =  mat.skew_tilde(v1=sigmaset)
     # sigma_skewmat_sq = np.dot(sigma_skewmat,sigma_skewmat)
-    sigma_skewmat_sq =  matrices.mxm(m2=sigma_skewmat, m1=sigma_skewmat)
+    sigma_skewmat_sq =  mat.mxm(m2=sigma_skewmat, m1=sigma_skewmat)
     # amat = np.dot(8.0, sigma_skewmat_sq)
-    amat =  matrices.mxscalar(scalar=8.0, m1=sigma_skewmat_sq)
+    amat =  mat.mxscalar(scalar=8.0, m1=sigma_skewmat_sq)
     bscalar = 4.0 * ( 1 - norm(sigmaset)**2)
     # bmat = np.dot(bscalar, sigma_skewmat)
-    bmat =  matrices.mxscalar(scalar=bscalar, m1=sigma_skewmat)
+    bmat =  mat.mxscalar(scalar=bscalar, m1=sigma_skewmat)
     cscalar = 1.0 / ((1.0 + norm(sigmaset)**2)**2)
-    asubb =  matrices.mxsub(m2=amat, m1=bmat)
+    asubb =  mat.mxsub(m2=amat, m1=bmat)
     # dcm = np.dot(cscalar, asubb)
-    dcm =  matrices.mxscalar(scalar=cscalar, m1=asubb)
-    return dcm
+    dcm =  mat.mxscalar(scalar=cscalar, m1=asubb)
+    return np.array(np.array(dcm))
 
 
 def mrpdot(sigmaset, wvec):
@@ -364,13 +366,13 @@ def mrpdot(sigmaset, wvec):
     Tsigma = [[1-snorm**2+2*s[0]**2, 2*(s[0]*s[1]-s[2]),   2*(s[0]*s[2]+s[1])],
               [2*(s[1]*s[0]+s[2]),   1-snorm**2+2*s[1]**2, 2*(s[1]*s[2]-s[0])],
               [2*(s[2]*s[0]-s[1]),   2*(s[2]*s[1]+s[0]),   1-snorm**2+2*s[2]**2]]
-    Tsigma_scaled = matrices.mxscalar(scalar=1./4., m1=Tsigma)
-    sigmadot = matrices.mxv(m1=Tsigma_scaled, v1=wvec)
-    return sigmadot
+    Tsigma_scaled = mat.mxscalar(scalar=1./4., m1=Tsigma)
+    sigmadot = mat.mxv(m1=Tsigma_scaled, v1=wvec)
+    return np.array(sigmadot)
 
 
 def mrpxmrp(sigmaset1, sigmaset2):
-    """in work
+    """in work; returns transformation [FN] = [FB(s2)][BN(s1)]
     """
     q1 = np.array(sigmaset1)
     q2 = np.array(sigmaset2)
@@ -379,17 +381,17 @@ def mrpxmrp(sigmaset1, sigmaset2):
     scalar1 = 1 - sig1_norm**2
     scalar2 = 1 - sig2_norm**2
     scalar3 = 2.
-    denom = 1 + sig1_norm**2*sig2_norm**2-2*vectors.vTxv(sigmaset1, sigmaset2)
-    term1 = vectors.vxscalar(scalar1, sigmaset2)
-    term2 = vectors.vxscalar(scalar2, sigmaset1)
-    term3 = vectors.vxscalar(2, vectors.vcrossv(sigmaset2, sigmaset1))
-    numer = vectors.vxadd(term1, vectors.vxadd(term2, -term3))
-    sigma = vectors.vxscalar(denom, numer)
+    denom = 1 + sig1_norm**2*sig2_norm**2-2*vec.vTxv(sigmaset1, sigmaset2)
+    term1 = vec.vxscalar(scalar1, sigmaset2)
+    term2 = vec.vxscalar(scalar2, sigmaset1)
+    term3 = vec.vxscalar(2, vec.vcrossv(sigmaset2, sigmaset1))
+    numer = vec.vxadd(term1, vec.vxadd(term2, -term3))
+    sigma = vec.vxscalar(denom, numer)
 
-    # q = (1-(q1.T*q1))*q2+(1-(q2*q2.T))*q1+2*np.cross(q1.T,q2.T).T;
-    # q = q/(1+q1.T*q1 * q2.T*q2-2*q1.T*q2);
+    # sigma = (1-(q1.T*q1))*q2+(1-(q2*q2.T))*q1+2*np.cross(q1.T,q2.T).T;
+    # sigma = sigma/(1+q1.T*q1 * q2.T*q2-2*q1.T*q2);
 
-    return q
+    return np.array(sigma)
 
 
 def quat_kde_from_w(qset, wset):
@@ -400,8 +402,8 @@ def quat_kde_from_w(qset, wset):
               [w1,  0,  w3, -w2],
               [w2,-w3,   0,  w1],
               [w3, w2, -w1,   0]]
-    quat_kde = matrices.mxv(matrix, qset)
-    return quat_kde
+    quat_kde = mat.mxv(matrix, qset)
+    return np.array(quat_kde)
 
 
 def quat_kde_from_q(qset, wset):
@@ -413,8 +415,8 @@ def quat_kde_from_q(qset, wset):
               [b2, b3, s1,-b1],
               [b3,-b2, b1, s1]]
     wset = [0, wset]
-    quat_kde = matrices.mxv(matrix, wset)
-    return quat_kde
+    quat_kde = mat.mxv(matrix, wset)
+    return np.array(quat_kde)
 
 
 if __name__ == "__main__":
@@ -426,7 +428,7 @@ if __name__ == "__main__":
 
     dcm1 = mrp2dcm(sigma1)
     dcm2 = mrp2dcm(sigma2)
-    dcm = matrices.mxm(dcm2, dcm1)
+    dcm = mat.mxm(dcm2, dcm1)
     sigma = dcm2mrp(dcm)
     print(sigma)
 

@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from math_helpers import rotations as rot
 from math_helpers import matrices as mat
-from math_helpers import vectors, quaternions
+from math_helpers import quaternions as quat
 from numpy.linalg import norm
 import numpy as np
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     tset_N, NBarT = rot.triad(v1_N, v2_N)
 
     # transforms estimated attitude from the inertial to body frame
-    BbarN = mat.mxm(BbarT, mat.mtranspose(NBarT))
+    BbarN = mat.mxm(BbarT, mat.mT(NBarT))
     print(BbarN)
 
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # compare the estimated body frame attitude with true attitude
     # should be near identity
-    BbarB = mat.mxm(BbarN, mat.mtranspose(BN_true))
+    BbarB = mat.mxm(BbarN, mat.mT(BN_true))
 
     # determine the magnitude of angle error
     prv_e, prv_a = rot.prv_axis(BbarB)
@@ -83,11 +83,11 @@ if __name__ == "__main__":
     print(daven_q)
 
     # get the dcm
-    BbarN = quaternions.quat2dcm(daven_q)
+    BbarN = quat.quat2dcm(daven_q)
     print(BbarN)
 
     # error
-    BbarB = mat.mxm(BbarN, mat.mtranspose(BN_true))
+    BbarB = mat.mxm(BbarN, mat.mT(BN_true))
     prv_e, prv_a = rot.prv_axis(BbarB)
     print(np.rad2deg(prv_a))
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     v2N = v2N / np.linalg.norm(v2N)
     w1, w2 = 2, 1
     daven_q = rot.davenportq([v1N, v2N], [v1B, v2B], [w1, w2], sensors=2)
-    BbarN = quaternions.quat2dcm(daven_q)
+    BbarN = quat.quat2dcm(daven_q)
     print(BbarN)
 
 
@@ -112,9 +112,9 @@ if __name__ == "__main__":
     w1, w2 = 1, 1
     crp = rot.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=True)
     print(crp)
-    BbarN = quaternions.crp2dcm(crp)
+    BbarN = quat.crp2dcm(crp)
     print(BbarN)
-    BbarB = mat.mxm(BbarN, mat.mtranspose(BN_true))
+    BbarB = mat.mxm(BbarN, mat.mT(BN_true))
     print(BbarB)
     axis, ang = rot.prv_axis(BbarB)
     mag = np.rad2deg(np.linalg.norm(ang))
@@ -133,11 +133,11 @@ if __name__ == "__main__":
     v2_N = v2_N / np.linalg.norm(v2_N)
     crp = rot.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=True)
     print(crp)
-    BbarN = quaternions.crp2dcm(crp)
+    BbarN = quat.crp2dcm(crp)
     print(BbarN)
     qset = rot.davenportq([v1_N, v2_N], [v1_B, v2_B], [w1, w2], sensors=2, quest=False)
     print(qset)
-    dcm = quaternions.quat2dcm(qset)
+    dcm = quat.quat2dcm(qset)
     print(dcm)
 
 

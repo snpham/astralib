@@ -2,10 +2,9 @@
 import numpy as np
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from math_helpers import rotations
 
 
-def mtranspose(m1):
+def mT(m1):
     """computes the transpose of a square matrix
     :param m1: rotation matrix
     :return mt: m1 transpose
@@ -17,7 +16,7 @@ def mtranspose(m1):
                 mt[ii][jj] = m1[ii][jj]
             if ii != jj:
                 mt[ii][jj] = m1[jj][ii]
-    return mt
+    return np.array(mt)
 
 
 def mxadd(m2, m1):
@@ -30,7 +29,7 @@ def mxadd(m2, m1):
     for ii in range(len(m2)):
         for jj in range(len(m1)):
             m_out[ii][jj] = m2[ii][jj]+m1[ii][jj]
-    return m_out
+    return np.array(m_out)
 
 
 def mxsub(m2, m1):
@@ -43,7 +42,7 @@ def mxsub(m2, m1):
     for ii in range(len(m2)):
         for jj in range(len(m1)):
             m_out[ii][jj] = m2[ii][jj]-m1[ii][jj]
-    return m_out
+    return np.array(m_out)
 
 
 def mxm(m2, m1):
@@ -57,7 +56,7 @@ def mxm(m2, m1):
         for ii in range(len(m2)):
             for jj in range(len(m1)):
                 m_out[ii][jj] = m2[ii][0]*m1[0][jj] + m2[ii][1]*m1[1][jj] + m2[ii][2]*m1[2][jj]
-    return m_out
+    return np.array(m_out)
 
 
 def mxv(m1, v1):
@@ -70,11 +69,11 @@ def mxv(m1, v1):
     if len(v1) == 4:
         for ii in range(len(v1)):
             v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2] + m1[ii][3]*v1[3]
-        return v_out    
+        return np.array(v_out)
     if len(v1) == 3:
         for ii in range(len(v1)):
             v_out[ii] = m1[ii][0]*v1[0] + m1[ii][1]*v1[1] + m1[ii][2]*v1[2]
-        return v_out     
+        return np.array(v_out)
 
 
 def mxscalar(scalar, m1):
@@ -87,7 +86,7 @@ def mxscalar(scalar, m1):
     for ii in range(len(m1)):
         for jj in range(len(m1)):
             m_out[ii][jj] = scalar * m1[ii][jj]
-    return m_out
+    return np.array(m_out)
 
 
 def skew_tilde(v1):
@@ -102,7 +101,7 @@ def skew_tilde(v1):
     v_tilde[1][2] = -v1[0]
     v_tilde[2][0] = -v1[1]
     v_tilde[2][1] = v1[0]
-    return v_tilde
+    return np.array(v_tilde)
 
     
 if __name__ == '__main__':

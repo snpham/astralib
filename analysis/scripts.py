@@ -27,7 +27,7 @@ if __name__ == "__main__":
     roty = rotations.rotate_y(beta)
     T_rot = matrices.mxm(m2=roty, m1=rotz)
     print(T_rot)
-    evec, theta = quaternions.prv_axis(dcm=T_rot)
+    evec, theta = rotations.prv_axis(dcm=T_rot)
     print(evec, np.rad2deg(theta))
     print([-1, 3.7321, 1.732]/np.linalg.norm([-1, 3.7321, 1.732]))
     v = [np.sqrt(3)/2, 1/2, -np.sqrt(3)]

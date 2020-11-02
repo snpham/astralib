@@ -155,8 +155,8 @@ def T_ijk2topo(lon, lat, altitude=0.0, frame='sez', reference='spherical'):
     if frame == 'sez':
         m1 = rot.rotate_z(lon)
         m2 = rot.rotate_y(lat)
-        mat = mat.mxm(m2=m2, m1=m1)
-    return mat
+        matrix = mat.mxm(m2=m2, m1=m1)
+        return matrix
 
 
 def T_pqw2ijk(raan, incl, argp):
@@ -168,6 +168,8 @@ def T_pqw2ijk(raan, incl, argp):
 
 
 def lat2rec(lon, lat, elevation, center = 'earth', reference='ellipsoid'):
+    """in work
+    """
     if center == 'earth' and reference=='ellipsoid':
         # we want the mean sea level "geoid" values
         ra = 6378.136

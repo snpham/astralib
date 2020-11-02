@@ -64,6 +64,9 @@ def mrp_integrator(x0, wt, t):
     return x0
 
 
+
+
+
 if __name__ == "__main__":
 
     ############# euler rates integrator
@@ -157,3 +160,48 @@ if __name__ == "__main__":
     mrp_output =  mrp_integrator(sigmas, wt, ets)
     print(np.linalg.norm(mrp_output))
     assert np.allclose(np.linalg.norm(mrp_output), 0.639465,  atol=1e-03)
+
+    #######################################
+
+
+    ############ Gemeral 3-axis attitude control
+    # time window
+    ti = 0.0
+    tf = 41
+    dt = 0.01
+    ets = np.arange(ti, tf, dt)
+
+    # principal inertias
+    inertias = np.diag([100., 75., 80.]) # kgm2
+    # print(inertias)
+    # initial states
+    sigma_BN0 = np.array([0.1, 0.2, -0.1])
+    w_BN0 = np.array(np.deg2rad([30., 10., -20.])) # rad/sec
+
+    # gains
+    K = 5  # Nm
+    P = 10 * np.eye(3)  # Nms, [P] = P[eye3x3]
+    f = 0.05 # rad/sec
+    # print(P)
+
+    # MRP's
+    sigma_RN = []
+    for et in ets:
+        sigma_RN.append([0.2*np.sin(f*et), 
+                         0.3*np.cos(f*et), 
+                        -0.3*np.sin(f*et)])
+    sigma_RN = np.array(sigma_RN)
+    # sigma_RN = np.array([0,0,0])
+    sigma_BR = [quaternions.mrpxmrp(sig_RN, sigma_BN0) for sig_RN in sigma_RN]
+
+    # MRP derivative
+    sigma_RNdot = np.array([0.2*np.cos(f*ets), 
+                           -0.3*np.sin(f*ets), 
+                           -0.3*np.cos(f*ets)])
+    # sigma_RNdot = np.array([0,0,0])
+
+
+
+    # sigma_output =  attitude_integrator(inertias, sigma_BN0, w_BN0, ets, K, P, sigma_RN, sigma_RN_dot)
+    # print(np.linalg.norm(mrp_output))
+    # assert np.allclose(np.linalg.norm(mrp_output), 0.639465,  atol=1e-03)

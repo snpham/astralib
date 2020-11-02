@@ -2,10 +2,9 @@
 import numpy as np
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import math_helpers.rotations as rot
 import math_helpers.vectors as vec
 import math_helpers.matrices as mat
-
+import orbitals.conics as conics
 
 def get_range(rho, az, el, frame='sez'):
     s, c = np.sin, np.cos
@@ -14,8 +13,8 @@ def get_range(rho, az, el, frame='sez'):
         rho_e = rho*c(el)*s(az)
         rho_z = rho*s(el)
         range_topo = [rho_s, rho_e, rho_z]
-
-    return range_topo
+        return range_topo
+    raise ValueError(f'frame {frame} not implemented')
 
 
 def get_rangerate(rho, rhodot, az, azdot, el, eldot, frame='sez'):
@@ -42,7 +41,7 @@ if __name__ == "__main__":
     rvec = vec.vxadd(v1=[.0, .0, 1.], v2=range_sez)
     lat = el
     lon = np.deg2rad(6*15 - 150)
-    T_topo2ijk = mat.mtranspose(rot.T_ijk2topo(lon=lon, lat=lat))
+    T_topo2ijk = mat.mT(conics.T_ijk2topo(lon=lon, lat=lat))
     print(T_topo2ijk)
 #     [[ 0.433  0.866    0.25     ]
 #     [-0.75       0.5       -0.433]
