@@ -19,7 +19,7 @@ def T_inertiaframe(Imatrix, Tmatrix):
 def cg_tensor(rvec):
     """computes the center of gravity matrix for inertia calculations
     """
-    r_skew = mat.skew_tilde(v1=rvec)
+    r_skew = mat.skew(v1=rvec)
     r_skew_t = mat.mT(m1=r_skew)
     cg_tensor = mat.mxm(m2=r_skew, m1=r_skew_t)
     return np.array(cg_tensor)

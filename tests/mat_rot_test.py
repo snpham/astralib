@@ -94,7 +94,7 @@ def test_dcm_rates():
           [-0.19355, -0.67742, 0.70968], 
           [0.45161, 0.58065, 0.67742]]
     wbn = [0.1, 0.2, 0.3]
-    wbn_tl = mat.skew_tilde(wbn)
+    wbn_tl = mat.skew(wbn)
     rates = rot.dcm_rate(omega_tilde=wbn_tl, dcm=bn)
     rates_true = [[-0.148387, -0.319356,  0.07742], 
                   [ 0.306452, -0.077418,  0.009677], 
@@ -245,7 +245,7 @@ def test_triad_method():
 
 
 def test_davenportq_method():
-    """tests davenport algorithm, mxscalar, vxvT, mxadd, mxsub,
+    """tests davenport algorithm, mxs, vxvT, mxadd, mxsub,
     mT, and quat2dcm functions
     """
     # given inertial sensor measurements

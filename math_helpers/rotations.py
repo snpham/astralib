@@ -187,7 +187,7 @@ def davenportq(vset_nrtl, vset_body, weights, sensors=2, quest=False):
     """
     B = np.zeros((3,3))
     for s in range(sensors):
-        m1 = mat.mxscalar(scalar=weights[s], \
+        m1 = mat.mxs(scalar=weights[s], \
                           m1=vec.vxvT(v1=vset_body[s], v2=vset_nrtl[s]))
         B = mat.mxadd(m2=m1, m1=B)
     S = mat.mxadd(m2=B, m1=mat.mT(m1=B))
@@ -195,7 +195,7 @@ def davenportq(vset_nrtl, vset_body, weights, sensors=2, quest=False):
     Z = [[B[1][2]-B[2][1]], [B[2][0]-B[0][2]], [B[0][1]-B[1][0]]]
     K = np.zeros((4,4))
     K[0][0] = sigma
-    Kterm4 = mat.mxsub(m2=S, m1=mat.mxscalar(scalar=sigma, m1=np.eye(3)))
+    Kterm4 = mat.mxsub(m2=S, m1=mat.mxs(scalar=sigma, m1=np.eye(3)))
     for ii in range(3):
         K[0][ii+1] = Z[ii][0]
         K[ii+1][0] = Z[ii][0]
@@ -221,14 +221,14 @@ def quest_method(sigma, K, S, Z, weights):
     """
     lambda0 = sum(weights)
     print(f'initial lambda = {lambda0}')
-    term1 = np.linalg.inv(mat.mxsub(mat.mxscalar(lambda0+sigma, np.eye(3,3)), S))
+    term1 = np.linalg.inv(mat.mxsub(mat.mxs(lambda0+sigma, np.eye(3,3)), S))
     qvec = mat.mxv(term1, np.vstack(Z))
     print(f'initial crp = {qvec}')
 
     lam_opt = questf(K, lambda0)
     print(f'optimal lambda = {lam_opt}')
 
-    term1 = np.linalg.inv(mat.mxsub(mat.mxscalar(lambda0+sigma, np.eye(3,3)), S))
+    term1 = np.linalg.inv(mat.mxsub(mat.mxs(lambda0+sigma, np.eye(3,3)), S))
     crp_opt = mat.mxv(term1, np.vstack(Z))
     print(f'optimal CRP = {crp_opt}')
 
@@ -260,7 +260,7 @@ def qfunc(s, K):
     :param K: 4x4 matrix
     return: function to compute the QUEST determinant
     """
-    return np.linalg.det(mat.mxsub(K, mat.mxscalar(s, np.eye(4,4))))
+    return np.linalg.det(mat.mxsub(K, mat.mxs(s, np.eye(4,4))))
 
 
 def olae_method():
@@ -312,7 +312,7 @@ def eulerrates_frm_wvec_o2b(aset, wvec, sequence='321'):
                           [0.0,        c(aset[2])*c(aset[1]), -s(aset[2])*c(aset[1])],
                           [c(aset[1]), s(aset[2])*s(aset[1]),  c(aset[2])*s(aset[1])]])
         # multiply by the current body angular velocity vector
-        matrix = mat.mxscalar(scalar=1/c(aset[1]), m1=matrix)
+        matrix = mat.mxs(scalar=1/c(aset[1]), m1=matrix)
     else:
         raise ValueError(f'euler sequence not yet implemented')
     return np.array(mat.mxv(m1=matrix, v1=wvec))
@@ -338,7 +338,7 @@ def crprates_frm_wvec_o2b(qset, wvec):
     matrix = np.array([[1+q1**2, q1*q2-q3, q1*q3+q2], 
                       [q2*q1+q3, 1+q2**2, q2*q3-q1],
                       [q3*q1-q2, q3*q2+q1, 1+q3**2]])
-    matrix = mat.mxscalar(0.5, matrix)
+    matrix = mat.mxs(0.5, matrix)
 
     return np.array(mat.mxv(matrix, wvec)) 
 
@@ -352,7 +352,7 @@ def mrprates_frm_wvec_o2b(sigmas, wvec):
     matrix = np.array([[1-s**2+2*s1**2, 2*(s1*s2-s3), 2*(s1*s3+s2)], 
                        [2*(s2*s1+s3), 1-s**2+2*s2**2, 2*(s2*s3-s1)],
                        [2*(s3*s1-s2), 2*(s3*s2+s1), 1-s**2+2*s3**2]])
-    matrix = mat.mxscalar(1/4, matrix)
+    matrix = mat.mxs(1/4, matrix)
 
     return np.array(mat.mxv(matrix, wvec))
 

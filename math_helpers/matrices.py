@@ -76,7 +76,7 @@ def mxv(m1, v1):
         return np.array(v_out)
 
 
-def mxscalar(scalar, m1):
+def mxs(scalar, m1):
     """scales a matrix by a scalar
     :param scalar: scalar component to multiply
     :param m1: nxn matrix being scaled
@@ -89,7 +89,7 @@ def mxscalar(scalar, m1):
     return np.array(m_out)
 
 
-def skew_tilde(v1):
+def skew(v1):
     """generates a skewed cross-product matrix from a vector
     :param v1: vector to skew
     :return v_tilde: skewed matrix for v1

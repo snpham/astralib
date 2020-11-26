@@ -22,7 +22,7 @@ def test_inertia():
     rvec_B = matrices.mxv(BN, rvec_N)
     # parallel axis theorem
     cg_tensor = mp.cg_tensor(rvec_B)
-    paxis = matrices.mxscalar(mass, cg_tensor)
+    paxis = matrices.mxs(mass, cg_tensor)
 
     # inertia at point P
     J_P = matrices.mxadd(I_cg, paxis)

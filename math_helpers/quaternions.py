@@ -263,7 +263,7 @@ def crp2dcm(qset):
            [2*(q1*q3+q2), 2*(q2*q3-q1), 1-q1*q1-q2*q2+q3*q3]]
     inner = vec.vTxv(qset, qset)
     scalar = 1/(1+inner)
-    dcm = mat.mxscalar(scalar=scalar, m1=matrix)
+    dcm = mat.mxs(scalar=scalar, m1=matrix)
     return np.array(dcm)
 
 
@@ -281,7 +281,7 @@ def dcm2crp(dcm):
     # matrix method
     # dcm_T = mat.mT(m1=dcm)
     # zeta = np.sqrt(dcm[0][0]+dcm[1][1]+dcm[2][2] + 1)
-    # crpset = mat.mxscalar(scalar=1/zeta**2, m1=mat.mxsub(dcm_T, dcm))
+    # crpset = mat.mxs(scalar=1/zeta**2, m1=mat.mxsub(dcm_T, dcm))
     return np.array(crp)
 
 
@@ -339,26 +339,28 @@ def mrp2dcm(sigmaset):
     in work
     """
     imatrix = np.eye(3)
-    sigma_skewmat =  mat.skew_tilde(v1=sigmaset)
+    sigma_skewmat =  mat.skew(v1=sigmaset)
     # sigma_skewmat_sq = np.dot(sigma_skewmat,sigma_skewmat)
     sigma_skewmat_sq =  mat.mxm(m2=sigma_skewmat, m1=sigma_skewmat)
     # amat = np.dot(8.0, sigma_skewmat_sq)
-    amat =  mat.mxscalar(scalar=8.0, m1=sigma_skewmat_sq)
+    amat =  mat.mxs(scalar=8.0, m1=sigma_skewmat_sq)
     bscalar = 4.0 * ( 1 - norm(sigmaset)**2)
     # bmat = np.dot(bscalar, sigma_skewmat)
-    bmat =  mat.mxscalar(scalar=bscalar, m1=sigma_skewmat)
+    bmat =  mat.mxs(scalar=bscalar, m1=sigma_skewmat)
     cscalar = 1.0 / ((1.0 + norm(sigmaset)**2)**2)
     asubb =  mat.mxsub(m2=amat, m1=bmat)
     # dcm = np.dot(cscalar, asubb)
-    dcm =  mat.mxscalar(scalar=cscalar, m1=asubb)
+    dcm =  mat.mxs(scalar=cscalar, m1=asubb)
     return np.array(np.array(dcm))
 
 
-def mrpdot(sigmaset, wvec):
+def mrpdot(sigmaset, wvec, return_T_matrix=False):
     """compute MRP rates for a given angular velocity
     :param sigmaset: modified rodrigues parameter
     :param wvec: angular velocity (rad/s)
+    :param return_T_matrix: Boolean to return only matrix or MRP rates
     :return sigmadot: rate of change of the MRP's (rad/s)
+    :return Tsigma: MRP transform matrix for MRP rates
     in work
     """
     s = sigmaset
@@ -366,7 +368,9 @@ def mrpdot(sigmaset, wvec):
     Tsigma = [[1-snorm**2+2*s[0]**2, 2*(s[0]*s[1]-s[2]),   2*(s[0]*s[2]+s[1])],
               [2*(s[1]*s[0]+s[2]),   1-snorm**2+2*s[1]**2, 2*(s[1]*s[2]-s[0])],
               [2*(s[2]*s[0]-s[1]),   2*(s[2]*s[1]+s[0]),   1-snorm**2+2*s[2]**2]]
-    Tsigma_scaled = mat.mxscalar(scalar=1./4., m1=Tsigma)
+    if return_T_matrix:
+        return Tsigma
+    Tsigma_scaled = mat.mxs(scalar=1./4., m1=Tsigma)
     sigmadot = mat.mxv(m1=Tsigma_scaled, v1=wvec)
     return np.array(sigmadot)
 

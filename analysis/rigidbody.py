@@ -52,6 +52,6 @@ if __name__ == "__main__":
     BN = rotations.euler2dcm(np.deg2rad(euler), sequence='321')
     rvec_B = matrices.mxv(BN, rvec_N)
     cg_tensor = mp.cg_tensor(rvec_B)
-    paxis = matrices.mxscalar(12.5, cg_tensor)
+    paxis = matrices.mxs(12.5, cg_tensor)
     J = matrices.mxadd(inertiacg, paxis)
     print(J)
