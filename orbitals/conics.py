@@ -130,15 +130,15 @@ def bplane_targeting(rvec, vvec, center='earth'):
     semi_minor = k.h_mag**2/(k.mu*np.sqrt(e_mag**2-1))
 
     # computing incoming asymptote and B-vector
-    evec_term = vec.vxscalar(1/e_mag, k.e_vec)
-    nvec_term = vec.vxscalar(np.sqrt(1-(1/e_mag)**2), n_hat)
+    evec_term = vec.vxs(1/e_mag, k.e_vec)
+    nvec_term = vec.vxs(np.sqrt(1-(1/e_mag)**2), n_hat)
     S = vec.vxadd(evec_term, nvec_term)
-    evec_term = vec.vxscalar(semi_minor*np.sqrt(1-(1/e_mag)**2), k.e_vec)
-    nvec_term = vec.vxscalar(semi_minor/e_mag, n_hat)
+    evec_term = vec.vxs(semi_minor*np.sqrt(1-(1/e_mag)**2), k.e_vec)
+    nvec_term = vec.vxs(semi_minor/e_mag, n_hat)
     B = vec.vxadd(evec_term, -nvec_term)
 
     # T and R vector
-    T = vec.vxscalar(1/np.sqrt(S[0]**2+S[1]**2), [S[1], -S[0], 0.])
+    T = vec.vxs(1/np.sqrt(S[0]**2+S[1]**2), [S[1], -S[0], 0.])
     R = vec.vcrossv(v1=S, v2=T)
 
     # BdotT and BdotR
@@ -323,8 +323,8 @@ class Keplerian(object):
     def eccentricity_vector(self):
         """eccentricity vector"""
         scalar1 = self.v_mag**2/self.mu - 1./self.r_mag
-        term1 = vec.vxscalar(scalar=scalar1, v1=self.rvec)
-        term2 = -vec.vxscalar(scalar=vec.vTxv(v1=self.rvec, v2=self.vvec)/self.mu, 
+        term1 = vec.vxs(scalar=scalar1, v1=self.rvec)
+        term2 = -vec.vxs(scalar=vec.vTxv(v1=self.rvec, v2=self.vvec)/self.mu, 
                               v1=self.vvec)
         eccentricity_vec = vec.vxadd(v1=term1, v2=term2) # points to orbit periapsis
         return eccentricity_vec
@@ -384,7 +384,7 @@ if __name__ == "__main__":
     print(rv) # r=[9567.2, 0], v=[0, 7.9054]
 
     # testing specifc energy function
-    pos = vec.vxscalar(scalar=1e4, v1=[1.2756, 1.9135, 3.1891]) # km
+    pos = vec.vxs(scalar=1e4, v1=[1.2756, 1.9135, 3.1891]) # km
     vel = [7.9053, 15.8106, 0.0] # km/s
     sp_energy = sp_energy(vel=vel, pos=pos, mu=398600.4418)
     print(sp_energy)

@@ -69,7 +69,7 @@ def v_cross(v1):
     return np.array(v_tilde)
 
 
-def vxscalar(scalar, v1):
+def vxs(scalar, v1):
     """scales a vector by a scalar
     :param scalar: scalar component to multiply
     :param v1: vector to be scaled

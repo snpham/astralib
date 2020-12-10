@@ -295,7 +295,7 @@ def wvec_frm_eulerrates_n2b(aset, rates, Omega, sequence='321'):
     if sequence == '321':
         w_o2b = wvec_frm_eulerrates_o2b(aset=aset, rates=rates, sequence='321')
         eulerdcm = euler2dcm(aset, sequence='321')
-        w_n2o = vec.vxscalar(scalar=Omega, v1=mat.mT(eulerdcm)[1])
+        w_n2o = vec.vxs(scalar=Omega, v1=mat.mT(eulerdcm)[1])
     else:
         raise ValueError(f'euler sequence not yet implemented')
     return np.array(vec.vxadd(v1=w_o2b, v2=w_n2o))
@@ -323,7 +323,7 @@ def eulerrates_frm_wvec_n2b(aset, wvec, Omega, sequence='321'):
     """
     if sequence == '321':
         rates_o2b = eulerrates_frm_wvec_o2b(aset=aset, wvec=wvec, sequence='321')
-        term2 = vec.vxscalar(scalar=Omega/np.cos(aset[1]), \
+        term2 = vec.vxs(scalar=Omega/np.cos(aset[1]), \
             v1=[np.sin(aset[1])*np.sin(aset[0]), np.cos(aset[1])*np.cos(aset[0]), np.sin(aset[0])])
     else:
         raise ValueError(f'euler sequence not yet implemented')

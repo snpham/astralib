@@ -22,7 +22,7 @@ def sp_energy(vel, pos, mu=398600.4418):
 
 if __name__ == "__main__":
     # testing specifc energy function
-    pos = vectors.vxscalar(scalar=1e4, v1=[1.2756, 1.9135, 3.1891]) # km
+    pos = vectors.vxs(scalar=1e4, v1=[1.2756, 1.9135, 3.1891]) # km
     vel = [7.9053, 15.8106, 0.0] # km/s
     sp_energy = sp_energy(vel=vel, pos=pos, mu=398600.4418)
     print(sp_energy)
