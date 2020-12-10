@@ -14,7 +14,7 @@ def vxadd(v1, v2):
     return np.array(v_out)
 
 
-def vTxv(v1, v2):
+def vdotv(v1, v2):
     """vector dot product
     :param v1: first vector
     :param v2: second vector
