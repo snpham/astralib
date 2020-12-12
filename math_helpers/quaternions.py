@@ -354,6 +354,27 @@ def mrp2dcm(sigmaset):
     return np.array(np.array(dcm))
 
 
+def mrp2dcm2(sigmas):
+    q1, q2, q3 = sigmas
+    s = 1 - np.linalg.norm(sigmas)**2
+    sp = 1 + np.linalg.norm(sigmas)**2
+
+    dcm = np.array([[4*(q1**2 - q2**2 - q3**2) + s**2, 8*q1*q2 + 4*q3*s, 8*q1*q3 - 4*q2*s],
+           [8*q2*q1 - 4*q3*s, 4*(-q1**2 + q2**2 - q3**2) + s**2, 8*q2*q3 + 4*q1*s],
+           [8*q3*q1 - 4*q3*s, 8*q3*q2 - 4*q1*s, 4*(-q1**2 - q2**2 + q3**2) + s**2]])
+    dcm = np.dot(1/sp**2, dcm)
+    return np.array(dcm) 
+
+
+def mrp2dcm3(sigmas):
+    Id = np.eye(3,3)
+    t1 = 8 * np.dot(mat.skew(sigmas), mat.skew(sigmas))
+    t2 = 4 * np.dot((1 - np.linalg.norm(sigmas)**2), mat.skew(sigmas))
+    t3 = (1 + np.linalg.norm(sigmas)**2)**2
+    return Id + np.dot(1/t3, t1 - t2)
+
+
+
 def mrpdot(sigmaset, wvec, return_T_matrix=False):
     """compute MRP rates for a given angular velocity
     :param sigmaset: modified rodrigues parameter
