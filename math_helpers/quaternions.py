@@ -52,9 +52,9 @@ def qxq2(quat1, quat2):
     p0, p1, p2, p3 = quat1
     q0, q1, q2, q3 = quat2 
     p0q0 = p0*q0
-    pdotq = vec.vTxv(v1=[p1, p2, p3], v2=[q1, q2, q3])
-    p0q = vec.vxscalar(scalar=p0, v1=[q1, q2, q3])
-    q0p = vec.vxscalar(scalar=q0, v1=[p1, p2, p3])
+    pdotq = vec.vdotv(v1=[p1, p2, p3], v2=[q1, q2, q3])
+    p0q = vec.vxs(scalar=p0, v1=[q1, q2, q3])
+    q0p = vec.vxs(scalar=q0, v1=[p1, p2, p3])
     pcrossr = vec.vcrossv(v1=[p1, p2, p3], v2=[q1, q2, q3])
     scalar = p0q0 - pdotq
     complexq = [p0q[0]+q0p[0]+pcrossr[0], p0q[1]+q0p[1]+pcrossr[1], p0q[2]+q0p[2]+pcrossr[2]]
@@ -72,9 +72,9 @@ def q_operator_vector(quat, v1):
     """
     q0, q1, q2, q3 = quat
     wvec = np.zeros(3)
-    term1 = vec.vxscalar(scalar=(2.*q0**2-1), v1=v1)
-    term2 = vec.vxscalar(scalar=2.*vec.vTxv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
-    term3 = vec.vxscalar(scalar=2.*q0, v1=vec.vcrossv(v1=[q1, q2, q3], v2=v1))
+    term1 = vec.vxs(scalar=(2.*q0**2-1), v1=v1)
+    term2 = vec.vxs(scalar=2.*vec.vdotv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
+    term3 = vec.vxs(scalar=2.*q0, v1=vec.vcrossv(v1=[q1, q2, q3], v2=v1))
     wvec[0] = sum([term1[0], term2[0], term3[0]])
     wvec[1] = sum([term1[1], term2[1], term3[1]])
     wvec[2] = sum([term1[2], term2[2], term3[2]])
@@ -91,9 +91,9 @@ def q_operator_frame(quat, v1):
     """
     q0, q1, q2, q3 = quat
     wvec = np.zeros(3)
-    term1 = vec.vxscalar(scalar=(2.*q0**2-1), v1=v1)
-    term2 = vec.vxscalar(scalar=2.*vec.vTxv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
-    term3 = vec.vxscalar(scalar=2.*q0, v1=vec.vcrossv(v1=v1, v2=[q1, q2, q3]))
+    term1 = vec.vxs(scalar=(2.*q0**2-1), v1=v1)
+    term2 = vec.vxs(scalar=2.*vec.vdotv(v1=v1, v2=[q1, q2, q3]), v1=[q1, q2, q3])
+    term3 = vec.vxs(scalar=2.*q0, v1=vec.vcrossv(v1=v1, v2=[q1, q2, q3]))
     wvec[0] = sum([term1[0], term2[0], term3[0]])
     wvec[1] = sum([term1[1], term2[1], term3[1]])
     wvec[2] = sum([term1[2], term2[2], term3[2]])
@@ -261,7 +261,7 @@ def crp2dcm(qset):
     matrix = [[1+q1*q1-q2*q2-q3*q3, 2*(q1*q2+q3), 2*(q1*q3-q2)],
            [2*(q1*q2-q3), 1-q1*q1+q2*q2-q3*q3, 2*(q2*q3+q1)],
            [2*(q1*q3+q2), 2*(q2*q3-q1), 1-q1*q1-q2*q2+q3*q3]]
-    inner = vec.vTxv(qset, qset)
+    inner = vec.vdotv(qset, qset)
     scalar = 1/(1+inner)
     dcm = mat.mxs(scalar=scalar, m1=matrix)
     return np.array(dcm)
@@ -406,12 +406,12 @@ def mrpxmrp(sigmaset1, sigmaset2):
     scalar1 = 1 - sig1_norm**2
     scalar2 = 1 - sig2_norm**2
     scalar3 = 2.
-    denom = 1 + sig1_norm**2*sig2_norm**2-2*vec.vTxv(sigmaset1, sigmaset2)
-    term1 = vec.vxscalar(scalar1, sigmaset2)
-    term2 = vec.vxscalar(scalar2, sigmaset1)
-    term3 = vec.vxscalar(2, vec.vcrossv(sigmaset2, sigmaset1))
+    denom = 1 + sig1_norm**2*sig2_norm**2-2*vec.vdotv(sigmaset1, sigmaset2)
+    term1 = vec.vxs(scalar1, sigmaset2)
+    term2 = vec.vxs(scalar2, sigmaset1)
+    term3 = vec.vxs(2, vec.vcrossv(sigmaset2, sigmaset1))
     numer = vec.vxadd(term1, vec.vxadd(term2, -term3))
-    sigma = vec.vxscalar(denom, numer)
+    sigma = vec.vxs(denom, numer)
 
     # sigma = (1-(q1.T*q1))*q2+(1-(q2*q2.T))*q1+2*np.cross(q1.T,q2.T).T;
     # sigma = sigma/(1+q1.T*q1 * q2.T*q2-2*q1.T*q2);

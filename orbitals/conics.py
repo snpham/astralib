@@ -26,7 +26,7 @@ def get_orbital_elements(rvec, vvec, object='earth'):
 
     # K vector and rv inner product
     node_mag = vec.norm(k.node_vec)
-    r_dot_v = vec.vTxv(v1=rvec, v2=vvec)
+    r_dot_v = vec.vdotv(v1=rvec, v2=vvec)
 
     # eccentricity, semi-major axis, semi-parameter
     e = k.e_mag
@@ -41,13 +41,11 @@ def get_orbital_elements(rvec, vvec, object='earth'):
     if e == 0:
         lperi = float('nan')
     else:
-        lperi = np.arccos(vec.vTxv(k.eccentricity_vector, [1.,0.,0.])/k.e_mag)
+        lperi = np.arccos(vec.vdotv(k.eccentricity_vector, [1.,0.,0.])/k.e_mag)
 
     # inclination, true anomaly
     i = k.inclination
     ta = k.true_anomaly
-    if vec.vTxv(rvec, vvec) < 0:
-        ta = 2*np.pi - ta
 
     print(f'Orbital Elements:\n',
           f'Semi-major axis: {sma:0.06f} km\n',
@@ -64,16 +62,12 @@ def get_orbital_elements(rvec, vvec, object='earth'):
     else:
         # right ascending node
         raan = k.raan
-        if k.node_vec[1] < 0:
-            raan = 2*np.pi - raan
 
         # argument of periapsis
         aop = k.aop
-        if k.eccentricity_vector[2] < 0:
-            aop = 2*np.pi - aop
 
         # argument of latitude, true longitude at epoch
-        arglat = np.arccos(vec.vTxv(k.node_vec, rvec)/(node_mag*k.r_mag))
+        arglat = np.arccos(vec.vdotv(k.node_vec, rvec)/(node_mag*k.r_mag))
         if rvec[2] < 0:
             arglat = np.pi + arglat
         tlong = raan + arglat
@@ -130,20 +124,20 @@ def bplane_targeting(rvec, vvec, center='earth'):
     semi_minor = k.h_mag**2/(k.mu*np.sqrt(e_mag**2-1))
 
     # computing incoming asymptote and B-vector
-    evec_term = vec.vxscalar(1/e_mag, k.e_vec)
-    nvec_term = vec.vxscalar(np.sqrt(1-(1/e_mag)**2), n_hat)
+    evec_term = vec.vxs(1/e_mag, k.e_vec)
+    nvec_term = vec.vxs(np.sqrt(1-(1/e_mag)**2), n_hat)
     S = vec.vxadd(evec_term, nvec_term)
-    evec_term = vec.vxscalar(semi_minor*np.sqrt(1-(1/e_mag)**2), k.e_vec)
-    nvec_term = vec.vxscalar(semi_minor/e_mag, n_hat)
+    evec_term = vec.vxs(semi_minor*np.sqrt(1-(1/e_mag)**2), k.e_vec)
+    nvec_term = vec.vxs(semi_minor/e_mag, n_hat)
     B = vec.vxadd(evec_term, -nvec_term)
 
     # T and R vector
-    T = vec.vxscalar(1/np.sqrt(S[0]**2+S[1]**2), [S[1], -S[0], 0.])
+    T = vec.vxs(1/np.sqrt(S[0]**2+S[1]**2), [S[1], -S[0], 0.])
     R = vec.vcrossv(v1=S, v2=T)
 
     # BdotT and BdotR
-    B_t = vec.vTxv(v1=B, v2=T)
-    B_r = vec.vTxv(v1=B, v2=R)
+    B_t = vec.vdotv(v1=B, v2=T)
+    B_r = vec.vdotv(v1=B, v2=R)
 
     # angle between B and T
     theta = np.arccos(B_t/vec.norm(B_t))
@@ -323,31 +317,51 @@ class Keplerian(object):
     def eccentricity_vector(self):
         """eccentricity vector"""
         scalar1 = self.v_mag**2/self.mu - 1./self.r_mag
-        term1 = vec.vxscalar(scalar=scalar1, v1=self.rvec)
-        term2 = -vec.vxscalar(scalar=vec.vTxv(v1=self.rvec, v2=self.vvec)/self.mu, 
+        term1 = vec.vxs(scalar=scalar1, v1=self.rvec)
+        term2 = -vec.vxs(scalar=vec.vdotv(v1=self.rvec, v2=self.vvec)/self.mu, 
                               v1=self.vvec)
-        eccentricity_vec = vec.vxadd(v1=term1, v2=term2) # points to orbit periapsis
+        eccentricity_vec = vec.vxadd(v1=term1, v2=term2) # points to orbit periapsis;
+        # e_vec = 0 for circular orbits
         return eccentricity_vec
+
 
     @property
     def inclination(self):
         """inclination"""
         return np.arccos(self.h_vec[2]/self.h_mag)
 
+
     @property
     def true_anomaly(self):
         """true anomaly"""
-        return np.arccos(vec.vTxv(self.e_vec, self.rvec)/(self.e_mag*self.r_mag))
+        if self.e_mag is 0:
+            return float('nan')
+        ta = np.arccos(vec.vdotv(self.e_vec, self.rvec)/(self.e_mag*self.r_mag))
+        if vec.vdotv(rvec, vvec) < 0:
+            ta = 2*np.pi - ta
+        return ta
+
 
     @property
     def raan(self):
         """right ascending node"""
-        return np.arccos(vec.vTxv(self.node_vec, [1.0, 0.0, 0.0])/self.node_mag)
+        if self.inclination is 0:
+            return float('nan')
+        omega = np.arccos(self.node_vec[0]/self.node_mag)
+        if self.node_vec[1] < 0:
+            omega = 2*np.pi - omega
+        return omega
+
 
     @property
     def aop(self):
         """argument_of_periapse"""
-        return np.arccos(vec.vTxv(self.node_vec, self.e_vec)/(self.node_mag*self.e_mag))
+        if self.e_mag is 0 or self.node_mag is 0:
+            return float('nan')
+        argp = np.arccos(vec.vdotv(self.node_vec, self.e_vec)/(self.node_mag*self.e_mag))
+        if self.e_vec[2] < 0:
+            argp = 2*np.pi - argp
+        return argp
 
 
 if __name__ == "__main__":
@@ -384,7 +398,7 @@ if __name__ == "__main__":
     print(rv) # r=[9567.2, 0], v=[0, 7.9054]
 
     # testing specifc energy function
-    pos = vec.vxscalar(scalar=1e4, v1=[1.2756, 1.9135, 3.1891]) # km
+    pos = vec.vxs(scalar=1e4, v1=[1.2756, 1.9135, 3.1891]) # km
     vel = [7.9053, 15.8106, 0.0] # km/s
     sp_energy = sp_energy(vel=vel, pos=pos, mu=398600.4418)
     print(sp_energy)

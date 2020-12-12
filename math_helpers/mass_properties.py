@@ -26,7 +26,7 @@ def cg_tensor(rvec):
 
 
 def rotational_kenergy(I_cg, w):
-    return np.array(0.5* vec.vTxv(w, v2=mat.mxv(I_cg, w)))
+    return np.array(0.5* vec.vdotv(w, v2=mat.mxv(I_cg, w)))
 
 
 if __name__ == "__main__":

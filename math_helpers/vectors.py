@@ -14,7 +14,7 @@ def vxadd(v1, v2):
     return np.array(v_out)
 
 
-def vTxv(v1, v2):
+def vdotv(v1, v2):
     """vector dot product
     :param v1: first vector
     :param v2: second vector
@@ -69,7 +69,7 @@ def v_cross(v1):
     return np.array(v_tilde)
 
 
-def vxscalar(scalar, v1):
+def vxs(scalar, v1):
     """scales a vector by a scalar
     :param scalar: scalar component to multiply
     :param v1: vector to be scaled
