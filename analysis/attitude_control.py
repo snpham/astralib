@@ -33,24 +33,13 @@ def wdot_BN(mrp_BRi, w_BRi, w_BNi, w_RNi, w_RNprev, delta_w_BNi, z_sum):
 
     # control; note mrp in control is B/R
     if cc2_5:
-        u = -K*mrp_BRi - np.dot(P, w_BRi)
+        u = - K*mrp_BRi - np.dot(P, w_BRi)
     elif cc2_6:
-        u = -K*mrp_BRi \
+        u = - K*mrp_BRi \
             - np.dot(P, w_BRi) \
             + np.dot(I, wdot_RNi - vec.vcrossv(w_BNi, w_RNi)) \
             + np.dot(mat.skew(w_BNi), np.dot(I, w_BNi))
     elif cc4_2 or cc4_4:
-        # u = - K*mrp_BRi \
-        #     - np.dot(P + np.dot(P, Ki*I), delta_w_BNi) \
-        #     - np.dot(K*Ki, np.dot(P, z_sum)) \
-        #     + Ki * np.dot(P, np.dot(I, delta_w0_BN)) \
-        #     + np.dot(I, wdot_BN)
-
-        #     + mat.mxv(I, wdot_RNi) \
-        #     - mat.mxv(I, mat.mxv(mat.skew(w_BNi), w_RNi)) \
-        #     + mat.mxv(mat.skew(w_BNi), mat.mxv(I, w_BNi)) \
-        #     - L
-        # # integral feedback term 
         u = - K*mrp_BRi \
             - mat.mxv((P + mat.mxm(P, mat.mxs(Ki, I))), delta_w_BNi) \
             - mat.mxv(mat.mxs(K, mat.mxs(Ki, P)), z_sum) \
@@ -63,6 +52,18 @@ def wdot_BN(mrp_BRi, w_BRi, w_BNi, w_RNi, w_RNprev, delta_w_BNi, z_sum):
         u = - K*mrp_BRi \
             - np.dot(P, w_BNi) \
             + np.dot(mat.skew(w_BNi), np.dot(I, w_BNi))
+    elif cc6_1:
+        u = - K*mrp_BRi \
+            - np.dot(P, w_BRi) \
+            + np.dot(I, wdot_RNi - vec.vcrossv(w_BNi, w_RNi)) \
+            + np.dot(mat.skew(w_BNi), np.dot(I, w_BNi)) \
+            - L
+        for ii in range(len(u)):
+            if np.abs(u[ii]) <= u_max:
+                u[ii] = u[ii]
+            elif np.abs(u[ii]) > u_max:
+                u[ii] = u_max * np.sign(u[ii])
+
     else: # cc1_4, cc1_5, cc2_7
         u = -K*mrp_BRi \
             - np.dot(P, w_BRi) \
@@ -80,9 +81,11 @@ def wdot_BN(mrp_BRi, w_BRi, w_BNi, w_RNi, w_RNprev, delta_w_BNi, z_sum):
     term1 = mat.mxv(mat.skew(w_BNi), mat.mxv(I, w_BNi))
     I_inv = np.linalg.inv(I)
     rhs = -term1 + u + L + dL
-    wdot_BN = mat.mxv(I_inv, rhs)
+    wdot_BNi = mat.mxv(I_inv, rhs)
 
-    return wdot_BN
+    u_hist.append(u)
+
+    return wdot_BNi
 
 
 if __name__ == "__main__":
@@ -98,7 +101,8 @@ if __name__ == "__main__":
     cc3_4 = False
     cc4_2 = False
     cc4_4 = False
-    cc5_1 = True
+    cc5_1 = False
+    cc6_1 = True # 0.5110756 correct
 
     # set specific time for output
     if cc1_4 or cc3_4:
@@ -122,6 +126,10 @@ if __name__ == "__main__":
     if cc5_1:
         time = 30
         inrtl_ref = True
+    if cc6_1:
+        time = 60
+        u_max = 1
+
 
     # time window
     ti = 0.0
@@ -144,6 +152,7 @@ if __name__ == "__main__":
     if cc2_6 or cc2_7:
         L = np.array([0.5, -0.3, 0.2])
     z_integral_sum = 0
+    u_hist = []
 
     # MRP and MRP rates, R/N
     mrp_RN = []
@@ -206,7 +215,7 @@ if __name__ == "__main__":
         mrp_BN_i = mrp_BN[ii]
         mrp_RN_i = mrp_RN[ii]
         mrp_BR_i = quat.mrpxmrp(-mrp_RN_i, mrp_BN_i)
-
+        mrp_BR.append(mrp_BR_i)
         # set current angular rates for each frame
         w_BN_i = w_BN[ii]
         w_RN_i = w_RN[ii]
@@ -229,6 +238,7 @@ if __name__ == "__main__":
 
         # append to history list
         mrp_BN.append(mrp)
+        
         w_BN.append(w)
 
         
@@ -247,8 +257,8 @@ if __name__ == "__main__":
                 print(np.linalg.norm(mrp))
             else:
                 # we want output: mrp_B/R
-                mrp_BR = quat.mrpxmrp(-mrp_RN[ii+1], mrp)
-                print(np.linalg.norm(mrp_BR))
+                mrpBR = quat.mrpxmrp(-mrp_RN[ii+1], mrp)
+                print(np.linalg.norm(mrpBR))
 
 # cc2_6 is 0.1327
 # cc2_5 is 0.378
@@ -261,6 +271,9 @@ if __name__ == "__main__":
     mrp_BN = mrp_BN[1:]
     w_BN = np.vstack(w_BN)
     w_BN = w_BN[1:]
+    u_hist = np.vstack(u_hist)
+    mrp_BR = np.vstack(mrp_BR)
+    mrp_BR = mrp_BR[1:]
 
     plt.figure(1)
     plt.plot(ets, mrp_BN[:,0])
@@ -269,8 +282,21 @@ if __name__ == "__main__":
     plt.legend(['mrp1', 'mrp2', 'mrp3'])
 
     plt.figure(2)
+    plt.plot(ets, mrp_BR[:,0])
+    plt.plot(ets, mrp_BR[:,1])
+    plt.plot(ets, mrp_BR[:,2])
+    plt.legend(['mrpBR1', 'mrpBR2', 'mrpBR3'])
+
+    plt.figure(3)
     plt.plot(ets, w_BN[:,0])
     plt.plot(ets, w_BN[:,1])
     plt.plot(ets, w_BN[:,2])
     plt.legend(['w1', 'w2', 'w3'])
+
+    plt.figure(4)
+    plt.plot(ets, u_hist[:,0])
+    plt.plot(ets, u_hist[:,1])
+    plt.plot(ets, u_hist[:,2])
+    plt.legend(['u1', 'u2', 'u3'])
+
     plt.show()
