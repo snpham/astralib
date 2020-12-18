@@ -38,7 +38,6 @@ def test_keplerian():
     # orbital positon/velocity
     r = [8773.8938, -11873.3568, -6446.7067]
     v =  [4.717099, 0.714936, 0.388178]
-
     # compute orbital elements
     sma, e, i, raan, aop, ta = conics.get_orbital_elements(r, v)
     sma_truth = 14999.997238
@@ -50,13 +49,27 @@ def test_keplerian():
     elements = [sma, e, i, raan, aop, ta]
     elements_truth = [sma_truth, e_truth, i_truth, raan_truth, aop_truth, ta_truth]
     assert np.allclose(elements, elements_truth)
-
     # get semi-perimeter
     p = sma*(1-e**2)
-
     # get back position/velocity vectors
     r_ijk, v_ijk = conics.get_rv_frm_elements(p, e, i, raan, aop, ta)
     r_ijk_truth = [8773.893798, -11873.356801, -6446.706699]
     v_ijk_truth = [4.717099, 0.714936, 0.388178]
     assert np.allclose(r_ijk, r_ijk_truth)
     assert np.allclose(v_ijk, v_ijk_truth)
+
+    # example from pg 114 vallado
+    # orbital positon/velocity
+    r = [6524.834, 6862.875, 6448.296]
+    v =  [4.901327, 5.533756, -1.976341]
+    # compute orbital elements
+    sma, e, i, raan, aop, ta = conics.get_orbital_elements(r, v)
+    sma_truth = 36127.343
+    e_truth = 0.832853
+    i_truth = np.deg2rad(87.870)
+    raan_truth = np.deg2rad(227.898)
+    aop_truth = np.deg2rad(53.38)
+    ta_truth = np.deg2rad(92.335)
+    elements = [sma, e, i, raan, aop, ta]
+    elements_truth = [sma_truth, e_truth, i_truth, raan_truth, aop_truth, ta_truth]
+    assert np.allclose(elements, elements_truth, atol=1e-04)

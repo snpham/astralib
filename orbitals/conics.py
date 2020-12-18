@@ -24,60 +24,81 @@ def get_orbital_elements(rvec, vvec, object='earth'):
     # get Keplerian class
     k = Keplerian(rvec, vvec, center=object)
 
-    # K vector and rv inner product
-    node_mag = vec.norm(k.node_vec)
-    r_dot_v = vec.vdotv(v1=rvec, v2=vvec)
-
-    # eccentricity, semi-major axis, semi-parameter
+    # eccentricity, specific energy, semi-major axis, semi-parameter
     e = k.e_mag
+    zeta = k.v_mag**2/2. - k.mu/k.r_mag
     if e != 1:
-        zeta = k.v_mag**2/2. - k.mu/k.r_mag
         sma = -k.mu/(2*zeta)
         p = sma*(1-e**2)
     else:
         sma = float('inf')
         p = k.h_mag**2/(k.mu)
 
-    if e == 0:
-        lperi = float('nan')
-    else:
-        lperi = np.arccos(vec.vdotv(k.eccentricity_vector, [1.,0.,0.])/k.e_mag)
-
-    # inclination, true anomaly
+    # node vec, inclination, true anomaly, mean/eccentric anomaly
+    node_vec = k.node_vec
+    node_mag = vec.norm(node_vec)
     i = k.inclination
     ta = k.true_anomaly
+    M, E = mean_elements()
 
-    print(f'Orbital Elements:\n',
+    # true longitude of periapsis - from vernal equinox to eccentricty vector
+    if e == 0:
+        true_lon_peri = float('nan')
+    else:
+        true_lon_peri = np.arccos(vec.vdotv(k.eccentricity_vector, [1.,0.,0.])/k.e_mag)
+        if k.e_vec[1] < 0:
+            true_lon_peri = 2*np.pi - true_lon_peri
+    lon_peri_mean = k.raan + k.aop  # for small inclinations
+
+    # RAAN, argument of periapsis, arg. of lat., true long.
+    # for inclined orbits
+    if i != 0:
+        raan = k.raan
+        aop = k.aop
+
+        # argument of latitude - from ascending node to satellite position
+        # vector in direction of satellite motion
+        arglat = np.arccos(vec.vdotv(node_vec, rvec)/(node_mag*k.r_mag))
+        if rvec[2] < 0:
+            arglat = 2*np.pi - arglat
+        if e != 0:
+            # can also use arglat = aop + ta for inclined elliptical orbits
+            arglat = aop + ta
+            arglat_mean = aop + M # mean = includes mean anomaly
+        else:
+            arglat_mean = arglat
+        true_lon = raan + aop + ta
+    # for equatorial orbits
+    else:
+        raan = float('nan')
+        aop = float('nan')
+        arglat = float('nan')
+        arglat_mean = float('nan')
+        true_lon = float('nan')
+
+        # for circular and equatorial orbits
+        # true longitude - from vernal equinox to satellite position
+        if e == 0:
+            true_lon = np.arccos(vec.vdotv([1.,0.,0.], rvec)/k.r_mag)
+            if rvec[1] < 0:
+                true_lon = 2*np.pi - true_lon
+    mean_lon = true_lon_peri + M  # for small incl and e
+
+    print(f'\nOrbital Elements:\n',
           f'Semi-major axis: {sma:0.06f} km\n',
           f'Semi-latus Rectum: {p:0.6f} km\n',
           f'Eccentricity: {e:0.6f}\n',
           f'Inclination: {np.rad2deg(i):0.6f} deg')
 
-    # determine if inclination exists
-    if i == 0:
-        raan = float('nan')
-        aop = float('nan')
-        arglat = float('nan')
-        tlong = lperi + ta
-    else:
-        # right ascending node
-        raan = k.raan
-
-        # argument of periapsis
-        aop = k.aop
-
-        # argument of latitude, true longitude at epoch
-        arglat = np.arccos(vec.vdotv(k.node_vec, rvec)/(node_mag*k.r_mag))
-        if rvec[2] < 0:
-            arglat = np.pi + arglat
-        tlong = raan + arglat
-
     print(f' RAAN: {np.rad2deg(raan):0.6f} deg\n',
-            f'Argument of Periapsis: {np.rad2deg(aop):0.6f} deg\n',
-            f'Longitude of Periapsis: {np.rad2deg(lperi):0.6f} deg\n',
-            f'True Anomaly: {np.rad2deg(ta):0.6f} deg\n',
-            f'Argument of Latitude: {np.rad2deg(arglat):0.6f} deg\n',
-            f'True longitude at epoch: {np.rad2deg(tlong):0.6f} deg')
+          f'Argument of Periapsis: {np.rad2deg(aop):0.6f} deg\n',
+          f'True Longitude of Periapsis: {np.rad2deg(true_lon_peri):0.6f} deg\n',
+          f'Mean Longitude of Periapsis: {np.rad2deg(lon_peri_mean):0.6f} deg\n',
+          f'True Anomaly: {np.rad2deg(ta):0.6f} deg\n',
+          f'Argument of Latitude: {np.rad2deg(arglat):0.6f} deg\n',
+          f'Argument of Latitude - Mean: {np.rad2deg(arglat_mean):0.6f} deg\n',
+          f'True longitude: {np.rad2deg(true_lon):0.6f} deg\n',
+          f'Mean Longitude: {np.rad2deg(mean_lon):0.6f} deg')
 
     return sma, e, i, raan, aop, ta
 
@@ -118,7 +139,7 @@ def bplane_targeting(rvec, vvec, center='earth'):
         raise ValueError(f'e_mag = {e_mag}, non-hyperbolic orbit')
 
     # unit vector normal to eccentricity vector and orbit normal
-    n_hat = vec.vcrossv(k.h_hat, k.e_hat)
+    n_hat = vec.vcrossv(k.h_vec/k.h_mag, k.e_vec/k.e_mag)
 
     # semiminor axis
     semi_minor = k.h_mag**2/(k.mu*np.sqrt(e_mag**2-1))
@@ -277,6 +298,14 @@ def coplanar_transfer(p, e, r1, r2, object='earth'):
     return dv1, dv2
 
 
+def mean_elements():
+    """in work
+    """
+    M = 1
+    E = 1
+
+    return E, M
+
 class Keplerian(object):
     """Class to compute classical Keplerian elements from
     position/velocity vectors. 
@@ -302,15 +331,14 @@ class Keplerian(object):
         # angular momentun; orbit normal direction
         self.h_vec = vec.vcrossv(rvec, vvec)
         self.h_mag = vec.norm(self.h_vec)
-        self.h_hat = self.h_vec/self.h_mag
 
-        # node vector K
+        # node vector K; n = 0 for equatorial orbits
         self.node_vec = vec.vcrossv(v1=[0,0,1], v2=self.h_vec)
         self.node_mag = vec.norm(self.node_vec)
-        # eccentricity vector
+
+        # eccentricity vector; e = 0 for circular orbits
         self.e_vec = self.eccentricity_vector
         self.e_mag = vec.norm(self.e_vec)
-        self.e_hat = self.e_vec/self.e_mag
 
 
     @property
@@ -334,10 +362,10 @@ class Keplerian(object):
     @property
     def true_anomaly(self):
         """true anomaly"""
-        if self.e_mag is 0:
+        if self.e_mag == 0:
             return float('nan')
         ta = np.arccos(vec.vdotv(self.e_vec, self.rvec)/(self.e_mag*self.r_mag))
-        if vec.vdotv(rvec, vvec) < 0:
+        if vec.vdotv(self.rvec, self.vvec) < 0:
             ta = 2*np.pi - ta
         return ta
 
@@ -345,7 +373,7 @@ class Keplerian(object):
     @property
     def raan(self):
         """right ascending node"""
-        if self.inclination is 0:
+        if self.inclination == 0:
             return float('nan')
         omega = np.arccos(self.node_vec[0]/self.node_mag)
         if self.node_vec[1] < 0:
@@ -356,7 +384,7 @@ class Keplerian(object):
     @property
     def aop(self):
         """argument_of_periapse"""
-        if self.e_mag is 0 or self.node_mag is 0:
+        if self.e_mag == 0 or self.node_mag == 0:
             return float('nan')
         argp = np.arccos(vec.vdotv(self.node_vec, self.e_vec)/(self.node_mag*self.e_mag))
         if self.e_vec[2] < 0:
@@ -428,3 +456,10 @@ if __name__ == "__main__":
 
     pos = [6524.834, 6862.875, 6448.296]
     ecf2geo(pos)
+
+    # example from pg 114 vallado
+    # orbital positon/velocity
+    r = [6524.834, 6862.875, 6448.296]
+    v =  [4.901327, 5.533756, -1.976341]
+    elements = get_orbital_elements(rvec=r, vvec=v)
+    print(elements)
