@@ -10,8 +10,8 @@ from math_helpers import matrices as mat
 
 def get_orbital_elements(rvec, vvec, object='earth'):
     """computes Keplerian elements from positon/velocity vectors
-    :param rvec: positional vectors of spacecraft (km)
-    :param vvec: velocity vectors of spacecraft (km/s)
+    :param rvec: positional vectors of spacecraft [IJK] (km)
+    :param vvec: velocity vectors of spacecraft [IJK] (km/s)
     :param center: center object of orbit; default = earth
     :return sma: semi-major axis (km)
     :return e: eccentricity
@@ -104,17 +104,50 @@ def get_orbital_elements(rvec, vvec, object='earth'):
 
 
 def get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
-
+    """computes positon/velocity vectors from Keplerian elements.
+    We first compute pos/vel in the PQW system, then rotate to the
+    geocentric equatorial system.
+    :param center: center object of orbit; default = earth
+    :param sma: semi-major axis (km)
+    :param e: eccentricity
+    :param i: inclination (rad)
+    :param raan: right ascending node (rad)
+    :param aop: argument of periapsis (rad)
+    :param ta: true anomaly (rad)
+    :return rvec: positional vectors of spacecraft [IJK] (km)
+    :return vvec: velocity vectors of spacecraft [IJK] (km/s)
+    """
     # determine which planet center to compute
     if object == 'earth':
+        mu = 3.986004418e14 * 1e-9 # km^3*s^-2
+    else:
+        print('Using earth as center object\n')
         mu = 3.986004418e14 * 1e-9 # km^3*s^-2
     
     # declaring trig functions
     s, c = np.sin, np.cos
 
+    # assigning temporary variables
+    aop_t = aop
+    raan_t = raan
+    ta_t = ta 
+
+    # checking for undefined states 
+    if e == 0 and i == 0:
+        aop_t = 0.
+        raan_t = 0.
+        ta_t = aop_t + raan_t + ta
+    elif e == 0:
+        aop_t = 0.
+        ta_t = aop_t + ta
+    elif i == 0:
+        raan_t = 0.
+        aop_t = raan_t + aop
+        ta_t = ta
+
     # converting elements into state vectors in PQW frame
-    r = [p/(1+e*c(ta))*c(ta), p/(1+e*c(ta))*s(ta), 0]
-    v = [-np.sqrt(mu/p)*s(ta), np.sqrt(mu/p)*(e+c(ta)), 0]
+    r_pqw = [p*c(ta_t) / (1+e*c(ta_t)), p*s(ta_t) / (1+e*c(ta_t)), 0]
+    v_pqw = [-np.sqrt(mu/p)*s(ta_t), np.sqrt(mu/p)*(e+c(ta_t)), 0]
     
     # get 313 transformation matrix to geocentric-equitorial frame
     m1 = rot.rotate_z(-aop)
@@ -123,9 +156,23 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
     T_ijk_pqw = mat.mxm(m2=m3, m1=mat.mxm(m2=m2, m1=m1))
 
     # state vector from PQW to ECI
-    r_ijk = mat.mxv(m1=T_ijk_pqw, v1=r)
-    v_ijk = mat.mxv(m1=T_ijk_pqw, v1=v)
-    return r_ijk, v_ijk
+    r_ijk = mat.mxv(m1=T_ijk_pqw, v1=r_pqw)
+    v_ijk = mat.mxv(m1=T_ijk_pqw, v1=v_pqw)
+    return np.array(r_ijk), np.array(v_ijk)
+
+
+def flight_path_angle(e, ta):
+    """computes flight path angle for a satellite; measured from the
+    local horizon to the velocity vector
+    :param e: magnitude of eccentricity vector
+    :param ta: true anomaly (rad)
+    :return: flight path angle (rad)
+    not tested
+    """
+    if e == 0:
+        return 0.
+    else:
+        return np.arccos( (1+e*np.cos(ta) / (np.sqrt(1+2*e*np.cos(ta)+e**2))))
 
 
 def bplane_targeting(rvec, vvec, center='earth'):
@@ -237,6 +284,8 @@ def sp_energy(vel, pos, mu=398600.4418):
     ang_mo = vec.vcrossv(v1=pos, v2=vel)
     if np.dot(a=pos, b=vel) > 0:
         phi = np.rad2deg(np.arccos(np.linalg.norm(ang_mo)/(r_mag*v_mag)))
+    else:
+        phi = 0.
     return sp_energy, ang_mo, phi
 
 
@@ -463,3 +512,14 @@ if __name__ == "__main__":
     v =  [4.901327, 5.533756, -1.976341]
     elements = get_orbital_elements(rvec=r, vvec=v)
     print(elements)
+
+    # test get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
+    p = 11067.79
+    e = 0.83285
+    i = np.deg2rad(87.87)
+    raan = np.deg2rad(227.89)
+    aop = np.deg2rad(53.38)
+    ta = np.deg2rad(92.335)
+    r, v = get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth')
+    print(r) # [6525.36812099 6861.5318349  6449.11861416]
+    print(v) # [ 4.90227865  5.53313957 -1.9757101 ]

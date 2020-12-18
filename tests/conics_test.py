@@ -73,3 +73,20 @@ def test_keplerian():
     elements = [sma, e, i, raan, aop, ta]
     elements_truth = [sma_truth, e_truth, i_truth, raan_truth, aop_truth, ta_truth]
     assert np.allclose(elements, elements_truth, atol=1e-04)
+
+
+def test_rv_from_keplerian():
+    """tests get_rv_frm_elements function
+    """
+    p = 11067.79
+    e = 0.83285
+    i = np.deg2rad(87.87)
+    raan = np.deg2rad(227.89)
+    aop = np.deg2rad(53.38)
+    ta = np.deg2rad(92.335)
+
+    r, v = conics.get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth')
+    r_truth = [6525.368, 6861.532, 6449.119]
+    v_truth = [4.902279, 5.533140, -1.975710]
+    assert np.allclose(r, r_truth)
+    assert np.allclose(v, v_truth)
