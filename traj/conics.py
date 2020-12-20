@@ -213,66 +213,6 @@ def bplane_targeting(rvec, vvec, center='earth'):
     return B_t, B_r, theta
 
 
-def T_ijk2topo(lon, lat, altitude=0.0, frame='sez', reference='spherical'):
-    if frame == 'sez':
-        m1 = rot.rotate_z(lon)
-        m2 = rot.rotate_y(lat)
-        matrix = mat.mxm(m2=m2, m1=m1)
-        return matrix
-
-
-def T_pqw2ijk(raan, incl, argp):
-    s, c = np.sin, np.cos
-    rot_mat = [[c(raan)*c(argp)-s(raan)*s(argp)*c(incl), -c(raan)*s(argp)-s(raan)*c(argp)*c(incl), s(raan)*s(incl)],
-               [s(raan)*c(argp)+c(raan)*s(argp)*c(incl), -s(raan)*s(argp)+c(raan)*c(argp)*c(incl), -c(raan)*s(incl)],
-               [s(argp)*s(incl), c(argp)*s(incl), c(incl)]]
-    return rot_mat
-
-
-def lat2rec(lon, lat, elevation, center = 'earth', reference='ellipsoid'):
-    """in work
-    """
-    if center == 'earth' and reference=='ellipsoid':
-        # we want the mean sea level "geoid" values
-        ra = 6378.136
-        rc = 6356.752
-        e = 0.08182
-        f = (ra-rc)/ra
-
-    theta = theta0 + omega_e*(t-t0) + lambda_e
-    x = (ra/np.sqrt(1-e**2*np.sin(lon)**2)+elevation)*np.cos(lon)
-    y = (ra*(1-e**2)/np.sqrt(1-e**2*np.sin(lon)**2)+elevation)*np.sin(lon)
-    z = lon
-    r = [x*np.cos(theta), x*np.sin(theta), z]
-    return r
-
-
-def ecf2geo(pos):
-    """convert earth-centered fixed to latitude/longitude
-    reference: Astronomical Almanac
-    in work. see pg 172 in Fund of Astro
-    """
-    r_earth = 6378.1363
-    e_earth = 0.081819221456
-    r_dsat = np.sqrt(pos[0]**2+pos[1]**2)
-    alpha = np.arcsin(pos[1]/r_dsat)
-    lambd = alpha
-    print(f'Longitude: {np.rad2deg(lambd)} deg')
-    delta = np.arcsin(pos[2]/np.linalg.norm(pos))
-    phi_gd = delta
-    r_delta = r_dsat
-    r_k = pos[2]
-
-    prev_phi = 0
-    while (phi_gd - prev_phi) > 0.0000001:
-        C = r_earth / np.sqrt(1-e_earth**2*np.sin(phi_gd)**2)
-        prev_phi = phi_gd
-        phi_gd = np.arctan2((pos[2]+C*e_earth**2*np.sin(phi_gd)),r_delta)
-        print(f'Latitude: {np.rad2deg(phi_gd)} deg')
-
-    h_ellp = r_delta/np.cos(phi_gd) - C
-    print(f'Altitude: {h_ellp} km')
-
 
 def sp_energy(vel, pos, mu=398600.4418):
     """returns specific mechanical energy (km2/s2), angular momentum
@@ -462,14 +402,6 @@ if __name__ == "__main__":
     elements = get_orbital_elements(rvec=r, vvec=v)
     print(elements)
 
-    ijkframe = T_pqw2ijk(raan=elements[3], incl=elements[2], argp=elements[4])
-
-    p2j = mat.mxv(m1=ijkframe, v1=[1.0, 0.0, 0.0])
-    w2i = mat.mxv(m1=ijkframe, v1=[0.0, 0.0, 1.0])
-    q2k = mat.mxv(m1=ijkframe, v1=[0.0, 1.0, 0.0])
-    print(p2j, w2i, q2k)
-    print(np.linalg.norm(p2j))
-
     # get r,v from orbital elements
     rv = get_rv_frm_elements(p=14351, e=0.5, i=np.rad2deg(45), raan=np.rad2deg(30), aop=0, ta=0)
     print(rv) # r=[9567.2, 0], v=[0, 7.9054]
@@ -503,8 +435,6 @@ if __name__ == "__main__":
     r, v = get_rv_frm_elements(p, e, i, raan, aop, ta)
     print(r, v)
 
-    pos = [6524.834, 6862.875, 6448.296]
-    ecf2geo(pos)
 
     # example from pg 114 vallado
     # orbital positon/velocity

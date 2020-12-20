@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from math_helpers import matrices as mat
+from math_helpers import vectors as vec
+from math_helpers import quaternions as quat
+from numpy.linalg import norm
 import numpy as np
+
+
+
+
 
 def get_JD(year, month, day, hour, min, sec):
     """compute the current Julian Date based on the given time input
@@ -16,6 +27,10 @@ def get_JD(year, month, day, hour, min, sec):
     return jd
 
 
-if __name__ == "__main__":
+
+
+
+
+if __name__ == '__main__':
     a = get_JD(2020, 6, 1, 10, 0, 0)
     print(a)
