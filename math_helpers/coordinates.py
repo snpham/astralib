@@ -16,24 +16,34 @@ E_earth = 0.081819221456
 omega_earth = 7.292115e-5 # +/- 1.5e-12 (rad/s)
 
 
-def geodet2centric(e, gd_angle):
+def geodet2centric(gd_angle, ref="earth"):
     """convert geodetic latitude to geocentric; earth surface only
-    :param e: planet's eccentricity
     :param gd_angle: geodetic latitude angle (rad)
+    :param ref: reference planet to get eccentricity from
     :return: geocentric latitude (rad)
     not tested
     """
-    return (1-e**2)*np.tan(gd_angle)
+    if ref == "earth":
+        e = E_earth
+    else:
+        e = E_earth
+
+    return np.arctan((1-e**2)*np.tan(gd_angle))
 
 
-def geocentric2det(e, gc_angle):
+def geocentric2det(gc_angle, ref="earth"):
     """convert geocentric latitude to geodetic; earth surface only
-    :param e: planet's eccentricity
     :param gc_angle: geocentric latitude angle (rad)
+    :param ref: reference planet to get eccentricity from
     :return: geodetic latitude (rad)
     not tested
     """
-    return np.tan(gc_angle)/(1-e**2)
+    if ref == "earth":
+        e = E_earth
+    else:
+        e = E_earth
+
+    return np.arctan(np.tan(gc_angle)/(1-e**2))
 
 
 def lat2rec(lon, lat, elev, latref='geodetic', center='earth', ref='ellipsoid'):
@@ -115,3 +125,12 @@ if __name__ == '__main__':
     
     pos = [6524.834, 6862.875, 6448.296]
     ecf2geo(pos)
+
+    lon = np.deg2rad(345. + 35/60. + 51/3600.)
+    lat = np.deg2rad(-1 * (7. + 54/60. + 23.886/3600.))
+    elev = 56/1000.
+    r = lat2rec(lon, lat, elev, latref='geodetic', center='earth', ref='ellipsoid')
+    r_truth = [6119.40026932, -1571.47955545, -871.56118090]
+    print(r)
+    print(r_truth)
+    

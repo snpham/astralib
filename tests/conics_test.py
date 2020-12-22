@@ -2,8 +2,9 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers import rotations, vectors, quaternions, matrices
-from orbitals import conics
+from traj import conics
 import numpy as np
+
 
 def test_hohmann_transfer():
     """tests matrix transpose and multiplication
@@ -18,6 +19,7 @@ def test_hohmann_transfer():
     assert np.allclose(dv1, dv1_truth,rtol=0, atol=1e-04)
     assert np.allclose(dv2, dv2_truth,rtol=0, atol=1e-04)
 
+
 def test_coplanar_transfer():
     """tests general coplanar orbit transfer
     """
@@ -29,6 +31,7 @@ def test_coplanar_transfer():
     dv_tot_truth = 7.086
     dv_tot = dv1 + dv2
     assert np.allclose(dv_tot, dv_tot_truth,  atol=1e-03)
+
 
 def test_keplerian():
     """tests Keplerian class, and get_orbital_elements and 
@@ -90,3 +93,5 @@ def test_rv_from_keplerian():
     v_truth = [4.902279, 5.533140, -1.975710]
     assert np.allclose(r, r_truth)
     assert np.allclose(v, v_truth)
+
+
