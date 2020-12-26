@@ -23,8 +23,8 @@ if __name__ == "__main__":
     # testing rotation functions
     alpha = np.pi/6.
     beta = np.pi/3.
-    rotz = rotations.rotate_z(alpha)
-    roty = rotations.rotate_y(beta)
+    rotz = rotations.rotate(alpha, axis='z')
+    roty = rotations.rotate(beta, axis='y')
     T_rot = matrices.mxm(m2=roty, m1=rotz)
     print(T_rot)
     evec, theta = rotations.prv_axis(dcm=T_rot)

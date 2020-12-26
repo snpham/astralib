@@ -446,14 +446,4 @@ def quat_kde_from_q(qset, wset):
 
 if __name__ == "__main__":
 
-    sigma1 = [0.1, 0.2, 0.3]
-    sigma2 = [-0.1, 0.3, 0.1]
-    sigma = mrpxmrp(sigma1, sigma2)
-    print(sigma)
-
-    dcm1 = mrp2dcm(sigma1)
-    dcm2 = mrp2dcm(sigma2)
-    dcm = mat.mxm(dcm2, dcm1)
-    sigma = dcm2mrp(dcm)
-    print(sigma)
-
+    pass

@@ -96,4 +96,5 @@ def get_dir_cosines(v1):
     return cosa, cosb, cosc, sina, sinb, sinc
 
 if __name__ == "__main__":
+    
     pass

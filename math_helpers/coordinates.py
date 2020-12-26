@@ -68,8 +68,8 @@ def lat2rec(lon, lat, elev, latref='geodetic', center='earth', ref='ellipsoid'):
 
 def T_ijk2topo(lon, lat, altitude=0.0, frame='sez', reference='spherical'):
     if frame == 'sez':
-        m1 = rot.rotate_z(lon)
-        m2 = rot.rotate_y(lat)
+        m1 = rot.rotate(lon, axis='z')
+        m2 = rot.rotate(lat, axis='y')
         matrix = mat.mxm(m2=m2, m1=m1)
         return matrix
 
@@ -126,11 +126,3 @@ if __name__ == '__main__':
     pos = [6524.834, 6862.875, 6448.296]
     ecf2geo(pos)
 
-    lon = np.deg2rad(345. + 35/60. + 51/3600.)
-    lat = np.deg2rad(-1 * (7. + 54/60. + 23.886/3600.))
-    elev = 56/1000.
-    r = lat2rec(lon, lat, elev, latref='geodetic', center='earth', ref='ellipsoid')
-    r_truth = [6119.40026932, -1571.47955545, -871.56118090]
-    print(r)
-    print(r_truth)
-    

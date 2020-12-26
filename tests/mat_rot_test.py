@@ -17,7 +17,7 @@ def test_mxm():
 
 
 def test_euler_rotation():
-    """321 and 313; tests rotate_x, rotate_y, rotate_z, euler2dcm,
+    """321 and 313; tests rotate, euler2dcm,
     euler2dcm2, dcm2euler, and euler2dcm functions
     """
     # euler angles for n2b, n2f
@@ -49,8 +49,8 @@ def test_euler_rotation():
 
     # another dcm rotation test
     dcm = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    dcmx = rot.rotate_x(np.deg2rad(90))
-    dcmy = rot.rotate_y(np.deg2rad(-90))
+    dcmx = rot.rotate(np.deg2rad(90), axis='x')
+    dcmy = rot.rotate(np.deg2rad(-90), axis='y')
     dcmy = mat.mT(dcmy)
     br = mat.mxm(dcmx, dcmy)
     br_true = [[0.0, 0.0, -1.0],

@@ -9,37 +9,27 @@ from numpy.linalg import norm
 import numpy as np
 
 
-def rotate_x(angle):
-    """rotation about the x axis
+def rotate(angle, axis):
+    """Coordinate rotation about a principle axis
     :param angle: magnitude of angle of rotation (radians)
-    :return matrix: rotation matrix of "angle" about x-axis 
+    :param axis: axis to rotate about: x, y, z; or 1, 2, 3
+    :return matrix: rotation matrix of "angle" about an axis 
     """
-    matrix = [[1.0,            0.0,           0.0],
-              [0.0,  np.cos(angle), np.sin(angle)],
-              [0.0, -np.sin(angle), np.cos(angle)]]
-    return np.array(matrix)
-
-
-def rotate_y(angle):
-    """rotation about the y axis
-    :param angle: magnitude of angle of rotation (radians)
-    :return matrix: rotation matrix of "angle" about y-axis 
-    """
-    matrix = [[np.cos(angle), 0.0, -np.sin(angle)],
-              [          0.0, 1.0,            0.0],
-              [np.sin(angle), 0.0,  np.cos(angle)]]
-    return np.array(matrix)
-
-
-def rotate_z(angle):
-    """rotation about the z axis
-    :param angle: magnitude of angle of rotation (radians)
-    :return matrix: rotation matrix of "angle" about z-axis 
-    """
-    matrix = [[ np.cos(angle), np.sin(angle), 0.0],
-              [-np.sin(angle), np.cos(angle), 0.0],
-              [           0.0,           0.0, 1.0]]
-    return np.array(matrix)
+    if axis == 'x' or axis == 1:
+        matrix = [[1.0,            0.0,           0.0],
+                  [0.0,  np.cos(angle), np.sin(angle)],
+                  [0.0, -np.sin(angle), np.cos(angle)]]
+        return np.array(matrix)
+    elif axis == 'y' or axis == 2:
+        matrix = [[np.cos(angle), 0.0, -np.sin(angle)],
+                  [          0.0, 1.0,            0.0],
+                  [np.sin(angle), 0.0,  np.cos(angle)]]
+        return np.array(matrix)
+    elif axis == 'z' or axis == 2:
+        matrix = [[ np.cos(angle), np.sin(angle), 0.0],
+                  [-np.sin(angle), np.cos(angle), 0.0],
+                  [           0.0,           0.0, 1.0]]
+        return np.array(matrix)
 
 
 def euler2dcm(angles, sequence='321'):
@@ -52,11 +42,11 @@ def euler2dcm(angles, sequence='321'):
     """
     a1, a2, a3 = angles[0], angles[1], angles[2]
     if sequence == '321':
-        T1 = mat.mxm(m2=rotate_y(a2), m1=rotate_z(a1))
-        T2 = mat.mxm(m2=rotate_x(a3), m1=T1)
+        T1 = mat.mxm(m2=rotate(a2, axis='y'), m1=rotate(a1, axis='z'))
+        T2 = mat.mxm(m2=rotate(a3, axis='x'), m1=T1)
     elif sequence == '313':
-        T1 = mat.mxm(m2=rotate_y(a2), m1=rotate_z(a1))
-        T2 = mat.mxm(m2=rotate_z(a3), m1=T1)
+        T1 = mat.mxm(m2=rotate(a2, axis='y'), m1=rotate(a1, axis='z'))
+        T2 = mat.mxm(m2=rotate(a3, axis='z'), m1=T1)
     else:
          raise ValueError(f'euler sequence not yet implemented')
     return np.array(T2)

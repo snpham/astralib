@@ -150,9 +150,9 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
     v_pqw = [-np.sqrt(mu/p)*s(ta_t), np.sqrt(mu/p)*(e+c(ta_t)), 0]
     
     # get 313 transformation matrix to geocentric-equitorial frame
-    m1 = rot.rotate_z(-aop)
-    m2 = rot.rotate_x(-i)
-    m3 = rot.rotate_z(-raan)
+    m1 = rot.rotate(-aop, axis='z')
+    m2 = rot.rotate(-i, axis='x')
+    m3 = rot.rotate(-raan, axis='z')
     T_ijk_pqw = mat.mxm(m2=m3, m1=mat.mxm(m2=m2, m1=m1))
 
     # state vector from PQW to ECI
