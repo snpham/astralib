@@ -21,10 +21,14 @@ def get_JD(year, month, day, hour, min, sec):
     :param min: minutes
     :param sec: seconds
     :return jd: Julian date
+    :return mjd: modified julian date
     """
     jd = 1721013.5 + 367*year - int(7/4*(year+int((month+9)/12))) \
         + int(275*month/9) + day + (60*hour + min + sec/60)/1440
-    return jd
+
+    mjd = jd - 2400000.5
+
+    return jd, mjd
 
 
 
@@ -32,5 +36,7 @@ def get_JD(year, month, day, hour, min, sec):
 
 
 if __name__ == '__main__':
-    a = get_JD(2020, 6, 1, 10, 0, 0)
-    print(a)
+
+
+    jd, mjd = get_JD(1996, 10, 26, 14, 20, 0)
+    print(jd, mjd)

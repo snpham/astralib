@@ -10,8 +10,8 @@ from math_helpers import matrices as mat
 
 def get_orbital_elements(rvec, vvec, object='earth'):
     """computes Keplerian elements from positon/velocity vectors
-    :param rvec: positional vectors of spacecraft [IJK] (km)
-    :param vvec: velocity vectors of spacecraft [IJK] (km/s)
+    :param rvec: positional vectors of spacecraft [IJK?] (km)
+    :param vvec: velocity vectors of spacecraft [IJK?] (km/s)
     :param center: center object of orbit; default = earth
     :return sma: semi-major axis (km)
     :return e: eccentricity
@@ -211,7 +211,6 @@ def bplane_targeting(rvec, vvec, center='earth'):
     theta = np.arccos(B_t/vec.norm(B_t))
     
     return B_t, B_r, theta
-
 
 
 def sp_energy(vel, pos, mu=398600.4418):
