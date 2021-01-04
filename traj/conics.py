@@ -8,6 +8,10 @@ from math_helpers import rotations as rot
 from math_helpers import matrices as mat
 
 
+# gravitational constants
+mu = 398600.4418 # earth
+
+
 def get_orbital_elements(rvec, vvec, object='earth'):
     """computes Keplerian elements from positon/velocity vectors
     :param rvec: positional vectors of spacecraft [IJK?] (km)
@@ -39,7 +43,12 @@ def get_orbital_elements(rvec, vvec, object='earth'):
     node_mag = vec.norm(node_vec)
     i = k.inclination
     ta = k.true_anomaly
-    M, E = mean_elements()
+    if e < 1:
+        M, E = mean_anomalies(e, ta)
+    elif e == 1:
+        M = mean_anomalies(e, ta) # parabolic anomaly
+    else:
+        M = mean_anomalies(e, ta) # hyperbolic anomaly
 
     # true longitude of periapsis - from vernal equinox to eccentricty vector
     if e == 0:
@@ -161,6 +170,50 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
     return np.array(r_ijk), np.array(v_ijk)
 
 
+def kepler_prop(r, v, dt):
+    """Solve Kepler's problem using classical orbital elements; no perturbations
+    :param r: initial position
+    :param v: initial velocity
+    :param dt: time of flight
+    :return rvec: propagated position vector
+    :return vvec: propagated velocity vector
+    in work
+    """
+    sma, e, i, raan, aop, ta = get_orbital_elements(r, v)
+
+    p = sma*(1-e**2)
+    n = 2*np.sqrt(mu/p**3)
+    rmag = np.linalg.norm(r)
+
+    if e != 0:
+        if e < 1:
+            E0, _ = mean_anomalies(e, ta)
+            M0 = E0 - e*np.sin(E0)
+            M = M0 + n*dt
+            E = univ_anomalies(M=M, e=e, dt=None, p=None)
+            ta = true_anomaly(e, p=None, r=None, E=E, B=None, H=None)
+        elif e == 1:
+            B0 = mean_anomalies(e, ta)
+            hvec = vec.vcrossv(r, v)
+            hmag = np.linalg.norm(hvec)
+            p = hmag**2/mu
+            M0 = B0 + B0**3/3
+            B = univ_anomalies(M=None, e=e, dt=dt, p=p)
+            ta = true_anomaly(e, p=p, r=rmag, E=None, B=B, H=None)
+        elif e > 1:
+            H0 = mean_anomalies(e, ta)
+            M0 = e*np.sinh(H0) - H0
+            M = M0 + n*dt
+            H = univ_anomalies(M=M, e=e, dt=None, p=None)
+            ta = true_anomaly(e, p=None, r=None, E=None, B=None, H=H)
+    else:
+        E = raan + aop + ta
+
+    rvec, vvec = get_rv_frm_elements(p, e, i, raan, aop, ta)
+    return np.array(rvec), np.array(vvec)
+
+
+
 def flight_path_angle(e, ta):
     """computes flight path angle for a satellite; measured from the
     local horizon to the velocity vector
@@ -171,9 +224,17 @@ def flight_path_angle(e, ta):
     """
     if e == 0:
         return 0.
-    else:
-        return np.arccos( (1+e*np.cos(ta) / (np.sqrt(1+2*e*np.cos(ta)+e**2))))
-
+    elif e < 1:
+        E, _ = mean_anomalies(e, ta)
+        fpa = np.arccos(np.sqrt((1-e**2)/(1-e**2*np.cos(E)**2)))
+    elif e == 1:
+        fpa = ta/2.
+    else: # if e > 1
+        H = mean_anomalies(e, ta)
+        fpa = np.arccos(np.sqrt( (e**2-1)/(e**2*np.cosh(H)**2-1) ))
+    # return np.arccos( (1+e*np.cos(ta) / (np.sqrt(1+2*e*np.cos(ta)+e**2))))
+    return fpa
+    
 
 def bplane_targeting(rvec, vvec, center='earth'):
     """Compute BdotT and BdotR for a given b-plane targeting;
@@ -228,71 +289,97 @@ def sp_energy(vel, pos, mu=398600.4418):
     return sp_energy, ang_mo, phi
 
 
-def hohmann_transfer(r1, r2, object='earth'):
-    """hohmann transfer orbit computation from smaller orbit to
-    larger
-    :param r1: radius of smaller circular orbit (orbit one) (km)
-    :param r2: radius of larger circular orbit (orbit two) (km)
-    :param object: planetary object of smaller orbit
-    :return dv1: delta v required to enter transfer orbit (km/s)
-    :return dv2: delta v required to enter circular orbit two (km/s)
-    """
-    if object == 'earth':
-        mu = 398600.4418
-        r1, r2 = [r+6378.137 for r in [r1, r2]]
-    a_transfer = (r1+r2)/2
-    energy_transfer = -mu/(2*a_transfer)
-    v1 = np.sqrt(2*(mu/r1 + energy_transfer))
-    v_cs1 = np.sqrt(mu/r1)
-    dv1 = v1 - v_cs1
-    v2 = np.sqrt(2*(mu/r2 + energy_transfer))
-    v_cs2 = np.sqrt(mu/r2)
-    dv2 = v_cs2 - v2
-    dv_tot = dv1 + dv2
-    return dv1, dv2
-
-
-def coplanar_transfer(p, e, r1, r2, object='earth'):
-    """general form of coplanar circular orbit transfer; an orbit 
-    with a flight angle of 0 results in a hohmann transfer;
-    :param p: transfer ellipse semi-latus rectum (km)
-    :param e: transfer ellipse eccentricity
-    :param r1: inner circular orbit radius (km)
-    :param r2: outer circular orbit radius (km)
-    :param object: planetary object of focus; default = earth
-    :return dv1: delta v required to leave inner orbit (km/s)
-    :return dv2: delta v required to enter outer orbit (km/s)
-    """
-
-    if (p/(1-e)) < r2:
-        raise ValueError("Error: transfer orbit apogee is smaller than r2")
-    elif (p/(1+e)) > r1:
-        raise ValueError("Error: transfer orbit perigee is larger than r1")
-
-    if object == 'earth':
-        mu = 398600.4418
-    energy_transfer = -mu*(1-e**2)/(2*p)
-    h_transfer = np.sqrt(mu*p)
-    v1_circular = np.sqrt(mu/r1)
-    v1 = np.sqrt(2*(mu/r1+energy_transfer))
-    cos_phi1 = h_transfer/(r1*v1) # angle b/t v1 and v1_circular
-    # applying law of cosines to extract 3rd velocity side
-    dv1 = np.sqrt(v1**2+v1_circular**2 - 2*v1*v1_circular*cos_phi1)
-
-    v2 = np.sqrt(2*(mu/r2+energy_transfer))
-    v2_circular = np.sqrt(mu/r2)
-    cos_phi2 = h_transfer/(r2*v2) # angle b/t v1 and v1_circular
-    dv2 = np.sqrt(v2**2+v2_circular**2 - 2*v2*v2_circular*cos_phi2)
-    return dv1, dv2
-
-
-def mean_elements():
+def mean_anomalies(e, ta):
     """in work
     """
-    M = 1
-    E = 1
+    if e < 1:
+        E = np.arcsin(np.sin(ta)*np.sqrt(1-e**2) / (1+e*np.cos(ta)))
+        # alt: E = np.arccos((e+np.cos(ta))/(1+e*np.cos(ta)))
+        M = E - e**np.sin(E)
+        return E, M
+    elif e == 1:
+        B = np.tan(ta/2)
+        return B
+    elif e > 1:
+        H = np.arcsinh( (np.sin(ta)*np.sqrt(e**2-1)) / (1+e*np.cos(ta)) )
+        # alt: H = np.arccosh((e+np.cos(ta)/(1+e*np.cos(ta)))
+        return H
 
-    return E, M
+
+def true_anomaly(e, p=None, r=None, E=None, B=None, H=None):
+    """in work
+    """
+    if e < 1 and E:
+        ta = np.arcsin(np.sin(E)*np.sqrt(1-e**2) / (1-e*np.cos(E)))
+        # alt: ta = np.arccos((np.cos(E)-e)/(1-e*np.cos(E)))
+    elif e == 1 and B:
+        ta = np.arsin(p*B/r)
+        # alt: ta = (p-r)/r
+    else: # e > 1 and H:
+        ta = np.arcsin( (-np.sinh(H)*np.sqrt(e**2-1)) / (1-e*np.cosh(H)) )
+        # alt: ta = np.arccos((np.cosh(ta)-e)/(1-e*np.cosh(H)))
+    return ta
+
+
+def univ_anomalies(M=None, e=None, dt=None, p=None):
+    """universal formulation of elliptical, parabolic, and hyperbolic
+    solutions for Kepler's Equation using Newton-Raphson's interation method
+    where applicable.
+    :param M: mean anomaly (rad)
+    :param e: eccentricity
+    :param dt: time of flight from orbit periapsis (s)
+    :param p: semi-parameter (km)
+    :return E: eccentric anomaly for elliptical orbits (rad)
+    :return B: parabolic anomaly for parabolic orbits (rad)
+    :return H: hyperbolic anomaly for hyperbolic orbits (rad)
+    """
+    # elliptical solution
+    if e < 1 and M:
+        if -np.pi < M < 0 or np.pi < M < 2*np.pi:
+            E = M - e
+        else:
+            E = M + e
+        count = 0
+        E_prev = 0
+        while (np.abs(E - E_prev) > 1e-15):
+            if count == 0:
+                count += 1
+            else:
+                E_prev = E
+            E = E_prev + (M - E_prev + e*np.sin(E_prev)) / (1-e*np.cos(E_prev))
+        return E
+
+    # parabolic solution
+    elif e == 1 and p:
+        n_p = 2*np.sqrt(mu/p**3)
+        s = 0.5*np.arctan(2/(3*n_p*dt))
+        w = np.arctan(np.tan(s)**(1/3))
+        B = 2/np.tan(2*w)
+        return B
+
+    # hyperbolic solution
+    else: # e > 1
+        if e < 1.6 and M:
+            if -np.pi < M < 0 or np.pi < M < 2*np.pi:
+                H = M - e
+            else:
+                H = M + e
+        elif 1.6 <= e < 3.6 and np.abs(M) > np.pi:
+            H = M - np.sign(M)*e
+        else:
+            H = M / (e-1)
+
+        count = 0
+        H_prev = 0
+        while (np.abs(H - H_prev) > 1e-15):
+            if count == 0:
+                count += 1
+            else:
+                H_prev = H
+            H = H_prev + (M - e*np.sinh(H_prev)+H_prev) / (e*np.cosh(H_prev)-1)
+        return H
+
+
 
 class Keplerian(object):
     """Class to compute classical Keplerian elements from
@@ -411,10 +498,6 @@ if __name__ == "__main__":
     sp_energy = sp_energy(vel=vel, pos=pos, mu=398600.4418)
     print(sp_energy)
 
-    #
-    r1 = 7028.137
-    r2 = 42158.137
-    print(hohmann_transfer(r1, r2))
 
     rvec = [-299761, -440886, -308712]
     vvec = [1.343, 1.899, 1.329]
@@ -452,3 +535,12 @@ if __name__ == "__main__":
     r, v = get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth')
     print(r) # [6525.36812099 6861.5318349  6449.11861416]
     print(v) # [ 4.90227865  5.53313957 -1.9757101 ]
+
+    E = univ_anomalies(e=0.4, M=np.deg2rad(235.4))
+    print(E) # 3.84866174509717 rad
+
+    B = univ_anomalies(e=1, dt=53.7874*60, p=25512)
+    print(B) # 0.817751
+
+    H = univ_anomalies(e=2.4, M=np.deg2rad(235.4))
+    print(H) # 1.6013761449

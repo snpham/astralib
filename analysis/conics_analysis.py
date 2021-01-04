@@ -2,17 +2,22 @@
 import sys, os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from orbitals import conics
-mu_e = 398600.4418
+from traj import conics
+from traj import maneuvers as man
+
+
+# gravitational constants
+mu = 398600.4418 # earth
+
 
 def threepointfive():
     vc1 = 7
     vc2 = 3.5
-    r1 = mu_e/vc1**2
-    r2 = mu_e/vc2**2
+    r1 = mu/vc1**2
+    r2 = mu/vc2**2
     print(r1, r2)
     
-    dv1, dv2 = conics.hohmann_transfer(r1, r2)
+    dv1, dv2 = man.hohmann_transfer(r1, r2)
     print(dv1 + dv2)
 
     # rp1 = 7000
@@ -23,7 +28,7 @@ def threepointfive():
     # a2 = rp2/(1-e2)
     # p1 = rp1*(1+e1)
     # p2 = rp2*(1+e2)
-    # dv1, dv2 = conics.coplanar_transfer2(p1, p2, e1, e2)
+    # dv1, dv2 = man.coplanar_transfer2(p1, p2, e1, e2)
     # # print(dv1,dv2)
 
 
