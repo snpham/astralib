@@ -6,20 +6,6 @@ from traj import conics, maneuvers
 import numpy as np
 
 
-def test_hohmann_transfer():
-    """tests matrix transpose and multiplication
-    """
-    # given radii of two orbits
-    r1 = 400
-    r2 = 800
-    # compute and test delta v required for a hohmann transfer
-    dv1, dv2 = maneuvers.hohmann_transfer(r1, r2, object='earth')
-    dv1_truth = 0.1091 # km/s
-    dv2_truth = 0.1076 # km/s
-    assert np.allclose(dv1, dv1_truth,rtol=0, atol=1e-04)
-    assert np.allclose(dv2, dv2_truth,rtol=0, atol=1e-04)
-
-
 def test_keplerian():
     """tests Keplerian class, and get_orbital_elements and 
     get_rv_from_elements functions
@@ -75,7 +61,7 @@ def test_rv_from_keplerian():
     aop = np.deg2rad(53.38)
     ta = np.deg2rad(92.335)
 
-    r, v = conics.get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth')
+    r, v = conics.get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth')
     r_truth = [6525.368, 6861.532, 6449.119]
     v_truth = [4.902279, 5.533140, -1.975710]
     assert np.allclose(r, r_truth)

@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
+from operator import mul
 import sys, os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers import vectors as vec
 from math_helpers import rotations as rot
 from math_helpers import matrices as mat
+from math_helpers.constants import *
 
 
-# gravitational constants
-mu = 398600.4418 # earth
-
-
-def get_orbital_elements(rvec, vvec, object='earth'):
+def get_orbital_elements(rvec, vvec, center='earth'):
     """computes Keplerian elements from positon/velocity vectors
     :param rvec: positional vectors of spacecraft [IJK?] (km)
     :param vvec: velocity vectors of spacecraft [IJK?] (km/s)
-    :param center: center object of orbit; default = earth
+    :param center: center object of orbit; default=earth
     :return sma: semi-major axis (km)
     :return e: eccentricity
     :return i: inclination (rad)
@@ -26,7 +24,7 @@ def get_orbital_elements(rvec, vvec, object='earth'):
     """
 
     # get Keplerian class
-    k = Keplerian(rvec, vvec, center=object)
+    k = Keplerian(rvec, vvec, center=center)
 
     # eccentricity, specific energy, semi-major axis, semi-parameter
     e = k.e_mag
@@ -112,11 +110,11 @@ def get_orbital_elements(rvec, vvec, object='earth'):
     return sma, e, i, raan, aop, ta
 
 
-def get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
+def get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
     """computes positon/velocity vectors from Keplerian elements.
     We first compute pos/vel in the PQW system, then rotate to the
     geocentric equatorial system.
-    :param center: center object of orbit; default = earth
+    :param center: center object of orbit; default=earth
     :param sma: semi-major axis (km)
     :param e: eccentricity
     :param i: inclination (rad)
@@ -126,13 +124,9 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
     :return rvec: positional vectors of spacecraft [IJK] (km)
     :return vvec: velocity vectors of spacecraft [IJK] (km/s)
     """
-    # determine which planet center to compute
-    if object == 'earth':
-        mu = 3.986004418e14 * 1e-9 # km^3*s^-2
-    else:
-        print('Using earth as center object\n')
-        mu = 3.986004418e14 * 1e-9 # km^3*s^-2
-    
+    # determine which planet center to compute from
+    mu = get_mu(center=center)
+
     # declaring trig functions
     s, c = np.sin, np.cos
 
@@ -170,7 +164,7 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
     return np.array(r_ijk), np.array(v_ijk)
 
 
-def kepler_prop(r, v, dt):
+def kepler_prop(r, v, dt, center='earth'):
     """Solve Kepler's problem using classical orbital elements; no perturbations
     :param r: initial position
     :param v: initial velocity
@@ -179,6 +173,9 @@ def kepler_prop(r, v, dt):
     :return vvec: propagated velocity vector
     in work
     """
+    # determine which planet center to compute from
+    mu = get_mu(center=center)
+
     sma, e, i, raan, aop, ta = get_orbital_elements(r, v)
 
     p = sma*(1-e**2)
@@ -274,19 +271,19 @@ def bplane_targeting(rvec, vvec, center='earth'):
     return B_t, B_r, theta
 
 
-def sp_energy(vel, pos, mu=398600.4418):
+def sp_energy(vel, pos, mu=mu_earth):
     """returns specific mechanical energy (km2/s2), angular momentum
     (km2/s), and flight-path angle (deg) of an orbit; 2body problem
     """
     v_mag =  np.linalg.norm(vel)
     r_mag = np.linalg.norm(pos)
-    sp_energy =v_mag**2/2. - mu/r_mag
+    energy =v_mag**2/2. - mu/r_mag
     ang_mo = vec.vcrossv(v1=pos, v2=vel)
     if np.dot(a=pos, b=vel) > 0:
         phi = np.rad2deg(np.arccos(np.linalg.norm(ang_mo)/(r_mag*v_mag)))
     else:
         phi = 0.
-    return sp_energy, ang_mo, phi
+    return energy, ang_mo, phi
 
 
 def mean_anomalies(e, ta):
@@ -321,7 +318,7 @@ def true_anomaly(e, p=None, r=None, E=None, B=None, H=None):
     return ta
 
 
-def univ_anomalies(M=None, e=None, dt=None, p=None):
+def univ_anomalies(M=None, e=None, dt=None, p=None, center='earth'):
     """universal formulation of elliptical, parabolic, and hyperbolic
     solutions for Kepler's Equation using Newton-Raphson's interation method
     where applicable.
@@ -333,6 +330,8 @@ def univ_anomalies(M=None, e=None, dt=None, p=None):
     :return B: parabolic anomaly for parabolic orbits (rad)
     :return H: hyperbolic anomaly for hyperbolic orbits (rad)
     """
+    mu = get_mu(center=center)
+
     # elliptical solution
     if e < 1 and M:
         if -np.pi < M < 0 or np.pi < M < 2*np.pi:
@@ -386,16 +385,13 @@ class Keplerian(object):
     position/velocity vectors. 
     :param rvec: positional vectors of spacecraft (km)
     :param vvec: velocity vectors of spacecraft (km/s)
-    :param center: center object of orbit; default = earth
+    :param center: center object of orbit; default=earth
     """
 
     def __init__(self, rvec, vvec, center='earth'):
 
         # determine gravitational constant
-        if center.lower() == 'earth':
-            self.mu = 3.986004418e14 * 1e-9 # km^3*s^-2
-        elif center.lower() == 'mars':
-            self.mu = 4.282837e13 * 1e-9 # km^3*s^-2
+        self.mu = get_mu(center=center)
 
         # position and veloccity
         self.rvec = rvec
@@ -495,8 +491,8 @@ if __name__ == "__main__":
     # testing specifc energy function
     pos = vec.vxs(scalar=1e4, v1=[1.2756, 1.9135, 3.1891]) # km
     vel = [7.9053, 15.8106, 0.0] # km/s
-    sp_energy = sp_energy(vel=vel, pos=pos, mu=398600.4418)
-    print(sp_energy)
+    energy = sp_energy(vel=vel, pos=pos, mu=get_mu(center='earth'))
+    print(energy)
 
 
     rvec = [-299761, -440886, -308712]
@@ -525,14 +521,14 @@ if __name__ == "__main__":
     elements = get_orbital_elements(rvec=r, vvec=v)
     print(elements)
 
-    # test get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth'):
+    # test get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
     p = 11067.79
     e = 0.83285
     i = np.deg2rad(87.87)
     raan = np.deg2rad(227.89)
     aop = np.deg2rad(53.38)
     ta = np.deg2rad(92.335)
-    r, v = get_rv_frm_elements(p, e, i, raan, aop, ta, object='earth')
+    r, v = get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth')
     print(r) # [6525.36812099 6861.5318349  6449.11861416]
     print(v) # [ 4.90227865  5.53313957 -1.9757101 ]
 
