@@ -223,7 +223,11 @@ def flight_path_angle(e, ta):
         return 0.
     elif e < 1:
         E, _ = mean_anomalies(e, ta)
+        # FIXME: is this the correct way to check sign?
         fpa = np.arccos(np.sqrt((1-e**2)/(1-e**2*np.cos(E)**2)))
+        if ta > np.pi or ta < 0:
+            fpa = -fpa
+        # ALT: fpa = np.arctan2(e*np.sin(ta), 1+e*np.cos(ta))
     elif e == 1:
         fpa = ta/2.
     else: # if e > 1
@@ -378,6 +382,53 @@ def univ_anomalies(M=None, e=None, dt=None, p=None, center='earth'):
             H = H_prev + (M - e*np.sinh(H_prev)+H_prev) / (e*np.cosh(H_prev)-1)
         return H
 
+
+def semimajor_axis(p, e):
+    """returns semi-major axis for a Keplerian orbit
+    :param p:
+    :param e:
+    :return a:
+    """
+    a = p / (1-e**2)
+
+    return a
+
+
+def traj_equation(p, e, tanom):
+    """returns trajectory equation for a Keplerian orbit
+    :param p:
+    :param e:
+    :param tanom:
+    :return r:
+    """
+    r = p / ( 1 + e*np.cos(tanom))
+
+    return r
+
+
+def vel_mag(r=None, a=None, e=None, p=None, tanom=None, center='earth'):
+    """returns orbital velocity at true anomaly point
+    :param r:
+    :param a:
+    :param e:
+    :param p:
+    :param tanom:
+    :param center:
+    :return vmag:
+    not fully tested
+    """
+    mu = get_mu(center=center)
+
+    if r and a:
+        vmag = np.sqrt(2*mu/r - mu/a)
+        return vmag
+    elif e and p and tanom:
+        a = semimajor_axis(p, e)
+        r = traj_equation(p, e, tanom)
+        vmag = np.sqrt(2*mu/r - mu/a)
+        return vmag
+    else:
+        return "Need at least r, a; or e, p, tanom"
 
 
 class Keplerian(object):

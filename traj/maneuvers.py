@@ -7,7 +7,7 @@ from math_helpers.constants import *
 from math_helpers import vectors as vec
 from math_helpers import rotations as rot
 from math_helpers import matrices as mat
-
+from traj import conics as con
 
 def coplanar_transfer(p, e, r1, r2, center='earth'):
     """general form of coplanar circular orbit transfer; an orbit 
@@ -123,6 +123,74 @@ def bielliptic_transfer(r1, r2, r_trans, use_alts=True, center='earth'):
     return dv1, dv_trans, dv2, trans_t
 
 
+def onetangent_transfer(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
+    """has one tangential burn and one nontangential burn. Must be 
+    circular or coaxially elliptic. Currently only for circular
+    orbits.
+    :param ri:
+    :param rf:
+    :param vtransb:
+    :param k:
+    :param center:
+    :return:
+    in work
+    """
+    if use_alts and center.lower() == 'earth':
+        ri, rf = [r+REq_earth for r in [ri, rf]]
+
+    mu = get_mu(center=center)
+
+    Rinv = ri/rf
+    if Rinv > 1: 
+        # tangent burn is at apogee
+        e_trans = (Rinv-1)/(np.cos(ta_transb)+Rinv)
+        a_trans = ri/(1+e_trans)
+        E0 = np.pi
+    else:
+        # tangent burn is at perigee
+        e_trans = (Rinv-1)/(np.cos(ta_transb)-Rinv)
+        a_trans = ri/(1-e_trans)
+        E0 = 0.
+
+    vi = np.sqrt(mu/ri)
+    vf = np.sqrt(mu/rf)
+    vtransa = np.sqrt(2*mu/ri - mu/a_trans)
+    vtransb = np.sqrt(2*mu/rf - mu/a_trans)
+    dva = vtransa - vi
+
+    fpa_transb = np.arctan(e_trans*np.sin(ta_transb)/(1+e_trans*np.cos(ta_transb)))
+
+    dvb = np.sqrt( vtransb**2 + vf**2 - 2*vtransb*vf*np.cos(fpa_transb) )
+
+    dv_otb = np.abs(dva) + np.abs(dvb)
+
+    E = np.arccos((e_trans+np.cos(ta_transb))/(1+e_trans*np.cos(ta_transb)))
+    TOF = np.sqrt(a_trans**3/mu)*(2*k*np.pi+(E-e_trans*np.sin(E))-(E0 - e_trans*np.sin(E0)))
+
+    # print(Rinv)
+    # print(e_trans, a_trans)
+    # print(vi, vf, vtransa, vtransb, dva)
+    # print(np.rad2deg(fpa_transb))
+    # print(dvb, dv_otb)
+    # print(TOF/60)
+
+    return vtransa, vtransb, fpa_transb, TOF
+
+
+def noncoplanar_transfer(delta, phi_fpa, vi, change='inc'):
+    """
+    """
+    if change == 'inc':
+        dvi_only = 2*vi*np.cos(phi_fpa)*np.sin(delta/2)
+
+    elif change == 'raan':
+        pass
+    elif change in ['inc+raan', 'raan+inc']:
+        pass
+
+    return dvi_only
+
+
 if __name__ == '__main__':
     
     #
@@ -142,3 +210,38 @@ if __name__ == '__main__':
     dv1, dv_trans, dv2, tt = bielliptic_transfer(alt1, alt2, altb, use_alts=True, center='earth')
     # print(dv1, dv_trans, dv2, tt/3600)
     # print(np.abs(dv1)+np.abs(dv2)+np.abs(dv_trans))
+
+    alti = 191.34411 # alt, km
+    altf = 35781.34857 # km
+    ta_trans = np.deg2rad(160)
+    vtransa, vtransb, fpa_transb, TOF = onetangent_transfer(alti, altf, ta_trans, k=0, center='earth')
+
+
+    # circular orbit - incl. change only
+    delta = np.deg2rad(15)
+    vi = 5.892311
+    phi_fpa = 0
+    dvi = noncoplanar_transfer(delta, phi_fpa, vi, change='inc')
+    # print(dvi) # 1.5382021 km/s
+
+    # elliptical orbit - incl. change only
+    delta = np.deg2rad(15)
+    e = 0.3
+    p = 17858.7836 # km
+    argp = np.deg2rad(30)
+    tanom = np.deg2rad(330)
+    vi = con.vel_mag(e=e, tanom=tanom, p=p)
+    phi_fpa = con.flight_path_angle(e, tanom)
+    # print(vi) # 1.5382021
+    # print(phi_fpa, np.rad2deg(phi_fpa)) # -6.78 deg
+    dvi = noncoplanar_transfer(delta, phi_fpa, vi, change='inc')
+    # print(dvi) # 1.553727 km/s
+    # node check
+    tanom = tanom - np.pi
+    vi = con.vel_mag(e=e, tanom=tanom, p=p)
+    phi_fpa = con.flight_path_angle(e, tanom)
+    # print(vi) # 3.568017
+    # print(phi_fpa, np.rad2deg(phi_fpa)) # 11.4558 deg
+    dvi = noncoplanar_transfer(delta, phi_fpa, vi, change='inc')
+    # print(dvi) # 0.912883
+
