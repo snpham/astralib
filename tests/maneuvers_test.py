@@ -86,7 +86,7 @@ def test_noncoplanar_transfer():
     delta = np.deg2rad(15)
     vi = 5.892311
     phi_fpa = 0
-    dvi = man.noncoplanar_transfer(delta, phi_fpa, vi, change='inc')
+    dvi = man.noncoplanar_transfer(delta, vi, phi_fpa, change='inc')
     dvi_truth = 1.5382021 # km/s
     assert np.allclose(dvi, dvi_truth)
 
@@ -107,7 +107,7 @@ def test_noncoplanar_transfer():
     assert np.allclose(vi, vi_truth)
     assert np.allclose(phi_fpa_deg, phi_fpa_deg_truth)
     # find the deltav required for the incl. change
-    dvi = man.noncoplanar_transfer(delta, phi_fpa, vi, change='inc')
+    dvi = man.noncoplanar_transfer(delta, vi, phi_fpa, change='inc')
     dvi_truth = 1.553727 # km/s
     assert np.allclose(dvi, dvi_truth)
 
@@ -120,6 +120,102 @@ def test_noncoplanar_transfer():
     phi_fpa_deg_truth = 11.4558 # deg
     assert np.allclose(vi, vi_truth)
     assert np.allclose(phi_fpa_deg, phi_fpa_deg_truth)
-    dvi = man.noncoplanar_transfer(delta, phi_fpa, vi, change='inc')
+    dvi = man.noncoplanar_transfer(delta, vi, phi_fpa, change='inc')
     dvi_truth = 0.912883 # km/s
     assert np.allclose(dvi, dvi_truth)
+
+     # RAAN change only
+    incl = np.deg2rad(55) # inclination, deg
+    delta = np.deg2rad(45) # RAAN, deg
+    vi = 5.892311 # km/s
+    dvi, nodes = man.noncoplanar_transfer(delta, vi=vi, incli=incl, change='raan')
+    dvi_truth = 3.694195
+    nodes = np.rad2deg(nodes)
+    nodes_truth = [103.3647, 76.6353]
+    assert np.allclose(dvi, dvi_truth)
+    assert np.allclose(nodes, nodes_truth)
+
+    # RAAN +inclination
+    incli = np.deg2rad(55) # inclination, deg
+    inclf = np.deg2rad(40) # inclination, deg
+    delta = np.deg2rad(45) # RAAN, deg
+    vi = 5.892311 # km/s
+    dvi, nodes = man.noncoplanar_transfer(delta, vi=vi, incli=incli, inclf=inclf, change='raan+incl')
+    dvi_truth = 3.615925
+    nodes = np.rad2deg(nodes)
+    nodes_truth = [128.9041, 97.3803]
+    assert np.allclose(dvi, dvi_truth)
+    assert np.allclose(nodes, nodes_truth)
+
+def test_combined_planechange():
+    """
+    """
+    # test 1
+    # optimal combined incl+raan plane change hohmann transfer (circular)
+    incli = np.deg2rad(28.5)
+    inclf = 0
+    delta_i = inclf - incli
+    alti = 191 # km
+    altf = 35780 # km
+    dva, dvb, dii, dif = \
+        man.combined_planechange(ri=alti, rf=altf, delta_i=delta_i, 
+                                 use_alts=True, center='earth')
+    dii = np.rad2deg(dii)
+    dif = np.rad2deg(dif)
+    dva_truth = 2.48023100 # km
+    dvb_truth = 1.78999589 # km
+    dii_truth = -2.1666607 # deg
+    dif_truth = -26.333339 # deg
+    assert np.allclose([dva, dvb, dii, dif],
+                       [dva_truth, dvb_truth, dii_truth, dif_truth])
+        
+    # test 2 - changing incl.
+    # optimal combined incl+raan plane change hohmann transfer (circular)
+    delta_i = np.deg2rad(10)
+    ri = 6671.53 # km
+    rf = 42163.95 # km
+    dva, dvb, dii, dif = \
+        man.combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
+                                 use_alts=False, center='earth')
+    dvt = np.abs(dva) + np.abs(dvb)
+    dii = np.rad2deg(dii)
+    dif = np.rad2deg(dif)
+    dvt_truth = 3.9409 # km
+    dii_truth = 0.917 # deg
+    dif_truth = 9.083 # deg
+    assert np.allclose([dvt, dii, dif],
+                       [dvt_truth, dii_truth, dif_truth], atol=1e-03)
+
+    # test 3 - increasing incl., decreasing rf
+    # optimal combined incl+raan plane change hohmann transfer (circular)
+    delta_i = np.deg2rad(28.5)
+    ri = 6671.53 # km
+    rf = 26558.56 # km
+    dva, dvb, dii, dif = \
+        man.combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
+                                 use_alts=False, center='earth')
+    dvt = np.abs(dva) + np.abs(dvb)
+    dii = np.rad2deg(dii)
+    dif = np.rad2deg(dif)
+    dvt_truth = 4.05897 # km
+    dii_truth = 3.305 # deg
+    dif_truth = 25.195 # deg
+    assert np.allclose([dvt, dii, dif],
+                       [dvt_truth, dii_truth, dif_truth], atol=1e-03)
+
+    # test 4 - increasing incl., increasing rf
+    # optimal combined incl+raan plane change hohmann transfer (circular)
+    delta_i = np.deg2rad(45)
+    ri = 6671.53 # km
+    rf = 42163.95 # km
+    dva, dvb, dii, dif = \
+        man.combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
+                                 use_alts=False, center='earth')
+    dvt = np.abs(dva) + np.abs(dvb)
+    dii = np.rad2deg(dii)
+    dif = np.rad2deg(dif)
+    dvt_truth = 4.63737 # km
+    dii_truth = 2.751 # deg
+    dif_truth = 42.249 # deg
+    assert np.allclose([dvt, dii, dif],
+                       [dvt_truth, dii_truth, dif_truth], atol=1e-03)

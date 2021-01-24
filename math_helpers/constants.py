@@ -11,14 +11,12 @@ mu_mars = 42828.37 # (km^3*s^-2) mars
 def get_mu(center='earth'):
     # determine which planet center to compute
     if center.lower() == 'earth':
-        mu = mu_earth
+        return mu_earth
     elif center.lower() == 'mars':
-        mu = mu_mars
+        return mu_mars
     else:
-        mu = mu_earth
         print('Using earth as center object\n')
-
-    return mu
+        return mu_earth
 
 
 if __name__ == '__main__':
