@@ -20,7 +20,7 @@ def coplanar_transfer(p, e, r1, r2, center='earth'):
     :param e: transfer ellipse eccentricity
     :param r1: inner circular orbit radius (km)
     :param r2: outer circular orbit radius (km)
-    :param center: planetary object of focus; default=earth
+    :param center: planetary center of focus; default=earth
     :return dv1: delta v required to leave inner orbit (km/s)
     :return dv2: delta v required to enter outer orbit (km/s)
     """
@@ -51,11 +51,11 @@ def hohmann_transfer(r1, r2, use_alts=True, center='earth'):
     """hohmann transfer orbit computation from smaller orbit to
     larger; can input either satellite altitude above "object" or
     radius from its center.
-    :param r1: altitude (or radius) of smaller circular orbit (orbit one) (km)
-    :param r2: altitude (or radius) of larger circular orbit (orbit two) (km)
+    :param r1: altitude (or radius) of smaller circular orbit (km)
+    :param r2: altitude (or radius) of larger circular orbit (km)
     :param use_alts: Boolean for switching between r1,r2=altitude 
                      (True) and r1,r2=radius to center
-    :param object: main planetary object
+    :param center: planetary center of focus; default=earth
     :return dv1: delta v required to enter transfer orbit (km/s)
     :return dv2: delta v required to enter circular orbit two (km/s)
     """
@@ -93,8 +93,10 @@ def bielliptic_transfer(r1, r2, r_trans, use_alts=True, center='earth'):
     from smaller orbit to larger; assumes fpa to be 0
     :param r1: radius of smaller circular orbit (orbit one) (km)
     :param r2: radius of larger circular orbit (orbit two) (km)
-    :param rb: 
-    :param center: planetary center of smaller orbit
+    :param r_trans: desired transfer orbit radius (km)
+    :param use_alts: Boolean for switching between ri,rf=altitude 
+                     (True) and ri,rf=radius to center
+    :param center: planetary center of focus; default=earth
     :return dv1: delta v required to enter transfer orbit (km/s)
     :return dv2: delta v required to enter circular orbit two (km/s)
     not tested
@@ -128,22 +130,29 @@ def bielliptic_transfer(r1, r2, r_trans, use_alts=True, center='earth'):
 
 
 def onetangent_transfer(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
-    """has one tangential burn and one nontangential burn. Must be 
-    circular or coaxially elliptic. Currently only for circular
-    orbits.
-    :param ri:
-    :param rf:
-    :param vtransb:
-    :param k:
-    :param center:
-    :return:
+    """Orbit transfer with one tangential burn and one nontangential 
+    burn. Must be circular or coaxially elliptic. Currently only for 
+    circular orbits.
+    :param ri: altitude (or radius) of initial circular orbit (km)
+    :param rf: altitude (or radius) of initial circular orbit (km)
+    :param ta_transb: true anomaly of transfer orbit at point b (rad)
+    :param k: number of revolutions through perigee
+    :param use_alts: Boolean for switching between ri,rf=altitude 
+                     (True) and ri,rf=radius to center
+    :param center: planetary center of focus; default=earth
+    :return vtransa: transfer velocity required at point a (km/s)
+    :return vtransb: transfer velocity required at point b (km/s)
+    :return fpa_transb: flight path angle for the nontangential 
+                        transfer (rad)
+    :return TOF: time of flight (s)
     in work
     """
+    # update constants and parameters
+    mu = get_mu(center=center)
     if use_alts and center.lower() == 'earth':
         ri, rf = [r+REq_earth for r in [ri, rf]]
 
-    mu = get_mu(center=center)
-
+    # check location of tangent burn
     Rinv = ri/rf
     if Rinv > 1: 
         # tangent burn is at apogee
@@ -156,73 +165,87 @@ def onetangent_transfer(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
         a_trans = ri/(1-e_trans)
         E0 = 0.
 
+    # compute initial, final, and transfer velocities at a, b
     vi = np.sqrt(mu/ri)
     vf = np.sqrt(mu/rf)
     vtransa = np.sqrt(2*mu/ri - mu/a_trans)
     vtransb = np.sqrt(2*mu/rf - mu/a_trans)
+
+    # flight path angle of nontangential transfer
+    fpa_transb = np.arctan(e_trans*np.sin(ta_transb)
+                 / (1+e_trans*np.cos(ta_transb)))
+
+    # get delta-v's at each point and its total
     dva = vtransa - vi
-
-    fpa_transb = np.arctan(e_trans*np.sin(ta_transb)/(1+e_trans*np.cos(ta_transb)))
-
     dvb = np.sqrt( vtransb**2 + vf**2 - 2*vtransb*vf*np.cos(fpa_transb) )
-
     dv_otb = np.abs(dva) + np.abs(dvb)
 
+    # computing eccentric anomaly
     E = np.arccos((e_trans+np.cos(ta_transb))/(1+e_trans*np.cos(ta_transb)))
+
+    # computing time of flight
     TOF = np.sqrt(a_trans**3/mu) * \
         (2*k*np.pi+(E-e_trans*np.sin(E))-(E0 - e_trans*np.sin(E0)))
-
-    # print(Rinv)
-    # print(e_trans, a_trans)
-    # print(vi, vf, vtransa, vtransb, dva)
-    # print(np.rad2deg(fpa_transb))
-    # print(dvb, dv_otb)
-    # print(TOF/60)
 
     return vtransa, vtransb, fpa_transb, TOF
 
 
 def noncoplanar_transfer(delta, vi, phi_fpa=None, incli=None, inclf=None, change='inc'):
+    """noncoplanar transfers to change either inclination only, RAAN 
+    only, or both. A dv at nodal points will only change inclination; 
+    dv at a certain point in an orbit changes only the RAAN; a dv at 
+    any other point changes incl+RAAN
+    :param delta: the change value of (incl for incl only; RAAN for 
+                  RAAN only or RAAN+incl)
+    :param vi: initial velocity at the common point (km/s)
+    :param phi_fpa: flight path angle (rad)
+    :param incli: inclination of initial orbit (rad)
+    :param inclf: inclination of final orbit (rad)
+    :param change: choose which element to change;
+                   'inc' = inclination only;
+                   'raan' = raan only; 'inc+raan' = both elements
+    :return dvi: the required delta-velocity for the transfer (km/s)
+    :return (arglat1, arglat2): argument of latitude for the common 
+                                points, if applicable
     """
-    """
+    # change inclination only
     if change == 'inc':
         dvi = 2*vi*cos(phi_fpa)*sin(delta/2)
         return dvi
-
+    # change raan only
     elif change == 'raan':
         # NOTE: circular orbits only
         burn_angle = arccos(cos(incli)**2 + sin(incli)**2*cos(delta))
         dvi = 2*vi*sin(burn_angle/2)
-        node1 = arccos(tan(incli) * (cos(delta) - cos(burn_angle))/sin(burn_angle))
-        node2 = arccos(cos(incli)*sin(incli) * (1-cos(delta))/sin(burn_angle))
-        return dvi, (node1, node2)
-        
+        arglat1 = arccos(tan(incli)*(cos(delta)-cos(burn_angle)) / sin(burn_angle))
+        arglat2 = arccos(cos(incli)*sin(incli)*(1-cos(delta)) / sin(burn_angle))
+        return dvi, (arglat1, arglat2)
+    # change both elements
     elif change in ['incl+raan', 'raan+incl', 'inc+raan', 'raan+inc']:
         # NOTE: circular orbits only
-        burn_angle = arccos(cos(incli)*cos(inclf) + sin(incli)*sin(inclf)*cos(delta))
+        burn_angle = arccos(cos(incli)*cos(inclf)+sin(incli)*sin(inclf)*cos(delta))
         dvi = 2*vi*sin(burn_angle/2)
-        node1 = arccos((sin(inclf)*cos(delta)-cos(burn_angle)*sin(incli))/(sin(burn_angle)*cos(incli)))
-        node2 = arccos((cos(incli)*sin(inclf)-sin(incli)*cos(inclf)*cos(delta))/sin(burn_angle))
-        return dvi, (node1, node2)
+        arglat1 = arccos((sin(inclf)*cos(delta)-cos(burn_angle)*sin(incli))
+                  / (sin(burn_angle)*cos(incli)))
+        arglat2 = arccos((cos(incli)*sin(inclf)-sin(incli)*cos(inclf)*cos(delta))
+                  / sin(burn_angle))
+        return dvi, (arglat1, arglat2)
 
 
 def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth'):
     """determine the best amount of delta-v to be applied at each node
-    for most optimal inclination + raan hohmann transfer. Only for 
-    circular orbits!
-    :param ri: altitude (or radius) of smaller circular orbit 
-               (orbit one) (km)
-    :param rf: altitude (or radius) of larger circular orbit 
-               (orbit two) (km)
+    for most optimal hohmann transfer with inclination change;
+    currently for circular orbits only!
+    :param ri: altitude (or radius) of initial circular orbit (km)
+    :param rf: altitude (or radius) of initial circular orbit (km)
     :param delta_i: desired inclination change (rad)
     :param use_alts: Boolean for switching between r1,r2=altitude 
                      (True) and ri,rf=radius to center
-    :param center: center of main planetary object
+    :param center: planetary center of focus; default=earth
     :return dva: optimized delta-v at initial node
     :return dvb: optimized delta-v at second node
     :return dii: change in inclination at first node
     :return dif: change in inclination at second node
-    not fully tested
     """
     
     # get inital parameters
@@ -246,7 +269,8 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth'):
         s_prev = s
         dva = np.sqrt(vi**2 + vtransa**2 - 2*vi*vtransa*cos(s*delta_i))
         dvb = np.sqrt(vf**2 + vtransb**2 - 2*vf*vtransb*cos((1-s)*delta_i))
-        s = 1/delta_i * arcsin( dva*vf*vtransb*sin((1-s)*delta_i) / (dvb*vi*vtransa) )    
+        s = 1/delta_i * arcsin( dva*vf*vtransb*sin((1-s)*delta_i)
+            / (dvb*vi*vtransa) )    
 
     # get initial and final inclinations
     dii = s*delta_i
@@ -327,7 +351,8 @@ if __name__ == '__main__':
     inclf = np.deg2rad(40) # inclination, deg
     delta = np.deg2rad(45) # RAAN, deg
     vi = 5.892311 # km/s
-    dvi, nodes = noncoplanar_transfer(delta, vi=vi, incli=incli, inclf=inclf, change='raan+incl')
+    dvi, nodes = noncoplanar_transfer(delta, vi=vi, incli=incli, 
+                                      inclf=inclf, change='raan+incl')
     # print(dvi, np.rad2deg(nodes)) # 3.615924548496319 [128.90413974  97.38034533]
 
     # optimal combined incl+raan plane change hohmann transfer (circular)
