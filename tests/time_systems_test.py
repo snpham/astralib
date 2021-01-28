@@ -13,6 +13,10 @@ def test_get_JD():
     jd_truth = 2450383.09722222
     assert np.allclose(jd, jd_truth)
 
+    jd, mjd = time_systems.get_JD(year=1957, month=10, day=4, hour=19, min=26, sec=24)
+    jd_truth = 2436116.31
+    assert np.allclose(jd, jd_truth)
+
 
 def test_cal_from_jd():
     """tests cal_from_jd function

@@ -78,3 +78,9 @@ if __name__ == '__main__':
     jd = 2449877.3458762
     date = cal_from_jd(jd) 
     print(date) # 1995 6 8 20 18 3.703690767288248
+
+    jd = get_JD(year=1957, month=10, day=4, hour=19, min=26, sec=24)
+    print(jd)
+
+    jd = get_JD(year=2021, month=1, day=25, hour=8, min=12, sec=24)
+    print(jd)

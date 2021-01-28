@@ -47,7 +47,7 @@ def coplanar_transfer(p, e, r1, r2, center='earth'):
     return dv1, dv2
 
 
-def hohmann_transfer(r1, r2, use_alts=True, center='earth'):
+def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, center='earth'):
     """hohmann transfer orbit computation from smaller orbit to
     larger; can input either satellite altitude above "object" or
     radius from its center.
@@ -84,6 +84,9 @@ def hohmann_transfer(r1, r2, use_alts=True, center='earth'):
     # total deltav and transfer time
     dv_tot = np.abs(dv1) + np.abs(dv2)
     transfer_time = np.pi * np.sqrt(a_trans**3/mu)
+
+    if get_vtrans:
+        return v1_trans, v2_trans, transfer_time
 
     return dv1, dv2, transfer_time
 
@@ -232,7 +235,7 @@ def noncoplanar_transfer(delta, vi, phi_fpa=None, incli=None, inclf=None, change
         return dvi, (arglat1, arglat2)
 
 
-def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth'):
+def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth', get_payload_angle=False):
     """determine the best amount of delta-v to be applied at each node
     for most optimal hohmann transfer with inclination change;
     currently for circular orbits only!
@@ -279,6 +282,11 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth'):
     # get optimized delta v's
     dva = np.sqrt(vi**2 + vtransa**2 - 2*vi*vtransa*cos(dii))
     dvb = np.sqrt(vf**2 + vtransb**2 - 2*vf*vtransb*cos(dif))
+
+    if get_payload_angle:
+        gamma_a = arccos(-(vi**2+dva**2-vtransa**2) / (2*vi*dva))
+        gamma_b = arccos(-(vtransb**2+dvb**2-vf**2) / (2*vtransb*dvb))
+        return dva, dvb, dii, dif, gamma_a, gamma_b
 
     return dva, dvb, dii, dif
 
@@ -388,3 +396,14 @@ if __name__ == '__main__':
                                               use_alts=False, center='earth')
     print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
     # 4.637365842965433 2.7513777863242685 42.24862221367573
+
+    # optimal combined incl+raan plane change hohmann transfer (circular)
+    incli = np.deg2rad(28.5)
+    inclf = 0
+    delta_i = inclf - incli
+    alti = 191 # km
+    altf = 35780 # km
+    dva, dvb, dii, dif, ga, gb = \
+        combined_planechange(ri=alti, rf=altf, delta_i=delta_i, 
+                             use_alts=True, center='earth', get_payload_angle=True)
+    print(np.rad2deg(ga), np.rad2deg(gb))
