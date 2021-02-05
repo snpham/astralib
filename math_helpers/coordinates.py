@@ -7,13 +7,7 @@ from math_helpers import vectors as vec
 from math_helpers import rotations as rot
 from math_helpers import matrices as mat
 from traj import conics
-
-
-REq_earth = 6378.1363 # (km)
-RPolar_earth = 6356.7516005 # (km) 
-F_earth = 0.003352813178 # = 1/298.257
-E_earth = 0.081819221456
-omega_earth = 7.292115e-5 # +/- 1.5e-12 (rad/s)
+from math_helpers.constants import *
 
 
 def geodet2centric(gd_angle, ref="earth"):
@@ -93,13 +87,11 @@ def pqw2ijk(rvec, vvec, center='earth', output='vector'):
         return np.array(mat.mxv(T, rvec))
 
 
-def rsw2ijk(rvec, vvec, output='vector'):
+def ijk2rsw(rvec, vvec, output='vector'):
     """transforms from RSW to IJK
-    :param rvec: positional vector in RSW frame (km)
-    :param vvec: velocity vector in RSW frame (km/s)
-    :param output: output either vector or transform matrix
-    :return T: RSW to IJK transformation matrix
-    :return: r vector in rectangular IJK frame (km)
+    :param rvec: positional vector in inertial IJK frame (km)
+    :param vvec: velocity vector in inertial IJK frame (km/s)
+    :return: state vector in rotating RSW frame
     not tested
     """
     rxv = vec.vcrossv(rvec, vvec)
@@ -109,10 +101,7 @@ def rsw2ijk(rvec, vvec, output='vector'):
     S = vec.vcrossv(W, R)
     T = np.vstack((R, S, W)).T
 
-    if output == 'matrix':
-        return T
-    elif output == 'vector':
-        return np.array(mat.mxv(T, rvec))
+    return np.vstack((R, S, W))
 
 
 def ntw2ijk(rvec, vvec, output='vector'):
