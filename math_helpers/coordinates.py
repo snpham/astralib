@@ -51,8 +51,8 @@ def lat2rec(lon, lat, elev, latref='geodetic', center='earth', ref='ellipsoid'):
     if latref == 'geocentric':
         lat = geocentric2det(E_earth, lat)
 
-    C = REq_earth / np.sqrt(1-E_earth**2 * np.sin(lat)**2)
-    S = REq_earth*(1-E_earth**2) / np.sqrt(1-E_earth**2*np.sin(lat)**2)
+    C = r_earth / np.sqrt(1-E_earth**2 * np.sin(lat)**2)
+    S = r_earth*(1-E_earth**2) / np.sqrt(1-E_earth**2*np.sin(lat)**2)
 
     rx = (C+elev)*np.cos(lat)*np.cos(lon)
     ry = (C+elev)*np.cos(lat)*np.sin(lon)
@@ -260,7 +260,7 @@ def ecef2lat(rvec):
     while (phi_gd - phi_gd_prev > tol):
 
         phi_gd_prev = phi_gd
-        C = REq_earth / np.sqrt( 1 - E_earth**2 * np.sin(phi_gd)**2 )
+        C = r_earth / np.sqrt( 1 - E_earth**2 * np.sin(phi_gd)**2 )
         phi_gd = np.arctan( (rvec[2] + C*E_earth**2*np.sin(phi_gd)) / r_del_sat )
 
         print(C, np.rad2deg(np.tan(phi_gd)))

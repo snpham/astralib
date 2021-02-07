@@ -4,13 +4,7 @@ import sys, os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
-from math_helpers import vectors as vec
-from math_helpers import rotations as rot
-from math_helpers import matrices as mat
 from traj import conics as con
-
-sin, cos, tan = np.sin, np.cos, np.tan
-arcsin, arccos, arctan = np.arcsin, np.arccos, np.arctan
 
 
 def coplanar_transfer(p, e, r1, r2, center='earth'):
@@ -33,17 +27,17 @@ def coplanar_transfer(p, e, r1, r2, center='earth'):
     mu = get_mu(center=center)
 
     energy_transfer = -mu*(1-e**2)/(2*p)
-    h_transfer = np.sqrt(mu*p)
-    v1_circular = np.sqrt(mu/r1)
-    v1 = np.sqrt(2*(mu/r1+energy_transfer))
+    h_transfer = sqrt(mu*p)
+    v1_circular = sqrt(mu/r1)
+    v1 = sqrt(2*(mu/r1+energy_transfer))
     cos_phi1 = h_transfer/(r1*v1) # angle b/t v1 and v1_circular
     # applying law of cosines to extract 3rd velocity side
-    dv1 = np.sqrt(v1**2+v1_circular**2 - 2*v1*v1_circular*cos_phi1)
+    dv1 = sqrt(v1**2+v1_circular**2 - 2*v1*v1_circular*cos_phi1)
 
-    v2 = np.sqrt(2*(mu/r2+energy_transfer))
-    v2_circular = np.sqrt(mu/r2)
+    v2 = sqrt(2*(mu/r2+energy_transfer))
+    v2_circular = sqrt(mu/r2)
     cos_phi2 = h_transfer/(r2*v2) # angle b/t v1 and v1_circular
-    dv2 = np.sqrt(v2**2+v2_circular**2 - 2*v2*v2_circular*cos_phi2)
+    dv2 = sqrt(v2**2+v2_circular**2 - 2*v2*v2_circular*cos_phi2)
     return dv1, dv2
 
 
@@ -61,7 +55,7 @@ def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, center='earth'):
     """
     # add radius of planet to distance if altitude is inputt
     if use_alts == True and center.lower() == 'earth':
-        r1, r2 = [r+REq_earth for r in [r1, r2]]
+        r1, r2 = [r+r_earth for r in [r1, r2]]
 
     mu = get_mu(center=center)
 
@@ -70,12 +64,12 @@ def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, center='earth'):
     energy_trans = -mu/(2*a_trans)
 
     # initial and final velocities
-    v_cs1 = np.sqrt(mu/r1)
-    v_cs2 = np.sqrt(mu/r2)
+    v_cs1 = sqrt(mu/r1)
+    v_cs2 = sqrt(mu/r2)
 
     # transfer velocities
-    v1_trans = np.sqrt(2*(mu/r1 + energy_trans))
-    v2_trans = np.sqrt(2*(mu/r2 + energy_trans))
+    v1_trans = sqrt(2*(mu/r1 + energy_trans))
+    v2_trans = sqrt(2*(mu/r2 + energy_trans))
 
     # change and velocities
     dv1 = v1_trans - v_cs1
@@ -83,7 +77,7 @@ def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, center='earth'):
 
     # total deltav and transfer time
     dv_tot = np.abs(dv1) + np.abs(dv2)
-    transfer_time = np.pi * np.sqrt(a_trans**3/mu)
+    transfer_time = np.pi * sqrt(a_trans**3/mu)
 
     if get_vtrans:
         return v1_trans, v2_trans, transfer_time
@@ -106,7 +100,7 @@ def bielliptic_transfer(r1, r2, r_trans, use_alts=True, center='earth'):
     """
 
     if use_alts == True and center.lower() == 'earth':
-        r1, r2, r_trans = [r+REq_earth for r in [r1, r2, r_trans]]
+        r1, r2, r_trans = [r+r_earth for r in [r1, r2, r_trans]]
 
     if r_trans < r2:
         raise ValueError("Error: transfer orbit apogee is smaller than r2")
@@ -115,19 +109,19 @@ def bielliptic_transfer(r1, r2, r_trans, use_alts=True, center='earth'):
 
     a_trans1 = (r1+r_trans)/2
     a_trans2 = (r2+r_trans)/2
-    v_c1 = np.sqrt(mu/r1) # circular orbit 1
-    v_c2 = np.sqrt(mu/r2) # circular orbit 2
-    v_trans1 = np.sqrt(2*mu/r1 - mu/a_trans1)
-    v_transb1 = np.sqrt(2*mu/r_trans - mu/a_trans1)
-    v_transb2 = np.sqrt(2*mu/r_trans - mu/a_trans2)
-    v_trans2 = np.sqrt(2*mu/r2 - mu/a_trans2)
+    v_c1 = sqrt(mu/r1) # circular orbit 1
+    v_c2 = sqrt(mu/r2) # circular orbit 2
+    v_trans1 = sqrt(2*mu/r1 - mu/a_trans1)
+    v_transb1 = sqrt(2*mu/r_trans - mu/a_trans1)
+    v_transb2 = sqrt(2*mu/r_trans - mu/a_trans2)
+    v_trans2 = sqrt(2*mu/r2 - mu/a_trans2)
 
     dv1 = v_trans1 - v_c1
     dv_trans = v_transb2 - v_transb1
     dv2 = v_c2 - v_trans2
     dv_tot = np.abs(dv1) + np.abs(dv_trans) + np.abs(dv2)
 
-    trans_t = np.pi*np.sqrt(a_trans1**3/mu) + np.pi*np.sqrt(a_trans2**3/mu)
+    trans_t = np.pi*sqrt(a_trans1**3/mu) + np.pi*sqrt(a_trans2**3/mu)
 
     return dv1, dv_trans, dv2, trans_t
 
@@ -153,7 +147,7 @@ def onetangent_transfer(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
     # update constants and parameters
     mu = get_mu(center=center)
     if use_alts and center.lower() == 'earth':
-        ri, rf = [r+REq_earth for r in [ri, rf]]
+        ri, rf = [r+r_earth for r in [ri, rf]]
 
     # check location of tangent burn
     Rinv = ri/rf
@@ -169,10 +163,10 @@ def onetangent_transfer(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
         E0 = 0.
 
     # compute initial, final, and transfer velocities at a, b
-    vi = np.sqrt(mu/ri)
-    vf = np.sqrt(mu/rf)
-    vtransa = np.sqrt(2*mu/ri - mu/a_trans)
-    vtransb = np.sqrt(2*mu/rf - mu/a_trans)
+    vi = sqrt(mu/ri)
+    vf = sqrt(mu/rf)
+    vtransa = sqrt(2*mu/ri - mu/a_trans)
+    vtransb = sqrt(2*mu/rf - mu/a_trans)
 
     # flight path angle of nontangential transfer
     fpa_transb = np.arctan(e_trans*np.sin(ta_transb)
@@ -180,14 +174,14 @@ def onetangent_transfer(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
 
     # get delta-v's at each point and its total
     dva = vtransa - vi
-    dvb = np.sqrt( vtransb**2 + vf**2 - 2*vtransb*vf*np.cos(fpa_transb) )
+    dvb = sqrt( vtransb**2 + vf**2 - 2*vtransb*vf*np.cos(fpa_transb) )
     dv_otb = np.abs(dva) + np.abs(dvb)
 
     # computing eccentric anomaly
     E = np.arccos((e_trans+np.cos(ta_transb))/(1+e_trans*np.cos(ta_transb)))
 
     # computing time of flight
-    TOF = np.sqrt(a_trans**3/mu) * \
+    TOF = sqrt(a_trans**3/mu) * \
         (2*k*np.pi+(E-e_trans*np.sin(E))-(E0 - e_trans*np.sin(E0)))
 
     return vtransa, vtransb, fpa_transb, TOF
@@ -254,14 +248,14 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth', get_pay
     # get inital parameters
     mu = get_mu(center=center)
     if use_alts == True and center.lower() == 'earth':
-        ri, rf = [r+REq_earth for r in [ri, rf]]
+        ri, rf = [r+r_earth for r in [ri, rf]]
 
     # get velocities
     atrans = (ri+rf)/2
-    vi = np.sqrt(mu/ri)
-    vf = np.sqrt(mu/rf)
-    vtransa = np.sqrt(2*mu/ri - mu/atrans)
-    vtransb = np.sqrt(2*mu/rf - mu/atrans)
+    vi = sqrt(mu/ri)
+    vf = sqrt(mu/rf)
+    vtransa = sqrt(2*mu/ri - mu/atrans)
+    vtransb = sqrt(2*mu/rf - mu/atrans)
 
     # begin intertions
     s = 0.5
@@ -270,8 +264,8 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth', get_pay
     dvb = 0
     while (np.abs(s-s_prev) > 1e-6):
         s_prev = s
-        dva = np.sqrt(vi**2 + vtransa**2 - 2*vi*vtransa*cos(s*delta_i))
-        dvb = np.sqrt(vf**2 + vtransb**2 - 2*vf*vtransb*cos((1-s)*delta_i))
+        dva = sqrt(vi**2 + vtransa**2 - 2*vi*vtransa*cos(s*delta_i))
+        dvb = sqrt(vf**2 + vtransb**2 - 2*vf*vtransb*cos((1-s)*delta_i))
         s = 1/delta_i * arcsin( dva*vf*vtransb*sin((1-s)*delta_i)
             / (dvb*vi*vtransa) )    
 
@@ -280,8 +274,8 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth', get_pay
     dif = (1-s)*delta_i
 
     # get optimized delta v's
-    dva = np.sqrt(vi**2 + vtransa**2 - 2*vi*vtransa*cos(dii))
-    dvb = np.sqrt(vf**2 + vtransb**2 - 2*vf*vtransb*cos(dif))
+    dva = sqrt(vi**2 + vtransa**2 - 2*vi*vtransa*cos(dii))
+    dvb = sqrt(vf**2 + vtransb**2 - 2*vf*vtransb*cos(dif))
 
     if get_payload_angle:
         gamma_a = arccos(-(vi**2+dva**2-vtransa**2) / (2*vi*dva))
@@ -289,6 +283,74 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth', get_pay
         return dva, dvb, dii, dif, gamma_a, gamma_b
 
     return dva, dvb, dii, dif
+
+
+def patched_conics(r1, r2, rt1, rt2):
+    """compute a patched conics orbit transfer from an inner planet to 
+    outer planet.
+    :param r1: orbital radius around inner planet (km)
+    :param r2: orbital radius around outer planet (km)
+    :param rt1: radius to inner planet from center of transfer orbit (km)
+    :param rt2: radius to outer planet from center of transfer orbi (km)
+    :return vt1: departure velocity from inner planet (km/s)
+    :return vt2: arrival velocity to outer planer (km/s)
+    :return dv_inj: injection velocity to transfer orbit (km/s)
+    :return dv_ins: insertion velocity from transfer orbit (km/s)
+    :return TOF: transfer time of flight (s)
+    only tested for heliocentric earth->mars
+    """
+
+    r_orbit1 = r1
+    r_orbit2 = r2
+    atrans = (rt1 + rt2) / 2 # transfer sma
+    TOF = pi*sqrt(atrans**3/mu_sun) # period of hohmann transfer
+    # print(f'D: TOF (days): {TOF/(3600*24)}')
+
+    # velocities
+    vc1 = sqrt(mu_earth/r_orbit1)
+    vc2 = sqrt(mu_mars/r_orbit2)
+    vt1 = sqrt(2*mu_sun/rt1 - mu_sun/atrans) # heliocentric, departure
+    vt2 = sqrt(2*mu_sun/rt2 - mu_sun/atrans) # heliocentric, arrival
+    # print(f'vc1 {vc1}; A1: vt1 {vt1}')
+    # print(f'vc2 {vc2}; A2: vt2 {vt2}')
+
+    dv1 = vt1 - vc1
+    dv2 = vc2 - vt2
+    # print(f'dv1 {dv1}; dv2 {dv2}')
+
+    # velocity of earth and mars rel. to sun
+    v_es = sqrt(mu_sun/sma_earth)
+    v_ms = sqrt(mu_sun/sma_mars)
+    # print(f'v_es {v_es}; v_ms {v_ms}')
+
+    # hyperbolic excess velocity
+    v_hyp1 = vt1 - v_es # wrt earth
+    v_hyp2 = vt2 - v_ms # wrt mars
+    # print(f'v_hyp1 {v_hyp1}; v_hyp2 {v_hyp2}')
+
+    # departure
+    vp1 = sqrt(2*mu_earth/r_orbit1 + v_hyp1**2) # earth departure
+    # print(f'vp1 {vp1}')
+    dv_inj = vp1 - vc1 # v_inf
+    # print(f'B: dv_inj {dv_inj}')
+
+    # arrival
+    vp2 = sqrt(2*mu_mars/r_orbit2 + v_hyp2**2) # mars arrival
+    # print(f'vp2 {vp2}')
+    dv_ins = vc2 - vp2
+    # print(f'C: dv_ins {dv_ins}')
+
+    # # testing with existing code
+    # vsatd, vsata, tt = hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=True, center='sun')
+    # print(vsatd, vsata, tt)
+
+    # print(f"A1 (km/s): {vt1}")
+    # print(f"A2 (km/s): {vt2}")
+    # print(f"B (km/s): {dv_inj}")
+    # print(f"C (km/s): {dv_ins}")
+    # print(f"D (days): {TOF/(3600*24)}")
+
+    return vt1, vt2, dv_inj, dv_ins, TOF
 
 
 if __name__ == '__main__':
@@ -380,21 +442,21 @@ if __name__ == '__main__':
     rf = 42163.95 # km
     dva, dvb, dii, dif = combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
                                               use_alts=False, center='earth')
-    print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
+    # print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
     # 3.9408991449743187 0.9173354365672587 9.08266456343274
     delta_i = np.deg2rad(28.5)
     ri = 6671.53 # km
     rf = 26558.56 # km
     dva, dvb, dii, dif = combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
                                               use_alts=False, center='earth')
-    print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
+    # print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
     # 4.058973403705712 3.3053244515448106 25.19467554845519
     delta_i = np.deg2rad(45)
     ri = 6671.53 # km
     rf = 42163.95 # km
     dva, dvb, dii, dif = combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
                                               use_alts=False, center='earth')
-    print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
+    # print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
     # 4.637365842965433 2.7513777863242685 42.24862221367573
 
     # optimal combined incl+raan plane change hohmann transfer (circular)
@@ -406,4 +468,13 @@ if __name__ == '__main__':
     dva, dvb, dii, dif, ga, gb = \
         combined_planechange(ri=alti, rf=altf, delta_i=delta_i, 
                              use_alts=True, center='earth', get_payload_angle=True)
-    print(np.rad2deg(ga), np.rad2deg(gb))
+    # print(np.rad2deg(ga), np.rad2deg(gb))
+
+    # patched conics heliocentric from earth to mars
+    r1 = r_earth + 400
+    r2 = r_mars + 400
+    rt1 = sma_earth # assuming rp is earth's sma
+    rt2 = sma_mars # assuming ra is mars' sma
+    vt1, vt2, dv_inj, dv_ins, TOF = patched_conics(r1, r2, rt1, rt2)
+    # print(vt1, vt2, dv_inj, dv_ins, TOF)
+    # 32.7293592814 21.48049901302 3.569088822572 -2.079934912568 22366019.6507

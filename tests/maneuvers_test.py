@@ -2,9 +2,9 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers import rotations, vectors, quaternions, matrices
+from math_helpers.constants import *
 from traj import conics as con
 from traj import maneuvers as man
-import numpy as np
 
 
 def test_coplanar_transfer():
@@ -25,7 +25,8 @@ def test_hohmann_transfer():
     """
     alt1 = 191.34411
     alt2 = 35781.34857
-    dv1, dv2, tt = man.hohmann_transfer(alt1, alt2, use_alts=True, center='earth')
+    dv1, dv2, tt = man.hohmann_transfer(alt1, alt2, use_alts=True, 
+                                        center='earth')
     tt = tt/60.
     dv_tot = np.abs(dv1) + np.abs(dv2)
     dv_tot_truth = 3.935224 # km/s
@@ -37,7 +38,8 @@ def test_hohmann_transfer():
     r1 = 400
     r2 = 800
     # compute and test delta v required for a hohmann transfer
-    dv1, dv2, trans_time = man.hohmann_transfer(r1, r2, use_alts=True, center='earth')
+    dv1, dv2, trans_time = man.hohmann_transfer(r1, r2, use_alts=True, 
+                                                center='earth')
     dv1_truth = 0.1091 # km/s
     dv2_truth = 0.1076 # km/s
     assert np.allclose(dv1, dv1_truth,rtol=0, atol=1e-04)
@@ -51,7 +53,8 @@ def test_bielliptic():
     altb = 503873
     alt2 = 376310
     dv1, dv_trans, dv2, tt = \
-            man.bielliptic_transfer(alt1, alt2, altb, use_alts=True, center='Earth')
+            man.bielliptic_transfer(alt1, alt2, altb, 
+                                    use_alts=True, center='Earth')
     dv1_truth = 3.156233389
     dv2_truth = -0.070465937
     dv_trans_truth = 0.677357998
@@ -68,7 +71,8 @@ def test_onetangent_transfer():
     alti = 191.34411 # alt, km
     altf = 35781.34857 # km
     ta_trans = np.deg2rad(160)
-    vtransa, vtransb, fpa_transb, TOF = man.onetangent_transfer(alti, altf, ta_trans, k=0, center='earth')
+    vtransa, vtransb, fpa_transb, TOF = \
+        man.onetangent_transfer(alti, altf, ta_trans, k=0, center='earth')
     vtransa_truth = 10.364786
     vtransb_truth = 2.233554
     fpa_transb = 43.688825
@@ -128,7 +132,8 @@ def test_noncoplanar_transfer():
     incl = np.deg2rad(55) # inclination, deg
     delta = np.deg2rad(45) # RAAN, deg
     vi = 5.892311 # km/s
-    dvi, nodes = man.noncoplanar_transfer(delta, vi=vi, incli=incl, change='raan')
+    dvi, nodes = man.noncoplanar_transfer(delta, vi=vi, incli=incl, 
+                                          change='raan')
     dvi_truth = 3.694195
     nodes = np.rad2deg(nodes)
     nodes_truth = [103.3647, 76.6353]
@@ -140,7 +145,8 @@ def test_noncoplanar_transfer():
     inclf = np.deg2rad(40) # inclination, deg
     delta = np.deg2rad(45) # RAAN, deg
     vi = 5.892311 # km/s
-    dvi, nodes = man.noncoplanar_transfer(delta, vi=vi, incli=incli, inclf=inclf, change='raan+incl')
+    dvi, nodes = man.noncoplanar_transfer(delta, vi=vi, incli=incli, 
+                                          inclf=inclf, change='raan+incl')
     dvi_truth = 3.615925
     nodes = np.rad2deg(nodes)
     nodes_truth = [128.9041, 97.3803]
@@ -219,3 +225,21 @@ def test_combined_planechange():
     dif_truth = 42.249 # deg
     assert np.allclose([dvt, dii, dif],
                        [dvt_truth, dii_truth, dif_truth], atol=1e-03)
+
+
+def test_patched_conics():
+
+    # patched conics heliocentric from earth to mars
+    r1 = r_earth + 400
+    r2 = r_mars + 400
+    rt1 = sma_earth # assuming rp is earth's sma
+    rt2 = sma_mars # assuming ra is mars' sma
+    vt1, vt2, dv_inj, dv_ins, TOF = man.patched_conics(r1, r2, rt1, rt2)
+    vt1_truth = 32.72935928
+    vt2_truth = 21.480499013
+    dv_inj_truth = 3.56908882
+    dv_ins_truth = -2.07993491
+    TOF_truth = 22366019.65074988
+    assert np.allclose([vt1, vt2, dv_inj, dv_ins, TOF],
+                [vt1_truth, vt2_truth, dv_inj_truth, dv_ins_truth, TOF_truth], 
+                atol=1e-03)

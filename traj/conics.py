@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-from operator import mul
 import sys, os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -52,7 +50,7 @@ def get_orbital_elements(rvec, vvec, center='earth'):
     if e == 0:
         true_lon_peri = float('nan')
     else:
-        true_lon_peri = np.arccos(vec.vdotv(k.eccentricity_vector, [1.,0.,0.])/k.e_mag)
+        true_lon_peri = arccos(vec.vdotv(k.eccentricity_vector, [1.,0.,0.])/k.e_mag)
         if k.e_vec[1] < 0:
             true_lon_peri = 2*np.pi - true_lon_peri
     lon_peri_mean = k.raan + k.aop  # for small inclinations
@@ -65,7 +63,7 @@ def get_orbital_elements(rvec, vvec, center='earth'):
 
         # argument of latitude - from ascending node to satellite position
         # vector in direction of satellite motion
-        arglat = np.arccos(vec.vdotv(node_vec, rvec)/(node_mag*k.r_mag))
+        arglat = arccos(vec.vdotv(node_vec, rvec)/(node_mag*k.r_mag))
         if rvec[2] < 0:
             arglat = 2*np.pi - arglat
         if e != 0:
@@ -86,7 +84,7 @@ def get_orbital_elements(rvec, vvec, center='earth'):
         # for circular and equatorial orbits
         # true longitude - from vernal equinox to satellite position
         if e == 0:
-            true_lon = np.arccos(vec.vdotv([1.,0.,0.], rvec)/k.r_mag)
+            true_lon = arccos(vec.vdotv([1.,0.,0.], rvec)/k.r_mag)
             if rvec[1] < 0:
                 true_lon = 2*np.pi - true_lon
     mean_lon = true_lon_peri + M  # for small incl and e
@@ -128,7 +126,7 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
     mu = get_mu(center=center)
 
     # declaring trig functions
-    s, c = np.sin, np.cos
+    s, c = sin, cos
 
     # assigning temporary variables
     aop_t = aop
@@ -150,7 +148,7 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
 
     # converting elements into state vectors in PQW frame
     r_pqw = [p*c(ta_t) / (1+e*c(ta_t)), p*s(ta_t) / (1+e*c(ta_t)), 0]
-    v_pqw = [-np.sqrt(mu/p)*s(ta_t), np.sqrt(mu/p)*(e+c(ta_t)), 0]
+    v_pqw = [-sqrt(mu/p)*s(ta_t), sqrt(mu/p)*(e+c(ta_t)), 0]
     
     # get 313 transformation matrix to geocentric-equitorial frame
     m1 = rot.rotate(-aop, axis='z')
@@ -179,27 +177,27 @@ def kepler_prop(r, v, dt, center='earth'):
     sma, e, i, raan, aop, ta = get_orbital_elements(r, v)
 
     p = sma*(1-e**2)
-    n = 2*np.sqrt(mu/p**3)
-    rmag = np.linalg.norm(r)
+    n = 2*sqrt(mu/p**3)
+    rmag = norm(r)
 
     if e != 0:
         if e < 1:
             E0, _ = mean_anomalies(e, ta)
-            M0 = E0 - e*np.sin(E0)
+            M0 = E0 - e*sin(E0)
             M = M0 + n*dt
             E = univ_anomalies(M=M, e=e, dt=None, p=None)
             ta = true_anomaly(e, p=None, r=None, E=E, B=None, H=None)
         elif e == 1:
             B0 = mean_anomalies(e, ta)
             hvec = vec.vcrossv(r, v)
-            hmag = np.linalg.norm(hvec)
+            hmag = norm(hvec)
             p = hmag**2/mu
             M0 = B0 + B0**3/3
             B = univ_anomalies(M=None, e=e, dt=dt, p=p)
             ta = true_anomaly(e, p=p, r=rmag, E=None, B=B, H=None)
         elif e > 1:
             H0 = mean_anomalies(e, ta)
-            M0 = e*np.sinh(H0) - H0
+            M0 = e*sinh(H0) - H0
             M = M0 + n*dt
             H = univ_anomalies(M=M, e=e, dt=None, p=None)
             ta = true_anomaly(e, p=None, r=None, E=None, B=None, H=H)
@@ -224,16 +222,16 @@ def flight_path_angle(e, ta):
     elif e < 1:
         E, _ = mean_anomalies(e, ta)
         # FIXME: is this the correct way to check sign?
-        fpa = np.arccos(np.sqrt((1-e**2)/(1-e**2*np.cos(E)**2)))
+        fpa = arccos(sqrt((1-e**2)/(1-e**2*cos(E)**2)))
         if ta > np.pi or ta < 0:
             fpa = -fpa
-        # ALT: fpa = np.arctan2(e*np.sin(ta), 1+e*np.cos(ta))
+        # ALT: fpa = arctan2(e*sin(ta), 1+e*cos(ta))
     elif e == 1:
         fpa = ta/2.
     else: # if e > 1
         H = mean_anomalies(e, ta)
-        fpa = np.arccos(np.sqrt( (e**2-1)/(e**2*np.cosh(H)**2-1) ))
-    # return np.arccos( (1+e*np.cos(ta) / (np.sqrt(1+2*e*np.cos(ta)+e**2))))
+        fpa = arccos(sqrt( (e**2-1)/(e**2*cosh(H)**2-1) ))
+    # return arccos( (1+e*cos(ta) / (sqrt(1+2*e*cos(ta)+e**2))))
     return fpa
     
 
@@ -251,18 +249,18 @@ def bplane_targeting(rvec, vvec, center='earth'):
     n_hat = vec.vcrossv(k.h_vec/k.h_mag, k.e_vec/k.e_mag)
 
     # semiminor axis
-    semi_minor = k.h_mag**2/(k.mu*np.sqrt(e_mag**2-1))
+    semi_minor = k.h_mag**2/(k.mu*sqrt(e_mag**2-1))
 
     # computing incoming asymptote and B-vector
     evec_term = vec.vxs(1/e_mag, k.e_vec)
-    nvec_term = vec.vxs(np.sqrt(1-(1/e_mag)**2), n_hat)
+    nvec_term = vec.vxs(sqrt(1-(1/e_mag)**2), n_hat)
     S = vec.vxadd(evec_term, nvec_term)
-    evec_term = vec.vxs(semi_minor*np.sqrt(1-(1/e_mag)**2), k.e_vec)
+    evec_term = vec.vxs(semi_minor*sqrt(1-(1/e_mag)**2), k.e_vec)
     nvec_term = vec.vxs(semi_minor/e_mag, n_hat)
     B = vec.vxadd(evec_term, -nvec_term)
 
     # T and R vector
-    T = vec.vxs(1/np.sqrt(S[0]**2+S[1]**2), [S[1], -S[0], 0.])
+    T = vec.vxs(1/sqrt(S[0]**2+S[1]**2), [S[1], -S[0], 0.])
     R = vec.vcrossv(v1=S, v2=T)
 
     # BdotT and BdotR
@@ -270,7 +268,7 @@ def bplane_targeting(rvec, vvec, center='earth'):
     B_r = vec.vdotv(v1=B, v2=R)
 
     # angle between B and T
-    theta = np.arccos(B_t/vec.norm(B_t))
+    theta = arccos(B_t/vec.norm(B_t))
     
     return B_t, B_r, theta
 
@@ -279,12 +277,12 @@ def sp_energy(vel, pos, mu=mu_earth):
     """returns specific mechanical energy (km2/s2), angular momentum
     (km2/s), and flight-path angle (deg) of an orbit; 2body problem
     """
-    v_mag =  np.linalg.norm(vel)
-    r_mag = np.linalg.norm(pos)
+    v_mag =  norm(vel)
+    r_mag = norm(pos)
     energy =v_mag**2/2. - mu/r_mag
     ang_mo = vec.vcrossv(v1=pos, v2=vel)
     if np.dot(a=pos, b=vel) > 0:
-        phi = np.rad2deg(np.arccos(np.linalg.norm(ang_mo)/(r_mag*v_mag)))
+        phi = np.rad2deg(arccos(norm(ang_mo)/(r_mag*v_mag)))
     else:
         phi = 0.
     return energy, ang_mo, phi
@@ -294,16 +292,16 @@ def mean_anomalies(e, ta):
     """in work
     """
     if e < 1:
-        E = np.arcsin(np.sin(ta)*np.sqrt(1-e**2) / (1+e*np.cos(ta)))
-        # alt: E = np.arccos((e+np.cos(ta))/(1+e*np.cos(ta)))
-        M = E - e**np.sin(E)
+        E = arcsin(sin(ta)*sqrt(1-e**2) / (1+e*cos(ta)))
+        # alt: E = arccos((e+cos(ta))/(1+e*cos(ta)))
+        M = E - e**sin(E)
         return E, M
     elif e == 1:
-        B = np.tan(ta/2)
+        B = tan(ta/2)
         return B
     elif e > 1:
-        H = np.arcsinh( (np.sin(ta)*np.sqrt(e**2-1)) / (1+e*np.cos(ta)) )
-        # alt: H = np.arccosh((e+np.cos(ta)/(1+e*np.cos(ta)))
+        H = arcsinh( (sin(ta)*sqrt(e**2-1)) / (1+e*cos(ta)) )
+        # alt: H = arccosh((e+cos(ta)/(1+e*cos(ta)))
         return H
 
 
@@ -311,14 +309,14 @@ def true_anomaly(e, p=None, r=None, E=None, B=None, H=None):
     """in work
     """
     if e < 1 and E:
-        ta = np.arcsin(np.sin(E)*np.sqrt(1-e**2) / (1-e*np.cos(E)))
-        # alt: ta = np.arccos((np.cos(E)-e)/(1-e*np.cos(E)))
+        ta = arcsin(sin(E)*sqrt(1-e**2) / (1-e*cos(E)))
+        # alt: ta = arccos((cos(E)-e)/(1-e*cos(E)))
     elif e == 1 and B:
         ta = np.arsin(p*B/r)
         # alt: ta = (p-r)/r
     else: # e > 1 and H:
-        ta = np.arcsin( (-np.sinh(H)*np.sqrt(e**2-1)) / (1-e*np.cosh(H)) )
-        # alt: ta = np.arccos((np.cosh(ta)-e)/(1-e*np.cosh(H)))
+        ta = arcsin( (-sinh(H)*sqrt(e**2-1)) / (1-e*cosh(H)) )
+        # alt: ta = arccos((cosh(ta)-e)/(1-e*cosh(H)))
     return ta
 
 
@@ -349,15 +347,15 @@ def univ_anomalies(M=None, e=None, dt=None, p=None, center='earth'):
                 count += 1
             else:
                 E_prev = E
-            E = E_prev + (M - E_prev + e*np.sin(E_prev)) / (1-e*np.cos(E_prev))
+            E = E_prev + (M - E_prev + e*sin(E_prev)) / (1-e*cos(E_prev))
         return E
 
     # parabolic solution
     elif e == 1 and p:
-        n_p = 2*np.sqrt(mu/p**3)
-        s = 0.5*np.arctan(2/(3*n_p*dt))
-        w = np.arctan(np.tan(s)**(1/3))
-        B = 2/np.tan(2*w)
+        n_p = 2*sqrt(mu/p**3)
+        s = 0.5*arctan(2/(3*n_p*dt))
+        w = arctan(tan(s)**(1/3))
+        B = 2/tan(2*w)
         return B
 
     # hyperbolic solution
@@ -379,7 +377,7 @@ def univ_anomalies(M=None, e=None, dt=None, p=None, center='earth'):
                 count += 1
             else:
                 H_prev = H
-            H = H_prev + (M - e*np.sinh(H_prev)+H_prev) / (e*np.cosh(H_prev)-1)
+            H = H_prev + (M - e*sinh(H_prev)+H_prev) / (e*cosh(H_prev)-1)
         return H
 
 
@@ -401,7 +399,7 @@ def traj_equation(p, e, tanom):
     :param tanom:
     :return r:
     """
-    r = p / ( 1 + e*np.cos(tanom))
+    r = p / ( 1 + e*cos(tanom))
 
     return r
 
@@ -420,12 +418,12 @@ def vel_mag(r=None, a=None, e=None, p=None, tanom=None, center='earth'):
     mu = get_mu(center=center)
 
     if r and a:
-        vmag = np.sqrt(2*mu/r - mu/a)
+        vmag = sqrt(2*mu/r - mu/a)
         return vmag
     elif e and p and tanom:
         a = semimajor_axis(p, e)
         r = traj_equation(p, e, tanom)
-        vmag = np.sqrt(2*mu/r - mu/a)
+        vmag = sqrt(2*mu/r - mu/a)
         return vmag
     else:
         return "Need at least r, a; or e, p, tanom"
@@ -478,7 +476,7 @@ class Keplerian(object):
     @property
     def inclination(self):
         """inclination"""
-        return np.arccos(self.h_vec[2]/self.h_mag)
+        return arccos(self.h_vec[2]/self.h_mag)
 
 
     @property
@@ -486,7 +484,7 @@ class Keplerian(object):
         """true anomaly"""
         if self.e_mag == 0:
             return float('nan')
-        ta = np.arccos(vec.vdotv(self.e_vec, self.rvec)/(self.e_mag*self.r_mag))
+        ta = arccos(vec.vdotv(self.e_vec, self.rvec)/(self.e_mag*self.r_mag))
         if vec.vdotv(self.rvec, self.vvec) < 0:
             ta = 2*np.pi - ta
         return ta
@@ -497,7 +495,7 @@ class Keplerian(object):
         """right ascending node"""
         if self.inclination == 0:
             return float('nan')
-        omega = np.arccos(self.node_vec[0]/self.node_mag)
+        omega = arccos(self.node_vec[0]/self.node_mag)
         if self.node_vec[1] < 0:
             omega = 2*np.pi - omega
         return omega
@@ -508,7 +506,7 @@ class Keplerian(object):
         """argument_of_periapse"""
         if self.e_mag == 0 or self.node_mag == 0:
             return float('nan')
-        argp = np.arccos(vec.vdotv(self.node_vec, self.e_vec)/(self.node_mag*self.e_mag))
+        argp = arccos(vec.vdotv(self.node_vec, self.e_vec)/(self.node_mag*self.e_mag))
         if self.e_vec[2] < 0:
             argp = 2*np.pi - argp
         return argp
