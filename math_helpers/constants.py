@@ -28,6 +28,7 @@ sma_earth = 149598023
 sma_moon = 384400
 sma_mars = 227939186 # 1.523679342 AU
 sma_mars = 1.523679342 * AU
+sma_venus = 0.723 * AU # from wikipedia
 
 # earth constants
 E_earth = 0.081819221456
@@ -40,6 +41,7 @@ from numpy.linalg import norm
 sin, cos, tan = np.sin, np.cos, np.tan
 arcsin, arccos, arctan = np.arcsin, np.arccos, np.arctan
 sinh, cosh = np.sinh, np.cosh
+arcsinh, arccosh = np.arcsinh, np.arccosh
 sqrt = np.sqrt
 pi = np.pi
 
