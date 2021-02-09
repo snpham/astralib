@@ -162,6 +162,41 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
     return np.array(r_ijk), np.array(v_ijk)
 
 
+def get_rv_frm_elements2(p, e, i, Om, w, ta, center='earth'):
+    """computes positon/velocity vectors from Keplerian elements.
+    We first compute pos/vel in the PQW system, then rotate to the
+    geocentric equatorial system.
+    :param center: center object of orbit; default=earth
+    :param sma: semi-major axis (km)
+    :param e: eccentricity
+    :param i: inclination (rad)
+    :param Om: right ascending node (rad)
+    :param w: argument of periapsis (rad)
+    :param ta: true anomaly (rad)
+    :return rvec: positional vectors of spacecraft [IJK] (km)
+    :return vvec: velocity vectors of spacecraft [IJK] (km/s)
+    output similar answers but not completely tested
+    """
+    a = p / (1-e**2)
+    mu = get_mu(center=center)
+    r = p / (1+e*cos(ta))
+    h = sqrt( mu*a*(1-e**2) )
+
+    r = [r*(cos(Om)*cos(w+ta) - sin(Om)*sin(w+ta)*cos(i)), 
+         r*(sin(Om)*cos(w+ta) + cos(Om)*sin(w+ta)*cos(i)), 
+         r*(sin(i)*sin(w+ta))
+    ]
+
+    rmag = norm(r)
+    v = [r[0]*h*e*sin(ta)/(rmag*p) - h/rmag*(cos(Om)*sin(w+ta) + sin(Om)*cos(w+ta)*cos(i)),
+         r[1]*h*e*sin(ta)/(rmag*p) - h/rmag*(sin(Om)*sin(w+ta) - cos(Om)*cos(w+ta)*cos(i)),
+         r[2]*h*e*sin(ta)/(rmag*p) + h/rmag*(sin(i)*cos(w+ta))
+    ]
+
+    return np.hstack([r, v])
+
+
+
 def kepler_prop(r, v, dt, center='earth'):
     """Solve Kepler's problem using classical orbital elements; no perturbations
     :param r: initial position

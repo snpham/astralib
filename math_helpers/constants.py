@@ -44,6 +44,8 @@ sinh, cosh = np.sinh, np.cosh
 arcsinh, arccosh = np.arcsinh, np.arccosh
 sqrt = np.sqrt
 pi = np.pi
+r2d = np.rad2deg
+d2r = np.deg2rad
 
 from matplotlib import pyplot as plt
 
