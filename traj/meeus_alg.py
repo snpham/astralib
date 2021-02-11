@@ -6,9 +6,6 @@ from traj.conics import get_rv_frm_elements2, get_orbital_elements
 import spiceypy as sp
 
 
-sp.furnsh(['math_helpers/naif0012.tls',
-        'math_helpers/de438s.bsp'])
-
 def meeus(jde, planet='earth'):
     """Meeus algorithm to determine planet ephemerides in ECLIPJ2000 frame
     :param jde: julian date
@@ -133,7 +130,10 @@ def meeus(jde, planet='earth'):
 
 
 if __name__ == '__main__':
-    
+
+    sp.furnsh(['math_helpers/naif0012.tls',
+            'math_helpers/de438s.bsp'])
+
     # r2d = np.rad2deg
 
     # testing hw2_1 test case 1: earth to venus
@@ -142,80 +142,61 @@ if __name__ == '__main__':
     # JPL data
     rvec_jpl = [1.470888856132856E+08, -3.251960759819394E+07, 6.064054554197937E+02]
     vvec_jpl = [5.943716349475999E+00, 2.898771456759873E+01, -8.218653820915023E-04]
-    print('jpl:', np.hstack([rvec_jpl, vvec_jpl]))
+
+    # earth Lambert check values
+    e_state = [147084764.907217, -32521189.649751, 467.190091, 5.946239, 28.974641, -0.000716]
 
     # using meeus and custom script
     jde = 2455450
-    a, e, i, om, w, ta = meeus(jde, planet='earth')
+    a, e, i, Om, w, ta = meeus(jde, planet='earth')
     a = a*AU
-    i = r2d(i)
-    om = r2d(om)
-    w = r2d(w)
-    ta = r2d(ta)
-    print(a, e, i, om, w, ta)
+    print('meeus elements', a, e, r2d(i), r2d(Om), r2d(w), r2d(ta))
     # 149598022.99063239 0.016704124282391108 0.0013956009472636647 174.8473987048956 288.1244364343985 244.56036662629032
-    p =  a*(1-e**2)
-    state = get_rv_frm_elements2(p, e, i, om, w, ta, center='sun')
-    print('my script', state)
-    # [-1.15163585e+08 -9.19636381e+07 -2.02175596e+05  1.90440519e+01  -2.34774076e+01  8.07160397e-03]
+
+    center = 'sun'
+    state = get_rv_frm_elements2(a, e, i, Om, w, ta, center)
+    print('my script state', state)
+    # [1.47081462e+08 -3.25372777e+07  4.67587601e+02  5.94941002e+00  2.89739400e+01 -7.15905071e-04]
     T0 = sp.utc2et(f'jd {jde}')
     dcm = sp.sxform('j2000', 'ECLIPJ2000', et=T0)
     state_eclp = np.dot(dcm, state)
     print('meeus state_eclp', state_eclp)
+    # 1.47084765e+08 -2.98374223e+07  1.29366150e+07  5.94623924e+00  2.65834288e+01 -1.15261072e+01
 
-    # using meeus but spice's rv2elements conversion
+    # FIXME: using meeus but spice's rv2elements conversion
     rp = a*(1-e)
     cosE = ((e+cos(ta)/(1+e*cos(ta))))
     sinE = ((sin(ta)*sqrt(1-e**2))/(1+e*cos(ta)))
     E = np.arctan2(sinE,cosE)
     M0 = E - e*sin(E)
     T0 = sp.utc2et(f'jd {jde}')
-    elements = [rp, e, i, om, w, M0, T0, get_mu('sun')]
+    elements = [rp, e, i, Om, w, M0, T0, get_mu('sun')]
     state = sp.conics(elements, T0)
     print('my script + spice:', state)
-    # [-1.15153074e+08 -9.19765948e+07 -2.02171140e+05  1.90466869e+01  -2.34753032e+01  8.07623002e-03]
-                #  RP      Perifocal distance.
-                #  ECC     Eccentricity.
-                #  INC     Inclination.
-                #  LNODE   Longitude of the ascending node.
-                #  ARGP    Argument of periapse.
-                #  M0      Mean anomaly at epoch.
-                #  T0      Epoch.
-                #  MU      Gravitational parameter.
+    # 1.47081462e+08 -3.25372777e+07  4.67587601e+02  5.94941002e+00  2.89739400e+01 -7.15905071e-04
 
-    # using spice entirely
-    et = T0
-    # eclip j2000
-    state = sp.spkezr('earth', et, 'ECLIPJ2000', abcorr='none', obs='sun')[0]
-    print('spice eclipj2000:', state)
-    # 1.47089279e+08 -2.98346377e+07 -1.29342376e+07  5.94333608e+00  2.65961111e+01  1.15299294e+01
-    # spice orbital elements eclipj2000
-    elements = sp.oscelt(state, et=et, mu=get_mu('sun'))
-    # print(elements)
+    ## using spice entirely
+    # state, eclipj2000
+    state = sp.spkezr('earth', T0, 'ECLIPJ2000', abcorr='none', obs='sun')[0]
+    print('spice state (eclipj2000):', state)
+    # 1.47089279e+08 -3.25176892e+07  6.06313111e+02  5.94333608e+00  2.89877974e+01 -8.22063694e-04
+    # orbital elements, eclipj2000
+    elements = sp.oscelt(state, et=T0, mu=get_mu('sun'))
     rp = elements[0]
     ecc = elements[1]
     inc = r2d(elements[2])
     lnode = r2d(elements[3])
     argp = r2d(elements[4])
     m0 = r2d(elements[5])
-    print('spice elements: ', rp, ecc, inc, lnode, argp, m0)
-    # 147255502.72641924 0.01651399180109588 23.437690394777302 0.0002959136395019184 100.07211899330639 249.21757574665213
-                    # rp      Perifocal distance.
-                    # ecc     Eccentricity.
-                    # inc     Inclination.
-                    # lnode   Longitude of the ascending node.
-                    # argp    Argument of periapsis.
-                    # m0      Mean anomaly at epoch.
-                    # t0      Epoch.
-                    # mu      Gravitational parameter.
+    print('spice elements (eclip j2000): ', rp, ecc, inc, lnode, argp, m0)
+    # 147255502.72641927 0.016513991801095966 0.0016050380019963543 175.7946305384967 284.277759951911 249.2175757466513
 
-    # j2000
-    state = sp.spkezr('earth', et, 'j2000', abcorr='none', obs='sun')[0]
-    print('spice j2000:', state)
+    # state, j2000
+    state = sp.spkezr('earth', T0, 'j2000', abcorr='none', obs='sun')[0]
+    print('spice state (j2000):', state)
     # 1.47089279e+08 -2.98346377e+07 -1.29342376e+07  5.94333608e+00  2.65961111e+01  1.15299294e+01
-    # spice orbital elements j2000
-    elements = sp.oscelt(state, et=et, mu=get_mu('sun'))
-    # print(elements)
+    # orbital elements, j2000
+    elements = sp.oscelt(state, et=T0, mu=get_mu('sun'))
     rp = elements[0]
     ecc = elements[1]
     inc = r2d(elements[2])
@@ -225,8 +206,25 @@ if __name__ == '__main__':
     print('spice elements (j2000): ', rp, ecc, inc, lnode, argp, m0)
     # 147255502.72641924 0.01651399180109588 23.437690394777302 0.0002959136395019184 100.07211899330639 249.21757574665213
 
-    # test case -> script orbital elements
+    # converting test case 1 states -> script's orbital elements
     state = [147084764.907217, -32521189.649751, 467.190091, 5.946239, 28.974641, -0.000716]
-    sma, e, i, raan, aop, ta = get_orbital_elements(state[:3], state[3:6], center='sun')
-    print('test->script elemnts:', sma, e, r2d(i), r2d(raan), r2d(aop), r2d(ta))
-    # 149598020.45343322 0.016704137307570675 0.0013957640305159802 174.84653943606472 288.1253400504828 244.56032227903557
+    a, e, i, raan, aop, ta = get_orbital_elements(state[:3], state[3:6], center='sun')
+    assert np.allclose([a, e, r2d(i), r2d(raan), r2d(aop), r2d(ta)], 
+                       [149598020.45343322, 0.016704137307570675, 0.0013957640305159802, 
+                        174.84653943606472, 288.1253400504828, 244.56032227903557])
+
+    # keplerian to cartesian, this is working now
+    r_vec = state[:3]
+    v_vec = state[3:6]
+    center = 'sun'
+    a = a
+    e = e 
+    i = i
+    w = aop
+    Om = raan
+    ta = ta
+    # r, v = get_rv_frm_elements3(a, e, i, w, Om, ta, center)
+    # assert np.allclose(np.hstack((r, v)), [147084764.907217, -32521189.649751, 467.190091, 5.946239, 28.974641, -0.000716])
+
+    state = get_rv_frm_elements2(a, e, i, Om, w, ta, center)
+    assert np.allclose(state, [147084764.907217, -32521189.649751, 467.190091, 5.946239, 28.974641, -0.000716])

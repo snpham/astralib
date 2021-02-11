@@ -5,6 +5,7 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
 from traj import conics as con
+from math_helpers.vectors import vdotv
 
 
 def coplanar_transfer(p, e, r1, r2, center='earth'):
@@ -353,128 +354,120 @@ def patched_conics(r1, r2, rt1, rt2):
     return vt1, vt2, dv_inj, dv_ins, TOF
 
 
+def get_c2c3(psi):
+    """compute the c2 and c2 coefficients for lamberts algorithm
+    :param psi: deltaE*2
+    :return c2: c2 coefficient
+    :return c3: c3 coefficient
+    """
+    if psi > 1e-6:
+        sqrt_psi = sqrt(psi)
+        c2 = ( 1 - cos(sqrt_psi) ) / psi
+        c3 = ( sqrt_psi - sin(sqrt_psi) ) / ( sqrt(psi**3) )
+
+    elif psi < -1e-6:
+        sqrt_npsi = sqrt(-psi)
+        c2 = ( 1 - cosh(sqrt_npsi) ) / psi
+        c3 = ( sinh(sqrt_npsi) - sqrt_npsi ) / ( sqrt( (-psi)**3 ) )
+
+    else:
+        c2 = 1/2.
+        c3 = 1/6.
+
+    return c2, c3
+
+
+def lambert_univ(ri, rf, TOF0, dm=None, center='sun'):
+    """lambert solver using universal variables
+    :param ri:
+    :param rf:
+    :param TOF0:
+    :param dm:
+    :param center:
+    :return vi:
+    :return vf:
+    """
+
+    # mu = 398600.4418 # matlab vallado test 1
+    mu = get_mu(center=center)
+
+    # position vectors and magnitudes
+    ri = np.array(ri)
+    rf = np.array(rf)
+    r0mag = norm(ri)
+    rfmag = norm(rf)
+
+    # assuming positions of planets are in the ecliptic
+    tanom1 = np.arctan2(ri[1], ri[0])
+    tanom2 = np.arctan2(rf[1], rf[0])
+    dtanom = tanom2 - tanom1
+    if dtanom < 0:
+        dtanom += 2*np.pi
+    elif dtanom > 2*np.pi:
+        dtanom -= 2*np.pi
+
+    # get direction or orbit
+    if dm:
+        dm = dm
+    else:
+        if dtanom < np.pi:
+            dm = 1
+        else:
+            dm = -1
+
+    # get constant values of orbit
+    cos_dtanom = vdotv(ri, rf) / (r0mag*rfmag)
+    A = dm * np.sqrt(r0mag*rfmag*(1+cos_dtanom))
+
+    if dtanom == 0 or A == 0:
+        raise ValueError("Trajectory can't be computed")
+
+    psi = 0
+    c2 = 1/2
+    c3 = 1/6
+    psi_up = 4*np.pi**2
+    psi_low = -4*np.pi
+    TOF = -10.0
+    y = 0
+
+    while np.abs(TOF - TOF0) > 1e-5:
+
+        y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
+
+        if A > 0 and y < 0:
+            while y < 0:
+                print('readjusting y')
+                N = 0.8
+                psi = N*1/c3 * (1-sqrt(c2)/A * (ri + rf))
+                c2, c3 = get_c2c3(psi)
+                y = r0mag + rfmag + A*(psi*c3-1)/np.sqrt(c2)
+    
+
+        chi = sqrt(y/c2)
+        TOF = (chi**3*c3 + A*sqrt(y)) / sqrt(mu)
+        # print(f'TOF {TOF}')
+
+        if TOF <= TOF0:
+            psi_low = psi
+        else:
+            psi_up = psi
+
+        psi = (psi_up+psi_low) / 2
+        c2, c3 = get_c2c3(psi)
+
+    # compute f, g functions
+    f = 1. - y/r0mag
+    gdot = 1. - y/rfmag
+    g = A * sqrt(y/mu)
+
+    # velocities
+    vi = (rf - f*ri) / g
+    vf = (gdot*rf - ri) / g
+
+    return vi, vf
+
+
+
 if __name__ == '__main__':
     
-    #
-    alt1 = 7028.137
-    alt2 = 42158.137
-    # print(hohmann_transfer(alt1, alt2))
-
-    alt1 = 191.34411
-    alt2 = 35781.34857
-    dv1, dv2, tt = hohmann_transfer(alt1, alt2, use_alts=True, center='earth')
-    # print(dv1, dv2, np.abs(dv1)+np.abs(dv2), tt)
-    # print(tt/60)
-
-    alt1 = 191.34411
-    altb = 503873
-    alt2 = 376310
-    dv1, dv_trans, dv2, tt = \
-        bielliptic_transfer(alt1, alt2, altb, use_alts=True, center='earth')
-    # print(dv1, dv_trans, dv2, tt/3600)
-    # print(np.abs(dv1)+np.abs(dv2)+np.abs(dv_trans))
-
-    alti = 191.34411 # alt, km
-    altf = 35781.34857 # km
-    ta_trans = np.deg2rad(160)
-    vtransa, vtransb, fpa_transb, TOF = \
-        onetangent_transfer(alti, altf, ta_trans, k=0, center='earth')
-
-
-    # circular orbit - incl. change only
-    delta = np.deg2rad(15)
-    vi = 5.892311
-    phi_fpa = 0
-    dvi = noncoplanar_transfer(delta, vi=vi, phi_fpa=phi_fpa, change='inc')
-    # print(dvi) # 1.5382021 km/s
-
-    # elliptical orbit - incl. change only
-    delta = np.deg2rad(15)
-    e = 0.3
-    p = 17858.7836 # km
-    argp = np.deg2rad(30)
-    tanom = np.deg2rad(330)
-    vi = con.vel_mag(e=e, tanom=tanom, p=p)
-    phi_fpa = con.flight_path_angle(e, tanom)
-    # print(vi) # 1.5382021
-    # print(phi_fpa, np.rad2deg(phi_fpa)) # -6.78 deg
-    dvi = noncoplanar_transfer(delta, vi=vi, phi_fpa=phi_fpa, change='inc')
-    # print(dvi) # 1.553727 km/s
-    # node check
-    tanom = tanom - np.pi
-    vi = con.vel_mag(e=e, tanom=tanom, p=p)
-    phi_fpa = con.flight_path_angle(e, tanom)
-    # print(vi) # 3.568017
-    # print(phi_fpa, np.rad2deg(phi_fpa)) # 11.4558 deg
-    dvi = noncoplanar_transfer(delta, vi=vi, phi_fpa=phi_fpa, change='inc')
-    # print(dvi) # 0.912883
-
-    # RAAN change only
-    incl = np.deg2rad(55) # inclination, deg
-    delta = np.deg2rad(45) # RAAN, deg
-    vi = 5.892311 # km/s
-    dvi, nodes = noncoplanar_transfer(delta, vi=vi, incli=incl, change='raan')
-    # print(dvi, np.rad2deg(nodes)) # 3.694195175425934 [103.36472753  76.63527247]
-
-    # RAAN +inclination
-    incli = np.deg2rad(55) # inclination, deg
-    inclf = np.deg2rad(40) # inclination, deg
-    delta = np.deg2rad(45) # RAAN, deg
-    vi = 5.892311 # km/s
-    dvi, nodes = noncoplanar_transfer(delta, vi=vi, incli=incli, 
-                                      inclf=inclf, change='raan+incl')
-    # print(dvi, np.rad2deg(nodes)) # 3.615924548496319 [128.90413974  97.38034533]
-
-    # optimal combined incl+raan plane change hohmann transfer (circular)
-    incli = np.deg2rad(28.5)
-    inclf = 0
-    delta_i = inclf - incli
-    alti = 191 # km
-    altf = 35780 # km
-    dva, dvb, dii, dif = combined_planechange(ri=alti, rf=altf, delta_i=delta_i, 
-                                              use_alts=True, center='earth')
-    # print(dva, dvb, np.rad2deg(dii), np.rad2deg(dif))
-    # 2.48023100425372 1.7899958948177792 -2.166660764180782 -26.333339235819217
-
-    # optimal combined incl+raan plane change hohmann transfer (circular)
-    delta_i = np.deg2rad(10)
-    ri = 6671.53 # km
-    rf = 42163.95 # km
-    dva, dvb, dii, dif = combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
-                                              use_alts=False, center='earth')
-    # print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
-    # 3.9408991449743187 0.9173354365672587 9.08266456343274
-    delta_i = np.deg2rad(28.5)
-    ri = 6671.53 # km
-    rf = 26558.56 # km
-    dva, dvb, dii, dif = combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
-                                              use_alts=False, center='earth')
-    # print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
-    # 4.058973403705712 3.3053244515448106 25.19467554845519
-    delta_i = np.deg2rad(45)
-    ri = 6671.53 # km
-    rf = 42163.95 # km
-    dva, dvb, dii, dif = combined_planechange(ri=ri, rf=rf, delta_i=delta_i, 
-                                              use_alts=False, center='earth')
-    # print(dva+dvb, np.rad2deg(dii), np.rad2deg(dif))
-    # 4.637365842965433 2.7513777863242685 42.24862221367573
-
-    # optimal combined incl+raan plane change hohmann transfer (circular)
-    incli = np.deg2rad(28.5)
-    inclf = 0
-    delta_i = inclf - incli
-    alti = 191 # km
-    altf = 35780 # km
-    dva, dvb, dii, dif, ga, gb = \
-        combined_planechange(ri=alti, rf=altf, delta_i=delta_i, 
-                             use_alts=True, center='earth', get_payload_angle=True)
-    # print(np.rad2deg(ga), np.rad2deg(gb))
-
-    # patched conics heliocentric from earth to mars
-    r1 = r_earth + 400
-    r2 = r_mars + 400
-    rt1 = sma_earth # assuming rp is earth's sma
-    rt2 = sma_mars # assuming ra is mars' sma
-    vt1, vt2, dv_inj, dv_ins, TOF = patched_conics(r1, r2, rt1, rt2)
-    # print(vt1, vt2, dv_inj, dv_ins, TOF)
-    # 32.7293592814 21.48049901302 3.569088822572 -2.079934912568 22366019.6507
+    pass

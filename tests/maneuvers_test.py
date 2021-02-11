@@ -86,6 +86,7 @@ def test_onetangent_transfer():
 def test_noncoplanar_transfer():
     """
     """
+    
     ## circular orbit - inclination change only
     delta = np.deg2rad(15)
     vi = 5.892311
@@ -243,3 +244,61 @@ def test_patched_conics():
     assert np.allclose([vt1, vt2, dv_inj, dv_ins, TOF],
                 [vt1_truth, vt2_truth, dv_inj_truth, dv_ins_truth, TOF_truth], 
                 atol=1e-03)
+
+
+def test_lambert_univ():
+
+    # short way, 0 rev - vallado test 1 (earth)
+    # initial/final positions, time of flight, and direction of motion
+    ri = [ 15945.3407,    0.000000 ,   0.000000]
+    rf = [12214.8396, 10249.4673, 0.0]
+    TOF0 =  76*60
+    dm = None
+    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='earth')
+    assert np.allclose(vi, [2.058913, 2.915965, 0])
+    assert np.allclose(vf, [-3.451565, 0.910315, 0])
+
+    # short way, 0 rev - vallado test 1 (earth)
+    # initial/final positions, time of flight, and direction of motion
+    ri = [ 15945.3407,    0.000000 ,   0.000000]
+    rf = [12214.8396, 10249.4673, 0.0]
+    TOF0 =  21300.0000
+    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=None, center='earth')
+    assert np.allclose(vi, [5.09232089, 1.60303981, 0.])
+    assert np.allclose(vf, [-4.93135829, -2.04528102, -0.])
+
+    # long way, 0 rev - vallado test 2 (earth)
+    # initial/final positions, time of flight, and direction of motion
+    ri = [ 15945.3407,    0.000000 ,   0.000000]
+    rf = [12214.8396, 10249.4673, 0.0]
+    TOF0 =  21300.0000
+    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=-1, center='earth')
+    assert np.allclose(vi, [0.16907567, -5.23745032, -0.])
+    assert np.allclose(vf, [3.23704878, -4.12079944, -0.])
+
+    # Lambert Check Handout, Test Case #1: Earth to Venus
+    ri = [147084764.907217, -32521189.6497507 , 467.190091409394]
+    rf = [-88002509.1583767, -62680223.1330849, 4220331.52492018]
+    TOF0 =  (2455610 - 2455450) *3600*24
+    dm = None
+    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='sun')
+    assert np.allclose(vi, [4.65144349746008, 26.0824144093203, -1.39306043231699])
+    assert np.allclose(vf, [16.7926204519414, -33.3516748429805, 1.52302150358741])
+
+    # Lambert Check Handout, Test Case #2: Mars to Jupiter
+    ri = [170145121.321308, -117637192.836034 , -6642044.2724648]
+    rf = [-803451694.669228, 121525767.116065, 17465211.7766441]
+    TOF0 =  (2457500 - 2456300) *3600*24
+    dm = None
+    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='sun')
+    assert np.allclose(vi, [13.7407773577481, 28.8309931231422, 0.691285008034955])
+    assert np.allclose(vf, [-0.883933068957334, -7.98362701426338, -0.240770597841448])
+
+    # Lambert Check Handout, Test Case #3: Saturn to Nepturn
+    ri = [-1334047119.28306, -571391392.847366 , 63087187.1397936]
+    rf = [4446562424.74189, 484989501.499146, -111833872.461498]
+    TOF0 =  (2461940 - 2455940) *3600*24
+    dm = None
+    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='sun')
+    assert np.allclose(vi, [11.183261516529, -8.90233011026663, 0.420697885966674])
+    assert np.allclose(vf, [7.52212721495555, 4.92836889442307, -0.474069568630355])

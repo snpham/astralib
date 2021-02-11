@@ -162,7 +162,7 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
     return np.array(r_ijk), np.array(v_ijk)
 
 
-def get_rv_frm_elements2(p, e, i, Om, w, ta, center='earth'):
+def get_rv_frm_elements2(a, e, i, Om, w, ta, center='earth'):
     """computes positon/velocity vectors from Keplerian elements.
     We first compute pos/vel in the PQW system, then rotate to the
     geocentric equatorial system.
@@ -177,23 +177,24 @@ def get_rv_frm_elements2(p, e, i, Om, w, ta, center='earth'):
     :return vvec: velocity vectors of spacecraft [IJK] (km/s)
     output similar answers but not completely tested
     """
-    a = p / (1-e**2)
+    p = a*(1-e**2)
+
     mu = get_mu(center=center)
     r = p / (1+e*cos(ta))
     h = sqrt( mu*a*(1-e**2) )
 
-    r = [r*(cos(Om)*cos(w+ta) - sin(Om)*sin(w+ta)*cos(i)), 
+    rvec = [r*(cos(Om)*cos(w+ta) - sin(Om)*sin(w+ta)*cos(i)), 
          r*(sin(Om)*cos(w+ta) + cos(Om)*sin(w+ta)*cos(i)), 
          r*(sin(i)*sin(w+ta))
     ]
 
-    rmag = norm(r)
-    v = [r[0]*h*e*sin(ta)/(rmag*p) - h/rmag*(cos(Om)*sin(w+ta) + sin(Om)*cos(w+ta)*cos(i)),
-         r[1]*h*e*sin(ta)/(rmag*p) - h/rmag*(sin(Om)*sin(w+ta) - cos(Om)*cos(w+ta)*cos(i)),
-         r[2]*h*e*sin(ta)/(rmag*p) + h/rmag*(sin(i)*cos(w+ta))
+    vvec = [rvec[0]*h*e*sin(ta)/(r*p) - h/r*(cos(Om)*sin(w+ta) + sin(Om)*cos(w+ta)*cos(i)),
+         rvec[1]*h*e*sin(ta)/(r*p) - h/r*(sin(Om)*sin(w+ta) - cos(Om)*cos(w+ta)*cos(i)),
+         rvec[2]*h*e*sin(ta)/(r*p) + h/r*(sin(i)*cos(w+ta))
     ]
 
-    return np.hstack([r, v])
+    return np.hstack([rvec, vvec])
+
 
 
 
