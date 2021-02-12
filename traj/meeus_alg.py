@@ -10,7 +10,7 @@ def meeus(jde, planet='earth'):
     """Meeus algorithm to determine planet ephemerides in ECLIPJ2000 frame
     :param jde: julian date
     :param planet: planet to get state from
-    :return a: semi-major axis
+    :return a: semi-major axis (km)
     :return e: eccentricity
     :return i: inclination (rad)
     :return Om: longitude of the ascending node (rad)
@@ -126,6 +126,9 @@ def meeus(jde, planet='earth'):
     while ta < -2*np.pi:
         ta += 2*np.pi
 
+    # convert SMA to km
+    a = a*AU
+
     return np.array([a, e, i, Om, w, ta])
 
 
@@ -149,7 +152,6 @@ if __name__ == '__main__':
     # using meeus and custom script
     jde = 2455450
     elements = meeus(jde, planet='earth')
-    elements[0] = elements[0]*AU
     a, e, i, Om, w, ta = elements
     print('meeus elements', a, e, r2d(i), r2d(Om), r2d(w), r2d(ta))
     # 149598022.99063239 0.016704124282391108 0.0013956009472636647 174.8473987048956 288.1244364343985 244.56036662629032

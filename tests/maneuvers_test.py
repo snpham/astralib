@@ -310,8 +310,6 @@ def test_lambert_univ():
     arrivaljd = 2458423.5
     dep_elements = meeus(departurejd, planet='earth')
     arr_elements = meeus(arrivaljd, planet='mars')
-    dep_elements[0] = dep_elements[0]*AU # covnert to km
-    arr_elements[0] = arr_elements[0]*AU # covnert to km
     center = 'sun'
     state_e = get_rv_frm_elements2(dep_elements, center)
     state_m = get_rv_frm_elements2(arr_elements, center)
