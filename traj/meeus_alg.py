@@ -126,7 +126,7 @@ def meeus(jde, planet='earth'):
     while ta < -2*np.pi:
         ta += 2*np.pi
 
-    return a, e, i, Om, w, ta
+    return np.array([a, e, i, Om, w, ta])
 
 
 if __name__ == '__main__':
@@ -148,13 +148,14 @@ if __name__ == '__main__':
 
     # using meeus and custom script
     jde = 2455450
-    a, e, i, Om, w, ta = meeus(jde, planet='earth')
-    a = a*AU
+    elements = meeus(jde, planet='earth')
+    elements[0] = elements[0]*AU
+    a, e, i, Om, w, ta = elements
     print('meeus elements', a, e, r2d(i), r2d(Om), r2d(w), r2d(ta))
     # 149598022.99063239 0.016704124282391108 0.0013956009472636647 174.8473987048956 288.1244364343985 244.56036662629032
 
     center = 'sun'
-    state = get_rv_frm_elements2(a, e, i, Om, w, ta, center)
+    state = get_rv_frm_elements2(elements, center)
     print('my script state', state)
     # [1.47081462e+08 -3.25372777e+07  4.67587601e+02  5.94941002e+00  2.89739400e+01 -7.15905071e-04]
     T0 = sp.utc2et(f'jd {jde}')
@@ -208,7 +209,8 @@ if __name__ == '__main__':
 
     # converting test case 1 states -> script's orbital elements
     state = [147084764.907217, -32521189.649751, 467.190091, 5.946239, 28.974641, -0.000716]
-    a, e, i, raan, aop, ta = get_orbital_elements(state[:3], state[3:6], center='sun')
+    elements = get_orbital_elements(state[:3], state[3:6], center='sun')
+    sma, e, i, raan, aop, ta = elements
     assert np.allclose([a, e, r2d(i), r2d(raan), r2d(aop), r2d(ta)], 
                        [149598020.45343322, 0.016704137307570675, 0.0013957640305159802, 
                         174.84653943606472, 288.1253400504828, 244.56032227903557])
@@ -217,14 +219,5 @@ if __name__ == '__main__':
     r_vec = state[:3]
     v_vec = state[3:6]
     center = 'sun'
-    a = a
-    e = e 
-    i = i
-    w = aop
-    Om = raan
-    ta = ta
-    # r, v = get_rv_frm_elements3(a, e, i, w, Om, ta, center)
-    # assert np.allclose(np.hstack((r, v)), [147084764.907217, -32521189.649751, 467.190091, 5.946239, 28.974641, -0.000716])
-
-    state = get_rv_frm_elements2(a, e, i, Om, w, ta, center)
+    state = get_rv_frm_elements2(elements, center)
     assert np.allclose(state, [147084764.907217, -32521189.649751, 467.190091, 5.946239, 28.974641, -0.000716])

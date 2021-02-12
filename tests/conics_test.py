@@ -15,7 +15,8 @@ def test_keplerian():
     r = [8773.8938, -11873.3568, -6446.7067]
     v =  [4.717099, 0.714936, 0.388178]
     # compute orbital elements
-    sma, e, i, raan, aop, ta = conics.get_orbital_elements(r, v)
+    elements = conics.get_orbital_elements(r, v)
+    sma, e, i, raan, aop, ta = elements
     sma_truth = 14999.997238
     e_truth = 0.400000
     i_truth = np.deg2rad(28.499996)
@@ -39,7 +40,8 @@ def test_keplerian():
     r = [6524.834, 6862.875, 6448.296]
     v =  [4.901327, 5.533756, -1.976341]
     # compute orbital elements
-    sma, e, i, raan, aop, ta = conics.get_orbital_elements(r, v)
+    elements = conics.get_orbital_elements(r, v)
+    sma, e, i, raan, aop, ta = elements
     sma_truth = 36127.343
     e_truth = 0.832853
     i_truth = np.deg2rad(87.870)

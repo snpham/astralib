@@ -105,7 +105,7 @@ def get_orbital_elements(rvec, vvec, center='earth'):
           f'True longitude: {np.rad2deg(true_lon):0.6f} deg\n',
           f'Mean Longitude: {np.rad2deg(mean_lon):0.6f} deg')
 
-    return sma, e, i, raan, aop, ta
+    return np.array([sma, e, i, raan, aop, ta])
 
 
 def get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
@@ -162,7 +162,7 @@ def get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
     return np.array(r_ijk), np.array(v_ijk)
 
 
-def get_rv_frm_elements2(a, e, i, Om, w, ta, center='earth'):
+def get_rv_frm_elements2(elements, center='earth'):
     """computes positon/velocity vectors from Keplerian elements.
     We first compute pos/vel in the PQW system, then rotate to the
     geocentric equatorial system.
@@ -177,6 +177,9 @@ def get_rv_frm_elements2(a, e, i, Om, w, ta, center='earth'):
     :return vvec: velocity vectors of spacecraft [IJK] (km/s)
     output similar answers but not completely tested
     """
+
+    a, e, i, Om, w, ta = elements
+
     p = a*(1-e**2)
 
     mu = get_mu(center=center)
@@ -196,8 +199,6 @@ def get_rv_frm_elements2(a, e, i, Om, w, ta, center='earth'):
     return np.hstack([rvec, vvec])
 
 
-
-
 def kepler_prop(r, v, dt, center='earth'):
     """Solve Kepler's problem using classical orbital elements; no perturbations
     :param r: initial position
@@ -210,7 +211,8 @@ def kepler_prop(r, v, dt, center='earth'):
     # determine which planet center to compute from
     mu = get_mu(center=center)
 
-    sma, e, i, raan, aop, ta = get_orbital_elements(r, v)
+    elements = get_orbital_elements(r, v)
+    sma, e, i, raan, aop, ta = elements
 
     p = sma*(1-e**2)
     n = 2*sqrt(mu/p**3)

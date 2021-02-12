@@ -5,6 +5,8 @@ from math_helpers import rotations, vectors, quaternions, matrices
 from math_helpers.constants import *
 from traj import conics as con
 from traj import maneuvers as man
+from traj.meeus_alg import meeus
+from traj.conics import get_rv_frm_elements2
 
 
 def test_coplanar_transfer():
@@ -302,3 +304,22 @@ def test_lambert_univ():
     vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='sun')
     assert np.allclose(vi, [11.183261516529, -8.90233011026663, 0.420697885966674])
     assert np.allclose(vf, [7.52212721495555, 4.92836889442307, -0.474069568630355])
+
+    # tested with kelly's model
+    departurejd = 2458239.5
+    arrivaljd = 2458423.5
+    dep_elements = meeus(departurejd, planet='earth')
+    arr_elements = meeus(arrivaljd, planet='mars')
+    dep_elements[0] = dep_elements[0]*AU # covnert to km
+    arr_elements[0] = arr_elements[0]*AU # covnert to km
+    center = 'sun'
+    state_e = get_rv_frm_elements2(dep_elements, center)
+    state_m = get_rv_frm_elements2(arr_elements, center)
+    r0 = state_e[:3]
+    rf = state_m[:3]
+    tof = (2458423.5-2458239.5)*3600*24
+    vi, vf = man.lambert_univ(r0, rf, tof, dm=None, center='sun')
+    assert np.allclose([vi, vf], 
+                      [[ 20.53360313, -24.75083974,  -1.2548687 ],
+                      [ 0.54583182, 23.34279642,  0.68009623]])
+
