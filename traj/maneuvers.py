@@ -401,6 +401,7 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun'):
     tanom1 = np.arctan2(ri[1], ri[0])
     tanom2 = np.arctan2(rf[1], rf[0])
     dtanom = tanom2 - tanom1
+
     if dtanom < 0:
         dtanom += 2*np.pi
     elif dtanom > 2*np.pi:
@@ -438,7 +439,7 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun'):
             while y < 0:
                 print('readjusting y')
                 N = 0.8
-                psi = N*1/c3 * (1-sqrt(c2)/A * (ri + rf))
+                psi = N*1/c3 * (1-sqrt(c2)/A * (r0mag + rfmag))
                 c2, c3 = get_c2c3(psi)
                 y = r0mag + rfmag + A*(psi*c3-1)/np.sqrt(c2)
     
