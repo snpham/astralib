@@ -377,18 +377,27 @@ def get_c2c3(psi):
     return c2, c3
 
 
-def lambert_univ(ri, rf, TOF0, dm=None, center='sun'):
-    """lambert solver using universal variables
-    :param ri:
-    :param rf:
-    :param TOF0:
-    :param dm:
-    :param center:
-    :return vi:
-    :return vf:
+def lambert_univ(ri, rf, TOF0, dm=None, center='sun', 
+                 dep_planet=None, arr_planet=None, return_psi=False):
+    """lambert solver using universal variables; 0 rev algorithm
+    :param ri: position of departure planet at time of departure (km)
+    :param rf: position of arrival planet at time of arrival (km)
+    :param TOF0: transfer time of flight (s)
+    :param dm: direction of motion (optional); if None, then 
+               the script will auto-compute direction based on the
+               change in true anomaly
+    :param center: point where both planets are orbiting about;
+                   default = 'sun'
+    :return vi: departure velocity of the transfer (km/s)
+    :return vf: arrival velocity of the transfer (km/s)
     """
 
-    # mu = 398600.4418 # matlab vallado test 1
+    # throw error if time of flight is outside of feasible values
+    if dep_planet in ['mars', 'earth'] and arr_planet in ['mars', 'earth']:
+        if TOF0 < 30*24*3600 or TOF0 > 500*24*3600:
+            raise ValueError("Earth to Mars TOF out of bounds")
+
+    # set mu = 398600.4418 for matlab vallado test 1
     mu = get_mu(center=center)
 
     # position vectors and magnitudes
@@ -423,6 +432,7 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun'):
     if dtanom == 0 or A == 0:
         raise ValueError("Trajectory can't be computed")
 
+    # initializing parameters
     psi = 0
     c2 = 1/2
     c3 = 1/6
@@ -430,7 +440,7 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun'):
     psi_low = -4*np.pi
     TOF = -10.0
     y = 0
-
+    
     while np.abs(TOF - TOF0) > 1e-5:
 
         y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
@@ -442,11 +452,9 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun'):
                 psi = N*1/c3 * (1-sqrt(c2)/A * (r0mag + rfmag))
                 c2, c3 = get_c2c3(psi)
                 y = r0mag + rfmag + A*(psi*c3-1)/np.sqrt(c2)
-    
 
         chi = sqrt(y/c2)
         TOF = (chi**3*c3 + A*sqrt(y)) / sqrt(mu)
-        # print(f'TOF {TOF}')
 
         if TOF <= TOF0:
             psi_low = psi
@@ -455,6 +463,9 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun'):
 
         psi = (psi_up+psi_low) / 2
         c2, c3 = get_c2c3(psi)
+
+    if return_psi:
+        return psi
 
     # compute f, g functions
     f = 1. - y/r0mag
