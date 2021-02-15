@@ -479,7 +479,220 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
     return vi, vf
 
 
+def lambert_univ_multirev(ri, rf, TOF0, nrev=0, ttype=None, dm=None, 
+                          psi_min=None, tof_min=None, center='sun', 
+                          dep_planet=None, arr_planet=None, return_psi=False):
+    """lambert solver using universal variables; n-revs algorithm
+    :param ri: position of departure planet at time of departure (km)
+    :param rf: position of arrival planet at time of arrival (km)
+    :param TOF0: transfer time of flight (s)
+    :param nrev: number of revolutions
+    :param dm: direction of motion (optional); if None, then 
+               the script will auto-compute direction based on the
+               change in true anomaly
+    :param center: point where both planets are orbiting about;
+                   default = 'sun'
+    :return vi: departure velocity of the transfer (km/s)
+    :return vf: arrival velocity of the transfer (km/s)
+    in work
+    """
+
+    # set mu = 398600.4418 for matlab vallado test 1
+    mu = get_mu(center=center)
+
+    # position vectors and magnitudes
+    ri = np.array(ri)
+    rf = np.array(rf)
+    r0mag = norm(ri)
+    rfmag = norm(rf)
+
+    # assuming positions of planets are in the ecliptic
+    tanom1 = np.arctan2(ri[1], ri[0])
+    tanom2 = np.arctan2(rf[1], rf[0])
+    dtanom = tanom2 - tanom1
+
+    if dtanom < 0:
+        dtanom += 2*np.pi
+    elif dtanom > 2*np.pi:
+        dtanom -= 2*np.pi
+
+    # get direction or orbit
+    if dm:
+        dm = dm
+    else:
+        if dtanom < np.pi:
+            dm = 1
+        else:
+            dm = -1
+
+    # get constant values of orbit
+    cos_dtanom = vdotv(ri, rf) / (r0mag*rfmag)
+    A = dm * np.sqrt(r0mag*rfmag*(1+cos_dtanom))
+
+    if dtanom == 0 or A == 0:
+        raise ValueError("Trajectory can't be computed")
+
+    # initializing parameters
+    psi = 0
+    c2 = 1/2
+    c3 = 1/6
+    if nrev != 0:
+        psi_up = 4*(nrev+1)**2*pi**2
+        psi_low = 4*nrev**2*pi**2
+    else:
+        psi_up = 4*np.pi**2
+        psi_low = -4*np.pi
+
+    # determine bounds based on Type 3 or 4
+    if ttype == 3:
+        psi_low = psi_up
+        psi_up = psi_min
+    elif ttype == 4:
+        psi_low = psi_min
+        psi_up = psi_up
+
+    # initialize
+    TOF = -10.0
+    y = 0
+    tof_tol = 1e-5
+    count = 0
+    count2 = 0
+
+    while np.abs(TOF - TOF0) > tof_tol:
+    
+        y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
+
+        if A > 0 and y < 0:
+            while y < 0:
+                print('readjusting y')
+                N = 0.8
+                psi = N*1/c3 * (1-sqrt(c2)/A * (r0mag + rfmag))
+                c2, c3 = get_c2c3(psi)
+                y = r0mag + rfmag + A*(psi*c3-1)/np.sqrt(c2)
+
+        chi = sqrt(y/c2)
+        TOF = (chi**3*c3 + A*sqrt(y)) / sqrt(mu)
+
+        if TOF <= TOF0:
+            psi_low = psi
+        else:
+            psi_up = psi
+
+        psi = (psi_up+psi_low) / 2
+        c2, c3 = get_c2c3(psi)
+
+
+
+    return psi
+
+
+def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun', 
+                    dep_planet=None, arr_planet=None, return_psi=False):
+    """lambert solver using universal variables; 0 rev algorithm
+    :param ri: position of departure planet at time of departure (km)
+    :param rf: position of arrival planet at time of arrival (km)
+    :param TOF0: transfer time of flight (s)
+    :param dm: direction of motion (optional); if None, then 
+               the script will auto-compute direction based on the
+               change in true anomaly
+    :param center: point where both planets are orbiting about;
+                   default = 'sun'
+    :return vi: departure velocity of the transfer (km/s)
+    :return vf: arrival velocity of the transfer (km/s)
+    """
+
+    # throw error if time of flight is outside of feasible values
+    if dep_planet in ['mars', 'earth'] and arr_planet in ['mars', 'earth']:
+        if TOF0 < 30*24*3600 or TOF0 > 500*24*3600:
+            raise ValueError("Earth to Mars TOF out of bounds")
+
+    # set mu = 398600.4418 for matlab vallado test 1
+    mu = get_mu(center=center)
+
+    # position vectors and magnitudes
+    ri = np.array(ri)
+    rf = np.array(rf)
+    r0mag = norm(ri)
+    rfmag = norm(rf)
+
+    # assuming positions of planets are in the ecliptic
+    tanom1 = np.arctan2(ri[1], ri[0])
+    tanom2 = np.arctan2(rf[1], rf[0])
+    dtanom = tanom2 - tanom1
+
+    if dtanom < 0:
+        dtanom += 2*np.pi
+    elif dtanom > 2*np.pi:
+        dtanom -= 2*np.pi
+
+    # get direction or orbit
+    if dm:
+        dm = dm
+    else:
+        if dtanom < np.pi:
+            dm = 1
+        else:
+            dm = -1
+
+    # get constant values of orbit
+    cos_dtanom = vdotv(ri, rf) / (r0mag*rfmag)
+    A = dm * np.sqrt(r0mag*rfmag*(1+cos_dtanom))
+
+    if dtanom == 0 or A == 0:
+        raise ValueError("Trajectory can't be computed")
+
+    # initializing parameters
+    psi = 0
+    c2 = 1/2
+    c3 = 1/6
+    psi_up = 4*np.pi**2
+    psi_low = -4*np.pi
+    TOF = -10.0
+    y = 0
+    
+    while np.abs(TOF - TOF0) > 1e-5:
+
+        y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
+
+        if A > 0 and y < 0:
+            while y < 0:
+                print('readjusting y')
+                N = 0.8
+                psi = N*1/c3 * (1-sqrt(c2)/A * (r0mag + rfmag))
+                c2, c3 = get_c2c3(psi)
+                y = r0mag + rfmag + A*(psi*c3-1)/np.sqrt(c2)
+
+        chi = sqrt(y/c2)
+        TOF = (chi**3*c3 + A*sqrt(y)) / sqrt(mu)
+
+        if TOF <= TOF0:
+            psi_low = psi
+        else:
+            psi_up = psi
+
+        psi = (psi_up+psi_low) / 2
+        c2, c3 = get_c2c3(psi)
+
+    if return_psi:
+        return psi
+
+    # compute f, g functions
+    f = 1. - y/r0mag
+    gdot = 1. - y/rfmag
+    g = A * sqrt(y/mu)
+
+    # velocities
+    vi = (rf - f*ri) / g
+    vf = (gdot*rf - ri) / g
+
+    return vi, vf
+
+
+
+
+
 
 if __name__ == '__main__':
     
     pass
+
