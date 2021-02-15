@@ -643,26 +643,39 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
     if dtanom == 0 or A == 0:
         raise ValueError("Trajectory can't be computed")
 
+    psi_high = 4*(nrev+1)**2*pi**2
+    psi_low = 4*nrev**2*pi**2
+
+    # find min psi, can bring out
+    # psi_min = 0
+    # if nrev > 0:
+    #     TOF_min = 4000*3600*24
+    #     for psi_bound in np.linspace(psi_low, psi_high, 1000):
+    #         # print(psi_bound)
+    #         c2, c3 = get_c2c3(psi_bound)
+    #         y = r0mag + rfmag + A*(psi_bound*c3-1)/sqrt(c2)
+    #         chi = sqrt(y/c2)
+    #         TOF = (chi**3*c3 + A*sqrt(y)) / sqrt(mu)
+    #         if TOF_min > TOF:
+    #             psi_min = psi_bound
+    #             TOF_min = TOF
+    # print(psi_min)
+
     # initializing parameters
-    psi = 0
     c2 = 1/2
     c3 = 1/6
+    psi = psi_min
     TOF = -10.0
     y = 0
-    
-    if nrev == 1:
-        psi_high = 4*(nrev+1)**2*pi**2
-        psi_low = 4*nrev**2*pi**2
-    else:
-        psi_high = 4*np.pi**2
-        psi_low = -4*np.pi
 
     # determine bounds based on Type 3 or 4
     if ttype == 3:
-        psi_low = psi_high
+        psi_low = psi_low
         psi_high = psi_min
     elif ttype == 4:
         psi_low = psi_min
+    else:
+        print('invalid transfer type')
 
     while np.abs(TOF - TOF0) > 1e-5:
 
@@ -684,8 +697,8 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
                 psi_low = psi
             else:
                 psi_high = psi
-        else:
-            if TOF > TOF0:
+        elif ttype == 3:
+            if TOF >= TOF0:
                 psi_low = psi
             else:
                 psi_high = psi
@@ -693,6 +706,7 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
         psi = (psi_high+psi_low) / 2
         c2, c3 = get_c2c3(psi)
 
+    # print(psi)
     if return_psi:
         return psi
 
