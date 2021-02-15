@@ -587,7 +587,9 @@ def lambert_univ_multirev(ri, rf, TOF0, nrev=0, ttype=None, dm=None,
 
 
 def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun', 
-                    dep_planet=None, arr_planet=None, return_psi=False):
+                    dep_planet=None, arr_planet=None, return_psi=False,
+                    nrev=None, ttype=None, psi_min=None
+                    ):
     """lambert solver using universal variables; 0 rev algorithm
     :param ri: position of departure planet at time of departure (km)
     :param rf: position of arrival planet at time of arrival (km)
@@ -645,11 +647,23 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
     psi = 0
     c2 = 1/2
     c3 = 1/6
-    psi_up = 4*np.pi**2
-    psi_low = -4*np.pi
     TOF = -10.0
     y = 0
     
+    if nrev == 1:
+        psi_high = 4*(nrev+1)**2*pi**2
+        psi_low = 4*nrev**2*pi**2
+    else:
+        psi_high = 4*np.pi**2
+        psi_low = -4*np.pi
+
+    # determine bounds based on Type 3 or 4
+    if ttype == 3:
+        psi_low = psi_high
+        psi_high = psi_min
+    elif ttype == 4:
+        psi_low = psi_min
+
     while np.abs(TOF - TOF0) > 1e-5:
 
         y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
@@ -665,12 +679,18 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
         chi = sqrt(y/c2)
         TOF = (chi**3*c3 + A*sqrt(y)) / sqrt(mu)
 
-        if TOF <= TOF0:
-            psi_low = psi
+        if ttype == 4:
+            if TOF <= TOF0:
+                psi_low = psi
+            else:
+                psi_high = psi
         else:
-            psi_up = psi
+            if TOF > TOF0:
+                psi_low = psi
+            else:
+                psi_high = psi
 
-        psi = (psi_up+psi_low) / 2
+        psi = (psi_high+psi_low) / 2
         c2, c3 = get_c2c3(psi)
 
     if return_psi:

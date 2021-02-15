@@ -24,7 +24,7 @@ def get_JD(year, month, day, hour, min, sec):
     return jd, mjd
 
 
-def cal_from_jd(jd):
+def cal_from_jd(jd, rtn=None):
     """convert from calendar date to julian
     :param jd: julian date
     :return: tuple of calendar date in format:
@@ -64,6 +64,9 @@ def cal_from_jd(jd):
     h = int(tau)
     minute = int((tau-h)*60)
     s = (tau-h-minute/60)*3600
+
+    if rtn == 'string':
+        return f'{year}-{month}-{day} {h}:{minute}:{s}'
 
     return (year, month, day, h, minute, s)
 
