@@ -538,33 +538,41 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
 
     psi_high = 4*(nrev+1)**2*pi**2
     psi_low = 4*nrev**2*pi**2
-
+    # print(psi_low, psi_high)
     # initializing parameters
     c2 = 1/2
     c3 = 1/6
-    psi = psi_min
+    # psi = psi_min
     TOF = -10.0
     y = 0
 
     # determine bounds based on Type 3 or 4
-    if ttype == 3:
+    if ttype == 3 or ttype == 5:
         psi_low = psi_low
         psi_high = psi_min
-    elif ttype == 4:
+    elif ttype == 4 or ttype == 6:
         psi_low = psi_min
     else:
         print('invalid transfer type')
+    # print(psi_low, psi_high)
 
     # FIXME - need to figure out what's the best psi to use??
-    if ttype == 4:
+    # print(psi_min)
+    if ttype == 3 or ttype == 5:
+        psi = (psi_high+psi_low) / 2 * 0.9 # 45 works
+        # print(psi)
+    elif ttype == 4 or ttype == 6:
         psi = (psi_high+psi_low) / 2
-    elif ttype == 3:
-        psi = 45
-    
-    while np.abs(TOF - TOF0) > 1e-5:
-        # print(np.abs(TOF - TOF0))
+        # print(psi)
+
+
+    # exit()
+    # psi = (psi_min + psi_low)/2
+
+    while np.abs(TOF - TOF0) > 1e-4:
+
         y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
-        # print(y)
+
         if A > 0 and y < 0:
             while y < 0:
                 # print('readjusting y')
@@ -575,13 +583,14 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
 
         chi = sqrt(y/c2)
         TOF = (chi**3*c3 + A*sqrt(y)) / sqrt(mu)
+        # print(y, c2, c3, chi, TOF, TOF0)
 
-        if ttype == 4:
+        if ttype == 4 or ttype == 6:
             if TOF <= TOF0:
                 psi_low = psi
             else:
                 psi_high = psi
-        elif ttype == 3:
+        elif ttype == 3 or ttype == 5:
             if TOF >= TOF0:
                 psi_low = psi
             else:
