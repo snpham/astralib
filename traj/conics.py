@@ -489,6 +489,7 @@ class Keplerian(object):
         # angular momentun; orbit normal direction
         self.h_vec = vec.vcrossv(rvec, vvec)
         self.h_mag = vec.norm(self.h_vec)
+        self.h_hat = self.h_vec / self.h_mag
 
         # node vector K; n = 0 for equatorial orbits
         self.node_vec = vec.vcrossv(v1=[0,0,1], v2=self.h_vec)
@@ -497,7 +498,7 @@ class Keplerian(object):
         # eccentricity vector; e = 0 for circular orbits
         self.e_vec = self.eccentricity_vector
         self.e_mag = vec.norm(self.e_vec)
-
+        self.e_hat = self.e_vec/self.e_mag
 
     @property
     def eccentricity_vector(self):

@@ -4,8 +4,8 @@ import sys, os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
-from traj import conics as con
-from math_helpers.vectors import vdotv
+from traj import conics
+from math_helpers.vectors import vcrossv, vdotv, vxs
 
 
 def coplanar_transfer(p, e, r1, r2, center='earth'):
@@ -671,6 +671,51 @@ def get_psimin(r_dep_planet, r_arr_planet, nrev=0, center='sun'):
     
     return psi_min, TOF_min
 
+
+def bplane_rv(rvec, vvec, vmag_inf, center='sun'):
+    """converts trajectory state vectors to B-Plane parameters for a 
+    spacecraft approaching a target body.
+    not tested
+    """
+    mu = get_mu(center=center)
+    Kep = conics.Keplerian(rvec, vvec, center=center)
+
+    h_hat = Kep.h_hat
+    e_vec = Kep.e_vec
+    a = -mu/vmag_inf**2
+    b = -a*sqrt(Kep.e_mag**2 - 1)
+    psi_s = arccos(1/Kep.e_mag)
+    K_hat = [0, 0, 1]
+
+    S_hat = Kep.e_hat*cos(psi_s) \
+        + vcrossv(h_hat, e_vec)/norm(vcrossv(h_hat, e_vec))*sin(psi_s)
+    T_hat = vcrossv(S_hat, K_hat) / norm(vcrossv(S_hat, K_hat))
+    R_hat = vcrossv(S_hat, T_hat)
+    B_vec = vxs(b, vcrossv(S_hat, h_hat))
+    BT = vdotv(B_vec, T_hat)
+    BR = vdotv(B_vec, R_hat)
+    return np.array([BT, BR])
+
+
+def bplane_vinf(vinf_in, vinf_out, center='earth'):
+    """converts trajectory v-infinity vectors to B-Plane parameters for a 
+    spacecraft approaching a flyby.
+    not tested
+    """
+    mu = get_mu(center=center)
+    S_hat = vinf_in / norm(vinf_in)
+    h_hat = vcrossv(vinf_in, vinf_out) / norm(vcrossv(vinf_in, vinf_out))
+    B_hat = vcrossv(S_hat, h_hat)
+    K_hat = [0, 0, 1]
+    T_hat = vcrossv(S_hat, K_hat)
+    R_hat = vcrossv(S_hat, T_hat)
+    psi = arccos(vdotv(vinf_in, vinf_out)/(norm(vinf_in)*norm(vinf_out)))
+    rp = mu/norm(vinf_in)**2 * ( 1/(cos((pi-psi)/2)) - 1 )
+    B = mu/norm(vinf_in)**2 * ( ( 1+norm(vinf_in)**2*rp/mu )**2 - 1 )**(1/2)
+    B_vec = vxs(B, B_hat)
+    BT = vdotv(B_vec, T_hat)
+    BR = vdotv(B_vec, R_hat)
+    return np.array([BT, BR])
 
 
 if __name__ == '__main__':
