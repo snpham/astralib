@@ -14,7 +14,7 @@ days_per_year = 365.242189
 AU = 1.49597870700e8 # km
 
 # planetary radii, km
-r_venus = 60513.8
+r_venus = 6051.8
 r_earth = 6378.14
 r_mars = 3396.19
 r_jupiter = 71492
@@ -39,7 +39,7 @@ omega_earth = 7.292115e-5 # +/- 1.5e-12 (rad/s)
 import numpy as np
 from numpy.linalg import norm
 sin, cos, tan = np.sin, np.cos, np.tan
-arcsin, arccos, arctan = np.arcsin, np.arccos, np.arctan
+arcsin, arccos, arctan, arctan2 = np.arcsin, np.arccos, np.arctan, np.arctan2
 sinh, cosh = np.sinh, np.cosh
 arcsinh, arccosh = np.arcsinh, np.arccosh
 sqrt = np.sqrt
@@ -58,6 +58,16 @@ def get_mu(center='earth'):
         return mu_mars
     elif center.lower() == 'sun':
         return mu_sun
+    elif center.lower() == 'venus':
+        return mu_venus
+    elif center.lower() == 'jupiter':
+        return mu_jupiter
+    elif center.lower() == 'saturn':
+        return mu_saturn
+    elif center.lower() == 'uranus':
+        return mu_uranus
+    elif center.lower() == 'neptune':
+        return mu_neptune
     else:
         print('Using earth as center object\n')
         return mu_earth
