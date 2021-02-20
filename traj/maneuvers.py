@@ -393,7 +393,7 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
     """
 
     # throw error if time of flight is outside of feasible values
-    if dep_planet in ['mars', 'earth'] and arr_planet in ['mars', 'earth']:
+    if dep_planet in ['earth'] and arr_planet in ['mars']:
         if TOF0 < 30*24*3600 or TOF0 > 500*24*3600:
             raise ValueError("Earth to Mars TOF out of bounds")
 
@@ -481,7 +481,7 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
 
 def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun', 
                     dep_planet=None, arr_planet=None, return_psi=False,
-                    nrev=None, ttype=None, psi_min=None
+                    nrev=None, ttype=None, psi_min=None, compute_psimin=False
                     ):
     """lambert solver using universal variables; nrev algorithm
     :param ri: position of departure planet at time of departure (km)
@@ -497,9 +497,13 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
     """
 
     # throw error if time of flight is outside of feasible values
-    if dep_planet in ['mars', 'earth'] and arr_planet in ['mars', 'earth']:
+    if dep_planet in ['earth'] and arr_planet in ['mars']:
         if TOF0 < 30*24*3600 or TOF0 > 500*24*3600:
             raise ValueError("Earth to Mars TOF out of bounds")
+
+    if compute_psimin:
+        psi_min = get_psimin(ri, rf, nrev=nrev, center=center)[0]
+
 
     # set mu = 398600.4418 for matlab vallado test 1
     mu = get_mu(center=center)

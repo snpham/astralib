@@ -3,7 +3,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
-def get_JD(year, month, day, hour, min, sec):
+def get_JD(year, month, day, hour, min, sec, rtn='jd'):
     """compute the current Julian Date based on the given time input
     :param year: given year between 1901 and 2099
     :param month: month 1-12
@@ -11,6 +11,8 @@ def get_JD(year, month, day, hour, min, sec):
     :param hour: hours
     :param min: minutes
     :param sec: seconds
+    :param rtn: optional return parameter; jd or mjd (modified julian)
+                default=jd
     :return jd: Julian date
     :return mjd: modified julian date
     """
@@ -18,10 +20,12 @@ def get_JD(year, month, day, hour, min, sec):
     jd = 1721013.5 + 367*year - int(7/4*(year+int((month+9)/12))) \
         + int(275*month/9) + day + (60*hour + min + sec/60)/1440
 
-    # compute mod julian
-    mjd = jd - 2400000.5
-
-    return jd, mjd
+    if rtn == 'mjd':
+        # compute mod julian
+        mjd = jd - 2400000.5
+        return mjd
+    else:
+        return jd
 
 
 def cal_from_jd(jd, rtn=None):
@@ -75,8 +79,8 @@ def cal_from_jd(jd, rtn=None):
 if __name__ == '__main__':
 
 
-    jd, mjd = get_JD(1996, 10, 26, 14, 20, 0)
-    # print(jd, mjd)
+    jd = get_JD(1996, 10, 26, 14, 20, 0)
+    # print(jd)
 
     jd = 2449877.3458762
     date = cal_from_jd(jd) 
