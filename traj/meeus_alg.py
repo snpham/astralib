@@ -2,11 +2,12 @@ import sys, os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
+from math_helpers.time_systems import get_JD
 from traj.conics import get_rv_frm_elements2, get_orbital_elements
 import spiceypy as sp
 
 
-def meeus(jde, planet='earth'):
+def meeus(date, planet='earth', dformat='jd', rtn=None, ref_rtn='sun'):
     """Meeus algorithm to determine planet ephemerides in ECLIPJ2000 frame
     :param jde: julian date
     :param planet: planet to get state from
@@ -16,8 +17,15 @@ def meeus(jde, planet='earth'):
     :return Om: longitude of the ascending node (rad)
     :return w: argument of periapsis (rad)
     :return ta: true anomaly (rad)
-    in work
+    FIXME: need to update comments to include rtn types
     """
+
+    if dformat == 'utc':
+        utc = pd.to_datetime(date)
+        jde = get_JD(utc.year, utc.month, utc.day, \
+                     utc.hour, utc.minute, utc.second)[0]    
+    elif dformat == 'jd':
+        jde = date
 
     # time measured in Julian centuries of 36525 ephemeris days from 
     # the epoch J2000 = JDE 2451545
@@ -66,15 +74,15 @@ def meeus(jde, planet='earth'):
         a = 5.202603191   + 0.0000001913*T # AU
         e = 0.04849485    + 0.000163244*T  - 0.0000004719*T**2 - 0.00000000197*T**3
         i = 1.303270      - 0.0019872*T    + 0.00003318*T**2   + 0.000000092*T**3 # deg
-        Om = 100.464441 + 0.1766828*T    + 0.00090387*T**2   - 0.000007032*T**3 # deg
-        Pi = 14.331309    + 0.2155525*T*   + 0.00072252*T**2   - 0.000004590*T**3 # deg
+        Om = 100.464441   + 0.1766828*T    + 0.00090387*T**2   - 0.000007032*T**3 # deg
+        Pi = 14.331309    + 0.2155525*T   + 0.00072252*T**2   - 0.000004590*T**3 # deg
 
     elif planet.lower() == 'saturn':
         L = 50.077471     + 1222.1137943*T + 0.00021004*T**2   - 0.000000019*T**3 # deg
         a = 9.554909596   - 0.0000021389*T # AU
         e = 0.05550862    - 0.000346818*T  - 0.0000006456*T**2 + 0.00000000338*T**3
         i = 2.488878      + 0.0025515*T    - 0.00004903*T**2   + 0.000000018*T**3 # deg
-        Om = 113.665524 - 0.2566649*T    - 0.00018345*T**2   + 0.000000357*T**3 # deg
+        Om = 113.665524  - 0.2566649*T    - 0.00018345*T**2   + 0.000000357*T**3 # deg
         Pi = 93.056787    + 0.5665496*T    + 0.00052809*T**2   + 0.000004882*T**3 # deg
 
     elif planet.lower() == 'uranus':
@@ -82,7 +90,7 @@ def meeus(jde, planet='earth'):
         a = 19.218446062 - 0.0000000372*T + 0.00000000098*T**2 # AU
         e = 0.04629590   - 0.000027337*T  + 0.0000000790*T**2  + 0.00000000025*T**3
         i = 0.773196     + 0.0007744*T    + 0.00003749*T**2    - 0.000000092*T**3 # deg
-        Om = 74.005947 + 0.5211258*T    + 0.00133982*T**2    + 0.000018516*T**3 # deg
+        Om = 74.005947   + 0.5211258*T    + 0.00133982*T**2    + 0.000018516*T**3 # deg
         Pi = 173.005159  + 1.4863784*T    + 0.0021450*T**2     + 0.000000433*T**3 # deg
 
     elif planet.lower() == 'neptune':
@@ -90,7 +98,7 @@ def meeus(jde, planet='earth'):
         a = 30.110386869  - 0.0000001663*T + 0.00000000069*T**2 # AU
         e = 0.00898809    + 0.000006408*T  - 0.0000000008*T**2  - 0.00000000005*T**3
         i = 1.769952      - 0.0093082*T    - 0.00000708*T**2    + 0.000000028*T**3 # deg
-        Om = 131.784057 + 1.1022057*T    + 0.00026006*T**2    - 0.000000636*T**3 # deg
+        Om = 131.784057   + 1.1022057*T    + 0.00026006*T**2    - 0.000000636*T**3 # deg
         Pi = 48.123691    + 1.4262677*T    + 0.00037918*T**2    - 0.000000003*T**3 # deg
 
     elif planet.lower() == 'pluto':
@@ -98,7 +106,7 @@ def meeus(jde, planet='earth'):
         a = 39.48211675     - 0.00031596*T # AU
         e = 0.24882730      + 0.00005170*T
         i = 17.14001206     + 0.00004818*T # deg
-        Om = 110.30393684 - 0.01183482*T # deg
+        Om = 110.30393684   - 0.01183482*T # deg
         Pi = 224.06891629   - 0.04062942*T # deg
 
     else:
@@ -129,7 +137,10 @@ def meeus(jde, planet='earth'):
     # convert SMA to km
     a = a*AU
 
-    return np.array([a, e, i, Om, w, ta])
+    if rtn == 'states':
+        return get_rv_frm_elements2(np.array([a, e, i, Om, w, ta]), center=ref_rtn)
+    else:
+        return np.array([a, e, i, Om, w, ta])
 
 
 if __name__ == '__main__':

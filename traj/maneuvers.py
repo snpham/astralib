@@ -483,7 +483,7 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
                     dep_planet=None, arr_planet=None, return_psi=False,
                     nrev=None, ttype=None, psi_min=None
                     ):
-    """lambert solver using universal variables; 0 rev algorithm
+    """lambert solver using universal variables; nrev algorithm
     :param ri: position of departure planet at time of departure (km)
     :param rf: position of arrival planet at time of arrival (km)
     :param TOF0: transfer time of flight (s)
@@ -615,7 +615,57 @@ def lambert_multrev2(ri, rf, TOF0, dm=None, center='sun',
     return vi, vf
 
 
+def get_psimin(r_dep_planet, r_arr_planet, nrev=0, center='sun'):
+    
+    # get minimum psi value
+    mu = get_mu(center=center)
+    rmag_dep = norm(r_dep_planet)
+    rmag_arr = norm(r_arr_planet)
 
+    # assuming positions of planets are in the ecliptic
+    tanom1 = np.arctan2(r_dep_planet[1], r_dep_planet[0])
+    tanom2 = np.arctan2(r_arr_planet[1], r_arr_planet[0])
+    dtanom = tanom2 - tanom1
+
+    if dtanom < 0:
+        dtanom += 2*np.pi
+    elif dtanom > 2*np.pi:
+        dtanom -= 2*np.pi
+
+    # get direction or orbit
+    dm = None
+    if dm:
+        dm = dm
+    else:
+        if dtanom < np.pi:
+            dm = 1
+        else:
+            dm = -1
+
+    cos_dtanom = np.dot(r_dep_planet, r_arr_planet) / (rmag_dep*rmag_arr)
+    A = dm * np.sqrt(rmag_dep*rmag_arr*(1+cos_dtanom))
+    psi_up = 4*(nrev+1)**2*pi**2
+    psi_low = 4*nrev**2*pi**2
+
+    # streamline since we know it's near the center
+    # psi_up = psi_low + (psi_up - psi_low)*0.6;             
+    # psi_low = psi_low + (psi_up - psi_low)*0.3;             
+    # initial estimate, just put in center 
+    # psi = (psi_up + psi_low) * 0.5;
+    # c2, c3 = get_c2c3(psi)
+
+    TOF_min = 6000*3600*24
+    for psi_bound in np.linspace(psi_low, psi_up, 5000):
+        # print(psi_bound)
+        c2, c3 = get_c2c3(psi_bound)
+        y = rmag_dep + rmag_arr + A*(psi_bound*c3-1)/sqrt(c2)
+        chi = sqrt(y/c2)
+        TOF = (chi**3*c3 + A*sqrt(y)) / sqrt(mu)
+        if TOF_min > TOF:
+            psi_min = psi_bound
+            TOF_min = TOF
+    
+    return psi_min, TOF_min
 
 
 

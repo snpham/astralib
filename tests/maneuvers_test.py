@@ -7,7 +7,7 @@ from traj import conics as con
 from traj import maneuvers as man
 from traj.meeus_alg import meeus
 from traj.conics import get_rv_frm_elements2
-
+from math_helpers.time_systems import cal_from_jd, get_JD
 
 def test_coplanar_transfer():
     """tests general coplanar orbit transfer
@@ -249,7 +249,9 @@ def test_patched_conics():
 
 
 def test_lambert_univ():
-
+    """tests lambert_univ 0rev function, meeus, get_JD, cal_from_jd,
+    and get_rv_frm_elements2
+    """
     # short way, 0 rev - vallado test 1 (earth)
     # initial/final positions, time of flight, and direction of motion
     ri = [ 15945.3407,    0.000000 ,   0.000000]
@@ -279,35 +281,113 @@ def test_lambert_univ():
     assert np.allclose(vf, [3.23704878, -4.12079944, -0.])
 
     # Lambert Check Handout, Test Case #1: Earth to Venus
-    ri = [147084764.907217, -32521189.6497507 , 467.190091409394]
-    rf = [-88002509.1583767, -62680223.1330849, 4220331.52492018]
-    TOF0 =  (2455610 - 2455450) *3600*24
+    # get state of departure planet
+    center = 'sun'
+    dep_JD = 2455450
+    cal = cal_from_jd(dep_JD, rtn=None)
+    jd = get_JD(cal[0], cal[1], cal[2], cal[3], cal[4], cal[5])[0]
+    assert np.allclose(jd, dep_JD)
+    dp = 'earth'
+    dep_elements = meeus(dep_JD, planet=dp)
+    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    r_dep_planet = s_dep_planet[:3]
+    v_dep_planet = s_dep_planet[3:6]
+    # get state of arrival planet
+    arr_JD = 2455610
+    cal = cal_from_jd(arr_JD, rtn=None)
+    jd = get_JD(cal[0], cal[1], cal[2], cal[3], cal[4], cal[5])[0]
+    assert np.allclose(jd, arr_JD)
+    ap = 'venus'
+    arr_elements = meeus(arr_JD, planet=ap)
+    s_arr_planet = get_rv_frm_elements2(arr_elements, center=center)
+    r_arr_planet = s_arr_planet[:3]
+    v_arr_planet = s_arr_planet[3:6]
+    ri_truth = [147084764.907217, -32521189.6497507 , 467.190091409394]
+    rf_truth = [-88002509.1583767, -62680223.1330849, 4220331.52492018]
+    assert np.allclose(r_dep_planet, ri_truth)
+    assert np.allclose(r_arr_planet, rf_truth)
+    # lambert alg.
+    TOF0 =  (arr_JD - dep_JD) *3600*24
     dm = None
-    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='sun')
+    vi, vf = man.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
     assert np.allclose(vi, [4.65144349746008, 26.0824144093203, -1.39306043231699])
     assert np.allclose(vf, [16.7926204519414, -33.3516748429805, 1.52302150358741])
 
     # Lambert Check Handout, Test Case #2: Mars to Jupiter
-    ri = [170145121.321308, -117637192.836034 , -6642044.2724648]
-    rf = [-803451694.669228, 121525767.116065, 17465211.7766441]
-    TOF0 =  (2457500 - 2456300) *3600*24
+    # get state of departure planet
+    center = 'sun'
+    dep_JD = 2456300
+    cal = cal_from_jd(dep_JD, rtn=None)
+    jd = get_JD(cal[0], cal[1], cal[2], cal[3], cal[4], cal[5])[0]
+    assert np.allclose(jd, dep_JD)
+    dp = 'mars'
+    dep_elements = meeus(dep_JD, planet=dp)
+    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    r_dep_planet = s_dep_planet[:3]
+    v_dep_planet = s_dep_planet[3:6]
+    # get state of arrival planet
+    arr_JD = 2457500
+    cal = cal_from_jd(arr_JD, rtn=None)
+    jd = get_JD(cal[0], cal[1], cal[2], cal[3], cal[4], cal[5])[0]
+    assert np.allclose(jd, arr_JD)
+    ap = 'jupiter'
+    arr_elements = meeus(arr_JD, planet=ap)
+    s_arr_planet = get_rv_frm_elements2(arr_elements, center=center)
+    r_arr_planet = s_arr_planet[:3]
+    v_arr_planet = s_arr_planet[3:6]
+    ri_truth = [170145121.321308, -117637192.836034 , -6642044.2724648]
+    rf_truth = [-803451694.669228, 121525767.116065, 17465211.7766441]
+    assert np.allclose(r_dep_planet, ri_truth)
+    assert np.allclose(r_arr_planet, rf_truth)
+    # lambert alg.
+    TOF0 =  (arr_JD - dep_JD) *3600*24
     dm = None
-    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='sun')
+    vi, vf = man.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
     assert np.allclose(vi, [13.7407773577481, 28.8309931231422, 0.691285008034955])
     assert np.allclose(vf, [-0.883933068957334, -7.98362701426338, -0.240770597841448])
 
     # Lambert Check Handout, Test Case #3: Saturn to Nepturn
-    ri = [-1334047119.28306, -571391392.847366 , 63087187.1397936]
-    rf = [4446562424.74189, 484989501.499146, -111833872.461498]
-    TOF0 =  (2461940 - 2455940) *3600*24
+    # get state of departure planet
+    center = 'sun'
+    dep_JD = 2455940
+    cal = cal_from_jd(dep_JD, rtn=None)
+    jd = get_JD(cal[0], cal[1], cal[2], cal[3], cal[4], cal[5])[0]
+    assert np.allclose(jd, dep_JD)
+    dp = 'saturn'
+    dep_elements = meeus(dep_JD, planet=dp)
+    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    r_dep_planet = s_dep_planet[:3]
+    v_dep_planet = s_dep_planet[3:6]
+    # get state of arrival planet
+    arr_JD = 2461940
+    cal = cal_from_jd(arr_JD, rtn=None)
+    jd = get_JD(cal[0], cal[1], cal[2], cal[3], cal[4], cal[5])[0]
+    assert np.allclose(jd, arr_JD)
+    ap = 'neptune'
+    arr_elements = meeus(arr_JD, planet=ap)
+    s_arr_planet = get_rv_frm_elements2(arr_elements, center=center)
+    r_arr_planet = s_arr_planet[:3]
+    v_arr_planet = s_arr_planet[3:6]
+    ri_truth = [-1334047119.28306, -571391392.847366 , 63087187.1397936]
+    rf_truth = [4446562424.74189, 484989501.499146, -111833872.461498]
+    assert np.allclose(r_dep_planet, ri_truth)
+    assert np.allclose(r_arr_planet, rf_truth)
+    # lambert alg.
+    TOF0 =  (arr_JD - dep_JD) *3600*24
     dm = None
-    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='sun')
+    vi, vf = man.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
     assert np.allclose(vi, [11.183261516529, -8.90233011026663, 0.420697885966674])
     assert np.allclose(vf, [7.52212721495555, 4.92836889442307, -0.474069568630355])
 
     # tested with kelly's model
     departurejd = 2458239.5
+    cal = cal_from_jd(departurejd, rtn=None)
+    jd = get_JD(cal[0], cal[1], cal[2], cal[3], cal[4], cal[5])[0]
+    assert np.allclose(jd, departurejd)
     arrivaljd = 2458423.5
+    cal = cal_from_jd(arrivaljd, rtn=None)
+    jd = get_JD(cal[0], cal[1], cal[2], cal[3], cal[4], cal[5])[0]
+    assert np.allclose(jd, arrivaljd)
     dep_elements = meeus(departurejd, planet='earth')
     arr_elements = meeus(arrivaljd, planet='mars')
     center = 'sun'
@@ -321,3 +401,44 @@ def test_lambert_univ():
                       [[ 20.53360313, -24.75083974,  -1.2548687 ],
                       [ 0.54583182, 23.34279642,  0.68009623]])
 
+
+
+
+def test_lambert_multrev2():
+    """tests lambert_univ 0rev function, meeus, and get_rv_frm_elements2
+    """
+    
+    # Test Case #4: Earth - Venus: Multi-Rev (Type III)
+    # get state of departure planet
+    center = 'sun'
+    dep_JD = 2460545
+    dp = 'earth'
+    dep_elements = meeus(dep_JD, planet=dp)
+    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    r_dep_planet = s_dep_planet[:3]
+    v_dep_planet = s_dep_planet[3:6]
+    # get state of arrival planet
+    arr_JD = 2460919
+    ap = 'venus'
+    arr_elements = meeus(arr_JD, planet=ap)
+    s_arr_planet = get_rv_frm_elements2(arr_elements, center=center)
+    r_arr_planet = s_arr_planet[:3]
+    v_arr_planet = s_arr_planet[3:6]
+    ri_truth = [130423562.062471, -76679031.8462418, 3624.81656101975]
+    rf_truth = [19195371.6699821, 106029328.360906, 348953.802015791]
+    assert np.allclose(r_dep_planet, ri_truth)
+    assert np.allclose(r_arr_planet, rf_truth)
+    # lambert alg.
+    TOF0 =  (arr_JD - dep_JD) *3600*24
+    dm = None
+    nrev = 1
+    ttype = 3
+    # get min value of psi
+    psi_min = man.get_psimin(r_dep_planet, r_arr_planet, nrev=nrev, center=center)[0]
+    vi, vf = man.lambert_multrev2(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun',
+                                 dep_planet=dp, arr_planet=ap, return_psi=False,
+                                 nrev=nrev, ttype=ttype, psi_min=psi_min)
+    vi_truth = [12.7677113445028, 22.7915887424295, 0.0903388263298628]
+    vf_truth = [-37.3007238886013, -0.176853446917812, -0.0666930825785935]
+    assert np.allclose(vi, vi_truth)
+    assert np.allclose(vf, vf_truth)
