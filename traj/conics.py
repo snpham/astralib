@@ -549,6 +549,22 @@ class Keplerian(object):
             argp = 2*np.pi - argp
         return argp
 
+    @property
+    def semiparameter(self):
+        """semi-parameter"""
+        return self.h_mag/self.mu
+
+    @property
+    def semimajor_axis(self):
+        """semi-major axis"""
+        return p/(1-self.e_mag**2)
+
+    @property
+    def energy(self):
+        """semi-major axis"""
+        return self.v_mag**2/2 - self.mu/self.r_mag
+
+
 
 if __name__ == "__main__":
     

@@ -25,7 +25,7 @@ def rotate(angle, axis):
                   [          0.0, 1.0,            0.0],
                   [np.sin(angle), 0.0,  np.cos(angle)]]
         return np.array(matrix)
-    elif axis == 'z' or axis == 2:
+    elif axis == 'z' or axis == 3:
         matrix = [[ np.cos(angle), np.sin(angle), 0.0],
                   [-np.sin(angle), np.cos(angle), 0.0],
                   [           0.0,           0.0, 1.0]]
