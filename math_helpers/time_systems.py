@@ -31,6 +31,8 @@ def get_JD(year, month, day, hour, min, sec, rtn='jd'):
 def cal_from_jd(jd, rtn=None):
     """convert from calendar date to julian
     :param jd: julian date
+    :param rtn: optional return arg. "string" will return a string;
+                default is a tuple of values
     :return: tuple of calendar date in format:
              (year, month, day, hour, min, sec)
     """

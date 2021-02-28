@@ -393,9 +393,9 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
     """
 
     # throw error if time of flight is outside of feasible values
-    if dep_planet in ['earth'] and arr_planet in ['mars']:
-        if TOF0 < 30*24*3600 or TOF0 > 500*24*3600:
-            raise ValueError("Earth to Mars TOF out of bounds")
+    # if dep_planet in ['earth'] and arr_planet in ['mars']:
+    #     if TOF0 < 30*24*3600 or TOF0 > 500*24*3600:
+    #         raise ValueError("Earth to Mars TOF out of bounds")
 
     # set mu = 398600.4418 for matlab vallado test 1
     mu = get_mu(center=center)
@@ -703,19 +703,30 @@ def bplane_vinf(vinf_in, vinf_out, center='earth'):
     not tested
     """
     mu = get_mu(center=center)
-    S_hat = vinf_in / norm(vinf_in)
-    h_hat = vcrossv(vinf_in, vinf_out) / norm(vcrossv(vinf_in, vinf_out))
+
+    vmaginf_in = norm(vinf_in)
+    vmaginf_out = norm(vinf_out)
+    vinf_cross = vcrossv(vinf_in, vinf_out)
+    vinf_dot = vdotv(vinf_in, vinf_out)
+    S_hat = vinf_in / vmaginf_in
+    h_hat = vinf_cross / norm(vinf_cross)
     B_hat = vcrossv(S_hat, h_hat)
     K_hat = [0, 0, 1]
-    T_hat = vcrossv(S_hat, K_hat)
+    T_hat = vcrossv(S_hat, K_hat) / norm(vcrossv(S_hat, K_hat))
     R_hat = vcrossv(S_hat, T_hat)
-    psi = arccos(vdotv(vinf_in, vinf_out)/(norm(vinf_in)*norm(vinf_out)))
-    rp = mu/norm(vinf_in)**2 * ( 1/(cos((pi-psi)/2)) - 1 )
-    B = mu/norm(vinf_in)**2 * ( ( 1+norm(vinf_in)**2*rp/mu )**2 - 1 )**(1/2)
+
+    psi = arccos(vinf_dot / (vmaginf_in*vmaginf_out))
+    rp = mu / vmaginf_in**2 * ( 1/(cos((pi-psi)/2)) - 1 )
+
+    B = mu/vmaginf_in**2 * ( ( 1+vmaginf_in**2*rp/mu )**2 - 1 )**(1/2)
     B_vec = vxs(B, B_hat)
     BT = vdotv(B_vec, T_hat)
     BR = vdotv(B_vec, R_hat)
-    return np.array([BT, BR])
+    theta = arccos(vdotv(T_hat, B_hat))
+    if vdotv(B_hat, R_hat) < 0:
+        theta = 2*pi - theta
+
+    return np.array([psi, rp, BT, BR, B, theta])
 
 
 if __name__ == '__main__':
