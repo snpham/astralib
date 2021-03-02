@@ -10,7 +10,7 @@ mu_neptune = 6.835100e6
 mu_pluto = 8.71e2
 
 # conversion
-days_per_year = 365.242189
+P_earth = 365.242189
 AU = 1.49597870700e8 # km
 
 # planetary radii, km
