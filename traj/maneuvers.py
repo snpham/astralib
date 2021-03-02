@@ -672,7 +672,7 @@ def get_psimin(r_dep_planet, r_arr_planet, nrev=0, center='sun'):
     return psi_min, TOF_min
 
 
-def bplane_rv(rvec, vvec, vmag_inf, center='sun'):
+def bplane_rv(rvec, vvec, v_inf=None, center='sun'):
     """converts trajectory state vectors to B-Plane parameters for a 
     spacecraft approaching a target body.
     not tested
@@ -682,19 +682,33 @@ def bplane_rv(rvec, vvec, vmag_inf, center='sun'):
 
     h_hat = Kep.h_hat
     e_vec = Kep.e_vec
-    a = -mu/vmag_inf**2
-    b = -a*sqrt(Kep.e_mag**2 - 1)
-    psi_s = arccos(1/Kep.e_mag)
     K_hat = [0, 0, 1]
 
-    S_hat = Kep.e_hat*cos(psi_s) \
-        + vcrossv(h_hat, e_vec)/norm(vcrossv(h_hat, e_vec))*sin(psi_s)
+    # asymptote 1/2 angle
+    rho = arccos(1/Kep.e_mag)
+
+    if v_inf:
+        S_hat = vxs(1/norm(v_inf), v_inf)
+    else:
+        S_hat = cos(rho)*Kep.e_hat \
+            + sin(rho)*vcrossv(h_hat, e_vec)/norm(vcrossv(h_hat, e_vec))
+
     T_hat = vcrossv(S_hat, K_hat) / norm(vcrossv(S_hat, K_hat))
     R_hat = vcrossv(S_hat, T_hat)
-    B_vec = vxs(b, vcrossv(S_hat, h_hat))
+
+    a = -mu/(2*norm(v_inf))
+    b = abs(a)*sqrt(Kep.e_mag**2 - 1)
+
+    B_hat = vcrossv(S_hat, h_hat)
+    B_vec = vxs(b, B_hat)
     BT = vdotv(B_vec, T_hat)
     BR = vdotv(B_vec, R_hat)
-    return np.array([BT, BR])
+    theta = arccos(vdotv(T_hat, B_hat))
+
+    if vdotv(B_hat, R_hat) < 0:
+        theta = 2*pi - theta
+
+    return np.array([BT, BR, b, theta])
 
 
 def bplane_vinf(vinf_in, vinf_out, center='earth'):

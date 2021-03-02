@@ -21,6 +21,8 @@ def vdotv(v1, v2):
     :return: v_out = sum of (v1[ii] * v2[ii])
     """
     v_out = 0
+    v1 = np.array(v1)
+    v2 = np.array(v2)
     for ii in range(len(v1)):
         v_out += v1[ii]*v2[ii]
     return np.array(v_out)

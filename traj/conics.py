@@ -553,11 +553,12 @@ class Keplerian(object):
     @property
     def semiparameter(self):
         """semi-parameter"""
-        return self.h_mag/self.mu
+        return self.h_mag**2/self.mu
 
     @property
     def semimajor_axis(self):
         """semi-major axis"""
+        p = self.semiparameter
         return p/(1-self.e_mag**2)
 
     @property

@@ -1,7 +1,7 @@
 # gravitational coefficients, km3/s2
 mu_sun = 1.32712440018e11
 mu_venus = 3.24858599e5
-mu_earth = 3.98600433e5
+mu_earth = 3.986004415e5
 mu_mars = 4.28283100e4
 mu_jupiter = 1.266865361e8
 mu_saturn = 3.7931208e7
