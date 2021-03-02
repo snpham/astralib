@@ -8,7 +8,12 @@ from traj.maneuvers import patched_conics
 
 
 def prop_nop(t, Y):
-    
+    """2-body orbit propagator with no perturbation
+    :param t: time of propagation (s)
+    :param Y: state at time of propagation (km, km/s)
+    :return: array [vx, vy, vz, ax, ay, az] (km/s, km/s2)
+    works for hw2_p1 but need to add unit test
+    """
     x = Y[0:3]
     v = Y[3:6]
 
@@ -16,15 +21,23 @@ def prop_nop(t, Y):
     return np.hstack((v, vdot))
 
 
-def prop_perb(t, Y, re, rm, ets):
-
+def prop_perb(t, Y, rp_1, rp_2, ets):
+    """2-body orbit propagator with 4 body external perturbations due to gravity
+    :param t: time of propagation (s)
+    :param Y: state at time of propagation (km, km/s)
+    :param rp_1: array of planet 1 radii for entire flight (km)
+    :param rp_2: array of planet 2 radii for entire flight (km)
+    :param ets: time window for solutions used (array for TOF) (s)
+    :return: array [vx, vy, vz, ax, ay, az] (km/s, km/s2)
+    works for hw2_p1 but need to add unit test
+    """
     x = Y[0:3]
     v = Y[3:6]
 
     idx = np.searchsorted(ets, t, side="left")
     r_12 = x
-    r_13 = re[idx]
-    r_14 = rm[idx]
+    r_13 = rp_1[idx]
+    r_14 = rp_2[idx]
     r_23 = r_13 - r_12
     r_24 = r_14 - r_12
 
@@ -36,10 +49,20 @@ def prop_perb(t, Y, re, rm, ets):
 
 
 def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, planet1='planet1', planet2='planet2'):
-    
-    # s_planet1 = initial state of first planet (begin of TOF) 
-    # s_planet2 = final state of second planet (end of TOF)
-    # si_sc = initial state of s/c
+    """propagate a spacecraft with and w/o external gravitational effects from 
+    additional planetary bodies using 2-body equations of motion.
+    :param r_sc: initial position vector of spacecraft (km)
+    :param v_sc: initial velocity vector of spacecraft (km/s)
+    :param TOF: time of flight of spacecraft for the transfer [beginning of TOF] (s)
+    :param s_planet1: initial state vector of departure planet [end of TOF] (km, km/s)
+    :param s_planet2: final state vector of arrival planet (km, km/s)
+    :param planet1: name of departure planet
+    :param planet2: name of arrival planet
+    :return: None
+    works for hw2_p1 but need to add unit test
+    """
+
+    # initial state of s/c
     si_sc = np.hstack((r_sc, v_sc))
 
     # get time window for solutions
@@ -112,7 +135,6 @@ def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, planet1='planet1', pla
     ax.legend()
     fig.tight_layout()
 
-    # print(len(propstate_sc), len(pertpropstate_sc))
     ets = ets/(3600*24)
     sc_diff = propstate_sc - pertpropstate_sc
     fig = plt.figure()
