@@ -10,24 +10,23 @@ import pandas as pd
 from math_helpers.time_systems import get_JD
 
 
-def launchwindows(departure_planet, departure_date,
-                        arrival_planet, arrival_window,
-                        dm=None, center='sun'):
-    """return plots of c3 and vinf values for a 0 rev lambert transfer
-    between a departure and arrival planet within a given arrival
-    window.
+def launchwindows(departure_planet, departure_date, arrival_planet, 
+                  arrival_window, dm=None, center='sun', run_test=False):
+    """return plots of c3 and vinf values for a 0 rev lambert transfer 
+    between a departure and arrival planet within a given arrival window.
     :param departure_planet: name of departure planet (str)
     :param departure_date: date of departure ('yyyy-mm-dd')
     :param arrival_planet: name of arrival planet (str)
-    :param arrival_window: list with begin and end arrival date 
-                           window ['yyyy-mm-dd', 'yyyy-mm-dd']
-    :param dm: direction of motion (optional); if None, then 
-               the script will auto-compute direction based on the
-               change in true anomaly
-    :param center: point where both planets are orbiting about;
+    :param arrival_window: list with begin and end arrival date window 
+                           ['yyyy-mm-dd', 'yyyy-mm-dd']
+    :param dm: direction of motion (optional); if None, then the script 
+               will auto-compute direction based on the change in true 
+               anomaly
+    :param center: point where both planets are orbiting about; 
                    default = 'sun'
-    need to figure out how to implement into unit tests
+    :param run_test: run unit tests with lower days and bypass plots
     """
+    
     spice.furnsh(['spice/kernels/solarsystem/naif0012.tls'])
 
     # reinitializing
@@ -40,9 +39,13 @@ def launchwindows(departure_planet, departure_date,
     dep_JD = get_JD(dep_date.year, dep_date.month, dep_date.day, \
                           dep_date.hour, dep_date.minute, dep_date.second)
 
+    days = 1000
+    if run_test:
+        days = 300
+
     # get arrival windows
     arrival_window = pd.to_datetime(arrival_window)
-    arrival_window = np.linspace(arrival_window[0].value, arrival_window[1].value, 1000)
+    arrival_window = np.linspace(arrival_window[0].value, arrival_window[1].value, days)
     arrival_window = pd.to_datetime(arrival_window)
 
     # get state of departure planet
@@ -98,6 +101,10 @@ def launchwindows(departure_planet, departure_date,
     print(f'(b) min v_inf = {minvinf} km/s on {minvinf_date.index[0]}'
           f' // {transfer.loc[transfer["vinf"] == minvinf, "tof_d"][0]}')
 
+    if run_test:
+        return minc3, minvinf, \
+               str(minc3_date.index[0])[:10], str(minvinf_date.index[0])[:10]
+                
     # # assuming positions of planets are in the ecliptic,
     # # determine Type 1 or 2 transfer
     tanom1 = np.arctan2(r_dep_planet[1], r_dep_planet[0])

@@ -154,9 +154,6 @@ def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, planet1='planet1', pla
     plt.show()
 
 
-
-
-
 if __name__ == '__main__':
     
     r_orbit1 = r_earth + 400
@@ -165,6 +162,8 @@ if __name__ == '__main__':
     r_trans2 = sma_mars # assuming ra is mars' sma
     vt1, vt2, dv_inj, dv_ins, TOF = patched_conics(r1=r_orbit1, r2=r_orbit2, 
                                                    rt1=r_trans1, rt2=r_trans2)
+    assert np.allclose(TOF, 22366019.65074988)
+    assert np.allclose(vt1, 32.729359281)
     print(f'initial velocity (km/s): {vt1}')
     print(f'TOF (days) : {TOF/(3600*24)}     (seconds): {TOF}')
 
@@ -179,4 +178,3 @@ if __name__ == '__main__':
     # print(r_sc, v_sc)
     generate_orbit(r_sc=r_sc, v_sc=v_sc, TOF=TOF, s_planet1=si_earth, s_planet2=sf_mars, 
                    planet1=planet1, planet2=planet2)
-
