@@ -96,3 +96,5 @@ def bplane_vinf(vinf_in, vinf_out, center='earth'):
         theta = 2*pi - theta
 
     return np.array([psi, rp, BT, BR, B, theta])
+
+    

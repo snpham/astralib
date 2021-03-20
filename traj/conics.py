@@ -271,44 +271,6 @@ def flight_path_angle(e, ta):
         fpa = arccos(sqrt( (e**2-1)/(e**2*cosh(H)**2-1) ))
     # return arccos( (1+e*cos(ta) / (sqrt(1+2*e*cos(ta)+e**2))))
     return fpa
-    
-
-def bplane_targeting(rvec, vvec, center='earth'):
-    """Compute BdotT and BdotR for a given b-plane targeting;
-    in work
-    """
-    k = Keplerian(rvec, vvec, center=center)
-
-    e_mag = vec.norm(k.e_vec)
-    if e_mag <= 1:
-        raise ValueError(f'e_mag = {e_mag}, non-hyperbolic orbit')
-
-    # unit vector normal to eccentricity vector and orbit normal
-    n_hat = vec.vcrossv(k.h_vec/k.h_mag, k.e_vec/k.e_mag)
-
-    # semiminor axis
-    semi_minor = k.h_mag**2/(k.mu*sqrt(e_mag**2-1))
-
-    # computing incoming asymptote and B-vector
-    evec_term = vec.vxs(1/e_mag, k.e_vec)
-    nvec_term = vec.vxs(sqrt(1-(1/e_mag)**2), n_hat)
-    S = vec.vxadd(evec_term, nvec_term)
-    evec_term = vec.vxs(semi_minor*sqrt(1-(1/e_mag)**2), k.e_vec)
-    nvec_term = vec.vxs(semi_minor/e_mag, n_hat)
-    B = vec.vxadd(evec_term, -nvec_term)
-
-    # T and R vector
-    T = vec.vxs(1/sqrt(S[0]**2+S[1]**2), [S[1], -S[0], 0.])
-    R = vec.vcrossv(v1=S, v2=T)
-
-    # BdotT and BdotR
-    B_t = vec.vdotv(v1=B, v2=T)
-    B_r = vec.vdotv(v1=B, v2=R)
-
-    # angle between B and T
-    theta = arccos(B_t/vec.norm(B_t))
-    
-    return B_t, B_r, theta
 
 
 def sp_energy(vel, pos, mu=mu_earth):
@@ -598,13 +560,6 @@ if __name__ == "__main__":
     vel = [7.9053, 15.8106, 0.0] # km/s
     energy = sp_energy(vel=vel, pos=pos, mu=get_mu(center='earth'))
     print(energy)
-
-
-    rvec = [-299761, -440886, -308712]
-    vvec = [1.343, 1.899, 1.329]
-    bdott, bdotr, theta = bplane_targeting(rvec, vvec, center='mars')
-    print(bdott, bdotr, np.rad2deg(theta))
-
 
     print('\n\n')
 

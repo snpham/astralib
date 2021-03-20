@@ -5,6 +5,7 @@ from math_helpers import rotations, vectors, quaternions, matrices
 from math_helpers.constants import *
 from traj import conics as con
 from traj import maneuvers as man
+from traj import lambert as lam
 from traj.meeus_alg import meeus
 from traj.conics import get_rv_frm_elements2
 from math_helpers.time_systems import cal_from_jd, get_JD
@@ -258,7 +259,7 @@ def test_lambert_univ():
     rf = [12214.8396, 10249.4673, 0.0]
     TOF0 =  76*60
     dm = None
-    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=dm, center='earth')
+    vi, vf = lam.lambert_univ(ri, rf, TOF0, dm=dm, center='earth')
     assert np.allclose(vi, [2.058913, 2.915965, 0])
     assert np.allclose(vf, [-3.451565, 0.910315, 0])
 
@@ -267,7 +268,7 @@ def test_lambert_univ():
     ri = [ 15945.3407,    0.000000 ,   0.000000]
     rf = [12214.8396, 10249.4673, 0.0]
     TOF0 =  21300.0000
-    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=None, center='earth')
+    vi, vf = lam.lambert_univ(ri, rf, TOF0, dm=None, center='earth')
     assert np.allclose(vi, [5.09232089, 1.60303981, 0.])
     assert np.allclose(vf, [-4.93135829, -2.04528102, -0.])
 
@@ -276,7 +277,7 @@ def test_lambert_univ():
     ri = [ 15945.3407,    0.000000 ,   0.000000]
     rf = [12214.8396, 10249.4673, 0.0]
     TOF0 =  21300.0000
-    vi, vf = man.lambert_univ(ri, rf, TOF0, dm=-1, center='earth')
+    vi, vf = lam.lambert_univ(ri, rf, TOF0, dm=-1, center='earth')
     assert np.allclose(vi, [0.16907567, -5.23745032, -0.])
     assert np.allclose(vf, [3.23704878, -4.12079944, -0.])
 
@@ -320,7 +321,7 @@ def test_lambert_univ():
     # lambert alg.
     TOF0 =  (arr_JD - dep_JD) *3600*24
     dm = None
-    vi, vf = man.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
+    vi, vf = lam.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
     assert np.allclose(vi, [4.65144349746008, 26.0824144093203, -1.39306043231699])
     assert np.allclose(vf, [16.7926204519414, -33.3516748429805, 1.52302150358741])
 
@@ -363,7 +364,7 @@ def test_lambert_univ():
     # lambert alg.
     TOF0 =  (arr_JD - dep_JD) *3600*24
     dm = None
-    vi, vf = man.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
+    vi, vf = lam.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
     assert np.allclose(vi, [13.7407773577481, 28.8309931231422, 0.691285008034955])
     assert np.allclose(vf, [-0.883933068957334, -7.98362701426338, -0.240770597841448])
 
@@ -406,7 +407,7 @@ def test_lambert_univ():
     # lambert alg.
     TOF0 =  (arr_JD - dep_JD) *3600*24
     dm = None
-    vi, vf = man.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
+    vi, vf = lam.lambert_univ(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun')
     assert np.allclose(vi, [11.183261516529, -8.90233011026663, 0.420697885966674])
     assert np.allclose(vf, [7.52212721495555, 4.92836889442307, -0.474069568630355])
 
@@ -427,7 +428,7 @@ def test_lambert_univ():
     r0 = state_e[:3]
     rf = state_m[:3]
     tof = (2458423.5-2458239.5)*3600*24
-    vi, vf = man.lambert_univ(r0, rf, tof, dm=None, center='sun')
+    vi, vf = lam.lambert_univ(r0, rf, tof, dm=None, center='sun')
     assert np.allclose([vi, vf], 
                       [[ 20.53360313, -24.75083974,  -1.2548687 ],
                       [ 0.54583182, 23.34279642,  0.68009623]])
@@ -435,7 +436,7 @@ def test_lambert_univ():
 
 
 
-def test_lambert_multrev2():
+def test_lambert_multrev():
     """tests lambert_univ 0rev function, meeus, and get_rv_frm_elements2
     """
     
@@ -475,8 +476,8 @@ def test_lambert_multrev2():
     nrev = 1
     ttype = 3
     # get min value of psi
-    psi_min = man.get_psimin(r_dep_planet, r_arr_planet, nrev=nrev, center=center)[0]
-    vi, vf = man.lambert_multrev2(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun',
+    psi_min = lam.get_psimin(r_dep_planet, r_arr_planet, nrev=nrev, center=center)[0]
+    vi, vf = lam.lambert_multrev(r_dep_planet, r_arr_planet, TOF0, dm=dm, center='sun',
                                  dep_planet=dp, arr_planet=ap, return_psi=False,
                                  nrev=nrev, ttype=ttype, psi_min=psi_min)
     vi_truth = [12.7677113445028, 22.7915887424295, 0.0903388263298628]

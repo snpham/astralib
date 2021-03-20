@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from math_helpers.constants import *
 from traj.bplane import bplane_vinf, get_rp
 from traj.meeus_alg import meeus
-from traj.maneuvers import lambert_univ
+from traj.lambert import lambert_univ
 from math_helpers.vectors import vdotv
 from traj.conics import Keplerian
 
