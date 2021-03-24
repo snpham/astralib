@@ -147,9 +147,29 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
                   plot_tar=False, tar_dep=None, tar_arr=None,
                   shade_c3=False, shade_tof=False, shade_vinf_arr=False,
                   shade_vinf_range=None, shade_tof_range=None):
-    """
-    PCP launch to JGA
-    in work
+    """generates a porkchop plot for a given launch and arrival window.
+    :param dep_jd_init: initial departure date (JD)
+    :param dep_jd_fin: final departure date (JD)
+    :param arr_jd_init: initial arrival date (JD)
+    :param arr_jd_fin: final arrival date (JD)
+    :param dp: departure planet
+    :param ap: arrival planet
+    :param center: center body of orbit; default='sun'
+    :param contour_tof: array of tof contours to plot
+    :param contour_c3: array of launch c3 contours to plot (optional)
+    :param contour_vinf: array of vinf inbound contours to plot
+    :param contour_vinf_out: array of vinf outbound contours to plot (optional)
+    :param plot_tar: plot target point (True); default=False
+    :param tar_dep: target departure date (JD)
+    :param tar_arr: target arrival date (JD)
+    :param shade_c3: option to shade certain c3 contours (True)
+    :param shade_tof: option to shade certain tof contours (True)
+    :param shade_vinf_arr: option to shade certain arrival vinf contours (True)
+    :param shade_vinf_range: array of arrival vinf range to shade
+    :param shade_tof_range: array of time of flight range to shade
+    :return df: if contour_c3 is present, [df_tof, df_c3, df_vinf_arr];
+                if contour_vinf_out is present, 
+                [df_tof, df_vinf_dep, df_vinf_arr]
     """
     plot_c3 = True
     plot_vinf_out = True
@@ -246,13 +266,36 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
 
     if plot_c3:
         return [df_tof, df_c3, df_vinf_arr]
-    else:
+    elif plot_vinf_out:
         return [df_tof, df_vinf_dep, df_vinf_arr]
+    else:
+        return [df_tof, df_vinf_arr]
 
 
 def run_pcp_search(dep_jd_init, dep_jd_fin, pl2_jd_init, pl2_jd_fin, pl3_jd_init, pl3_jd_fin, 
-                   dpl='earth', pl2='jupiter', pl3='pluto', center='sun', c3_max=None, vinf_max=None, vinf_tol=None, rp_min=None, fine_search=False):
-
+                   dpl='earth', pl2='jupiter', pl3='pluto', center='sun', 
+                   c3_max=None, vinf_max=None, vinf_tol=None, rp_min=None, fine_search=False):
+    """generates a porkchop plot for a given launch and arrival window.
+    :param dep_jd_init: initial departure date of launch planet (planet 1) (JD)
+    :param dep_jd_fin: final departure date of launch planet (planet 1) (JD)
+    :param pl2_jd_init: initial arrival date of flyby planet (planet 2) (JD)
+    :param pl2_jd_fin: final arrival date of flyby planet (planet 2) (JD)
+    :param pl3_jd_init: initial arrival date of arrival planet (planet 3) (JD)
+    :param pl3_jd_fin: final arrival date of arrival planet (planet 3) (JD)
+    :param dpl: name of departure planet (planet 1)
+    :param pl2: name of flyby planet (planet 2)
+    :param pl3: name of arrival planet (planet 3)
+    :param center: center body of orbit; default='sun'
+    :param c3_max: maximum launch c3 constraint (km2/s2)
+    :param vinf_max: maximum final arrival vinf at planet 3 (km/s)
+    :param vinf_tol: maximum allowable delta-vinf inbound/outbound of flyby (km/s)
+    :param rp_min: minimum radius of flyby (km)
+    :param fine_search: option between coarse search of 3 days interval (False);
+                        or fine search of 0.8 days interval (True)
+    :return df: [dfpl1_c3, dfpl2_tof, dfpl2_vinf_in, dfpl2_vinf_out, ...
+                 dfpl3_tof, dfpl3_vinf_in, dfpl3_rp]
+    in work, need to add more robustness for constraining options
+    """
     # departure and arrival dates
     dep_date_init_cal = pd.to_datetime(cal_from_jd(dep_jd_init, rtn='string'))
     pl2_jd_init_cal = pd.to_datetime(cal_from_jd(pl2_jd_init, rtn='string'))
@@ -498,5 +541,10 @@ if __name__ == '__main__':
     rp_min = 30*r_jupiter
     fine_search = True
 
-    dfs = run_pcp_search(dep1_jd_init, dep1_jd_fin, dep2_jd_init, dep2_jd_fin, arr3_jd_init, arr3_jd_fin, 
-                    dpl=dpl, pl2=pl2, pl3=pl3, center=center, c3_max=c3_max, vinf_max=vinf_max, vinf_tol=vinf_tol, rp_min=rp_min, fine_search=fine_search)
+    dfs = run_pcp_search(dep1_jd_init, dep1_jd_fin, dep2_jd_init,
+                         dep2_jd_fin, arr3_jd_init, arr3_jd_fin, 
+                         dpl=dpl, pl2=pl2, pl3=pl3, center=center, 
+                         c3_max=c3_max, vinf_max=vinf_max, vinf_tol=vinf_tol, 
+                         rp_min=rp_min, fine_search=fine_search)
+
+    
