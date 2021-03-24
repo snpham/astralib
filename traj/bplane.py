@@ -57,7 +57,7 @@ def bplane_rv(rvec, vvec, v_inf=None, center='sun'):
     return np.array([BT, BR, b, theta])
 
 
-def bplane_vinf(vinf_in, vinf_out, center='earth'):
+def bplane_vinf(vinf_in, vinf_out, center='earth', rtn_rp=False):
     """converts trajectory v-infinity vectors to B-Plane parameters for a 
     spacecraft approaching a flyby.
     :param vinf_in: incoming hyperbolic velocity relative to the center (km/s)
@@ -86,6 +86,9 @@ def bplane_vinf(vinf_in, vinf_out, center='earth'):
 
     psi = arccos(vinf_dot / (vmaginf_in*vmaginf_out))
     rp = mu / vmaginf_in**2 * ( 1/(cos((pi-psi)/2)) - 1 )
+
+    if rtn_rp:
+        return rp
 
     B = mu/vmaginf_in**2 * ( ( 1+vmaginf_in**2*rp/mu )**2 - 1 )**(1/2)
     B_vec = vxs(B, B_hat)

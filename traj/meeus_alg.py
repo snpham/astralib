@@ -9,8 +9,11 @@ import spiceypy as sp
 
 def meeus(date, planet='earth', dformat='jd', rtn=None, ref_rtn='sun'):
     """Meeus algorithm to determine planet ephemerides in ECLIPJ2000 frame
-    :param jde: julian date
+    :param date: calendar date (yyyy-mm-dd hh:mm:ss.ss)
     :param planet: planet to get state from
+    :param dformat: date format; jd or utc; default is jd
+    :param rtn: return either orbital elements (default) or states ('states')
+    :param ref_rtn: reference frame for returned state
     :return a: semi-major axis (km)
     :return e: eccentricity
     :return i: inclination (rad)
@@ -23,7 +26,7 @@ def meeus(date, planet='earth', dformat='jd', rtn=None, ref_rtn='sun'):
     if dformat == 'utc':
         utc = pd.to_datetime(date)
         jde = get_JD(utc.year, utc.month, utc.day, \
-                     utc.hour, utc.minute, utc.second)[0]    
+                     utc.hour, utc.minute, utc.second)
     elif dformat == 'jd':
         jde = date
 

@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from math_helpers.constants import *
 from traj import conics
 from traj.maneuvers import patched_conics
+from traj.meeus_alg import meeus
 
 
 def prop_nop(t, Y):
@@ -154,14 +155,65 @@ def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, planet1='planet1', pla
     plt.show()
 
 
+def genorbit_solarsystem(epoch, tof, list_planets=None):
+    """propagate a spacecraft with and w/o external gravitational effects from 
+    additional planetary bodies using 2-body equations of motion.
+    not tested
+    """
+
+    # get time window for solutions
+    ets_tof = np.linspace(0, tof, 2000)
+
+    if not list_planets:
+        list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus']
+
+    states_planets = []
+    for planet in list_planets:
+        state = meeus(epoch, planet=planet, dformat='utc', rtn='states', ref_rtn='sun')
+        states_planets.append(state)
+
+    s_plt = states_planets
+    # plots
+    fig=plt.figure(figsize=(14,14))
+    ax=fig.add_subplot(111, projection="3d")
+    ax.plot(0,0, 'yo', markersize=20)
+    ax.set_xlabel("x-position, km")
+    ax.set_ylabel("y-position, km")
+    ax.set_zlabel("z-position, km")
+    ax.set_title("orbits")
+
+    # integrate no perturbations
+    for ii, planet in enumerate(list_planets):
+
+        period = 2*np.pi * np.sqrt(get_sma(planet)**3/mu_sun)
+        ets = np.linspace(0, period, 2000)
+        prop_planet = ivp(prop_nop, (0, period), s_plt[ii], method='RK45', t_eval=ets, 
+                          dense_output=True, rtol=1e-13, atol=1e-13)
+        propstate = np.array(prop_planet.y).T
+        ax.plot(propstate[:,0],propstate[:,1], linewidth=0.6, color='k')
+
+        propseg_planet = ivp(prop_nop, (0, tof), s_plt[ii], method='RK45', t_eval=ets_tof, 
+                          dense_output=True, rtol=1e-13, atol=1e-13)
+        propsegstate = np.array(propseg_planet.y).T
+        ax.plot(propsegstate[:,0],propsegstate[:,1], label=f'{planet}', linewidth=4)
+
+    ax.legend()
+    fig.tight_layout()
+    plt.show()
+
+
+
 if __name__ == '__main__':
     
     r_orbit1 = r_earth + 400
     r_orbit2 = r_mars + 400
     r_trans1 = sma_earth # assuming rp is earth's sma
     r_trans2 = sma_mars # assuming ra is mars' sma
+    pl1 = 'earth'
+    pl2 = 'mars'
     vt1, vt2, dv_inj, dv_ins, TOF = patched_conics(r1=r_orbit1, r2=r_orbit2, 
-                                                   rt1=r_trans1, rt2=r_trans2)
+                                                   rt1=r_trans1, rt2=r_trans2,
+                                                   pl1=pl1, pl2=pl2, center='sun')
     assert np.allclose(TOF, 22366019.65074988)
     assert np.allclose(vt1, 32.729359281)
     print(f'initial velocity (km/s): {vt1}')
@@ -176,5 +228,12 @@ if __name__ == '__main__':
     planet1 = 'earth'
     planet2 = 'mars'
     # print(r_sc, v_sc)
-    generate_orbit(r_sc=r_sc, v_sc=v_sc, TOF=TOF, s_planet1=si_earth, s_planet2=sf_mars, 
-                   planet1=planet1, planet2=planet2)
+#     generate_orbit(r_sc=r_sc, v_sc=v_sc, TOF=TOF, s_planet1=si_earth, s_planet2=sf_mars, 
+#                    planet1=planet1, planet2=planet2)
+
+    # get orbit of solar system planets
+    epoch = '2021-04-01'
+    TOF = 365*3600*24
+    list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus']
+    genorbit_solarsystem(epoch, TOF, list_planets)
+    

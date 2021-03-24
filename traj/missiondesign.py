@@ -6,6 +6,7 @@ import spiceypy as spice
 from traj import lambert
 from traj.meeus_alg import meeus
 from traj.conics import get_rv_frm_elements2
+from traj.bplane import bplane_vinf
 import pandas as pd
 from math_helpers.time_systems import get_JD, cal_from_jd
 
@@ -144,12 +145,18 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
                   contour_tof=None, contour_c3=None,
                   contour_vinf=None, contour_vinf_out=None,
                   plot_tar=False, tar_dep=None, tar_arr=None,
-                  shade_c3=False, shade_tof=False, shade_vinf=False,
+                  shade_c3=False, shade_tof=False, shade_vinf_arr=False,
                   shade_vinf_range=None, shade_tof_range=None):
     """
     PCP launch to JGA
     in work
     """
+    plot_c3 = True
+    plot_vinf_out = True
+    if contour_c3 is None:
+        plot_c3 = False
+    if contour_vinf_out is None:
+        plot_vinf_out = False
 
     # departure and arrival dates
     dep_date_initial_cal = cal_from_jd(dep_jd_init, rtn='string')
@@ -168,7 +175,7 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
     df_tof = pd.DataFrame(index=arrival_window, columns=departure_window)
     df_vinf_arr = pd.DataFrame(index=arrival_window, columns=departure_window)
     df_vinf_dep = pd.DataFrame(index=arrival_window, columns=departure_window)
-    
+
     # loop through launch dates
     for dep_JD in departure_window:
 
@@ -194,10 +201,10 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
                         df_tof, linewidths=0.5, colors=('gray'), levels=contour_tof)
     CS_vinf_arr = ax.contour(departure_window-departure_window[0], arrival_window-arrival_window[0], 
                              df_vinf_arr, linewidths=0.5, colors=('g'), levels=contour_vinf)
-    if contour_vinf_out is not None:
+    if plot_vinf_out:
         CS_vinf_dep = ax.contour(departure_window-departure_window[0], arrival_window-arrival_window[0], 
                                  df_vinf_dep, linewidths=0.5, colors=('b'), levels=contour_vinf_out)
-    if contour_c3 is not None:
+    if plot_c3:
         CS_c3 = ax.contour(departure_window-departure_window[0], arrival_window-arrival_window[0], 
                            df_c3, linewidths=0.5, colors=('b'), levels=contour_c3)
 
@@ -210,27 +217,22 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
     h1,_ = CS_tof.legend_elements()
     h3,_ = CS_vinf_arr.legend_elements()
 
-    if contour_c3 is not None:
+    if plot_c3:
         ax.clabel(CS_c3, inline=0.2, fmt="%.1f", fontsize=10)
         h2,_ = CS_c3.legend_elements()
-    elif contour_vinf_out is not None:
-        ax.clabel(CS_vinf_dep, inline=0.2, fmt="%.1f", fontsize=10)   
-        h2,_ = CS_vinf_dep.legend_elements()
-
-    
-    if contour_c3 is not None:
         ax.legend([h1[0], h2[0], h3[0]], ['TOF, days', 'c3, km2/s2', 'v_inf_arrival, km/s'], 
                 loc=2, facecolor='white')
-    elif contour_vinf_out is not None:
+    elif plot_vinf_out:
+        ax.clabel(CS_vinf_dep, inline=0.2, fmt="%.1f", fontsize=10)   
+        h2,_ = CS_vinf_dep.legend_elements()
         ax.legend([h1[0], h2[0], h3[0]], ['TOF, days', 'vinf_departure, km2/s2', 'v_inf_arrival, km/s'], 
                 loc=2, facecolor='white')
-
 
     if plot_tar:
         plt.scatter(tar_dep-dep_jd_init, tar_arr-arr_jd_init, linewidths=18, color='orange')
 
     # shade region within these bounds
-    if shade_vinf:
+    if shade_vinf_arr:
         CS_vinf_arr = ax.contourf(departure_window-departure_window[0], 
                               arrival_window-arrival_window[0], df_vinf_arr, 
                               colors=('g'), levels=shade_vinf_range, alpha=0.3)
@@ -239,7 +241,98 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
                              arrival_window-arrival_window[0], df_tof, 
                              colors=('black'), levels=shade_tof_range, alpha=0.3)
 
+    plt.savefig(f'porkschops_{dp}_{ap}.png')
     plt.show()
+
+    if plot_c3:
+        return [df_tof, df_c3, df_vinf_arr]
+    else:
+        return [df_tof, df_vinf_dep, df_vinf_arr]
+
+
+def run_pcp_search(dep_jd_init, dep_jd_fin, pl2_jd_init, pl2_jd_fin, pl3_jd_init, pl3_jd_fin, 
+                   dpl='earth', pl2='jupiter', pl3='pluto', center='sun', c3_max=None, vinf_max=None, vinf_tol=None, rp_min=None, fine_search=False):
+
+    # departure and arrival dates
+    dep_date_init_cal = pd.to_datetime(cal_from_jd(dep_jd_init, rtn='string'))
+    pl2_jd_init_cal = pd.to_datetime(cal_from_jd(pl2_jd_init, rtn='string'))
+    pl3_jd_init_cal = pd.to_datetime(cal_from_jd(pl3_jd_init, rtn='string'))
+
+    # time windows
+    delta_dep = dep_jd_fin - dep_jd_init
+    delta_pl2 = pl2_jd_fin - pl2_jd_init
+    delta_pl3 = pl3_jd_fin - pl3_jd_init
+    searchint = 3
+    if fine_search:
+        searchint = 0.8
+    dep_window = np.linspace(dep_jd_init, dep_jd_fin, int(delta_dep/searchint))
+    # print(dep_window)
+    pl2_window = np.linspace(pl2_jd_init, pl2_jd_fin, int(delta_pl2/searchint))
+    pl3_window = np.linspace(pl3_jd_init, pl3_jd_fin, int(delta_pl3/searchint))
+
+
+    # generate dataframes for c3, time of flight, and dep/arrival v_inf
+    dfpl1_c3 = pd.DataFrame(index=pl2_window, columns=dep_window)
+    dfpl2_tof = pd.DataFrame(index=pl2_window, columns=dep_window)
+    dfpl2_vinf_in = pd.DataFrame(index=pl2_window, columns=dep_window)
+    dfpl2_vinf_out = pd.DataFrame(index=pl2_window, columns=dep_window)
+    dfpl3_tof = pd.DataFrame(index=pl3_window, columns=pl2_window)
+    dfpl3_vinf_in = pd.DataFrame(index=pl3_window, columns=pl2_window)
+    dfpl3_rp = pd.DataFrame(index=pl3_window, columns=pl2_window)
+
+    count = 0
+    # loop through launch dates
+    for dep_JD in dep_window:
+
+        for arr_JD in pl2_window:
+
+            tof12_s = (arr_JD-dep_JD)*3600*24
+            s_planet1 = meeus(dep_JD, planet=dpl, rtn='states', ref_rtn=center)
+            s_planet2 = meeus(arr_JD, planet=pl2, rtn='states', ref_rtn=center)
+            vi_seg1, vf_seg1 = lambert.lambert_univ(s_planet1[:3], s_planet2[:3], tof12_s, 
+                                  center=center, dep_planet=dpl, arr_planet=pl2)
+            
+            c3 = norm(vi_seg1-s_planet1[3:6])**2
+
+            if c3 < c3_max:
+                # print('c3', c3)
+                for arr2_JD in pl3_window:
+                    tof23_s = (arr2_JD-arr_JD)*3600*24
+                    s_planet3 = meeus(arr2_JD, planet=pl3, rtn='states', ref_rtn=center)
+                    vi_seg2, vf_seg2 = lambert.lambert_univ(s_planet2[:3], s_planet3[:3], tof23_s, 
+                                        center=center, dep_planet=pl2, arr_planet=pl3)
+
+                    vinf_pl2_in = norm(vf_seg1 - s_planet2[3:6])
+                    vinf_pl2_out = norm(vi_seg2 - s_planet2[3:6])
+
+                    if abs(vinf_pl2_in-vinf_pl2_out) < vinf_tol:
+                        
+                        # print(abs(vinf_pl2_in-vinf_pl2_out))
+
+                        rp = bplane_vinf(vf_seg1, vi_seg2, center=pl2, rtn_rp=True)
+
+                        if rp > rp_min:
+                            
+                            # print('rp', rp)
+
+                            vinf_pl3_in = norm(vf_seg2 - s_planet3[3:6])
+
+                            if vinf_pl3_in < vinf_max:
+
+                                # print('vinf_pl2_out', vinf_pl2_out)
+
+                                dfpl1_c3[dep_JD][arr_JD] = c3
+                                dfpl2_tof[dep_JD][arr_JD] = arr_JD-dep_JD
+                                dfpl2_vinf_in[dep_JD][arr_JD] = vinf_pl2_in
+                                dfpl2_vinf_out[dep_JD][arr_JD] = vinf_pl2_out
+                                dfpl3_tof[arr_JD][arr2_JD] = arr2_JD-arr_JD
+                                dfpl3_vinf_in[arr_JD][arr2_JD] = vinf_pl3_in
+                                dfpl3_rp[arr_JD][arr2_JD] = rp
+
+    return [dfpl1_c3, dfpl2_tof, dfpl2_vinf_in, dfpl2_vinf_out, dfpl3_tof, dfpl3_vinf_in, dfpl3_rp]
+
+
+
 
 
 if __name__ == '__main__':
@@ -350,11 +443,60 @@ if __name__ == '__main__':
     tar_dep = 2454159.73681
     tar_arr = 2457217.99931
 
-    get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin, 
-                  dp=dp, ap=ap, center=center, 
-                  contour_tof=contour_tof, contour_c3=None,
-                  contour_vinf=contour_vinf, contour_vinf_out=contour_vinf_dep,
-                  plot_tar=plot_tar, 
-                  tar_dep=tar_dep, tar_arr=tar_arr,
-                  shade_c3=False, shade_tof=False, shade_vinf=False,
-                  shade_vinf_range=None, shade_tof_range=None)
+    # get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin, 
+    #               dp=dp, ap=ap, center=center, 
+    #               contour_tof=contour_tof, contour_c3=None,
+    #               contour_vinf=contour_vinf, contour_vinf_out=contour_vinf_dep,
+    #               plot_tar=plot_tar, 
+    #               tar_dep=tar_dep, tar_arr=tar_arr,
+    #               shade_c3=False, shade_tof=False, shade_vinf=False,
+    #               shade_vinf_range=None, shade_tof_range=None)
+
+    dep1_jd_init = 2453714.5
+    dep1_jd_fin = 2453794.5
+    arr1_jd_init = 2454129.5
+    arr1_jd_fin = 2454239.5
+    dpl = 'earth'
+    pl2 = 'jupiter'
+    center = 'sun'
+    dep2_jd_init = arr1_jd_init
+    dep2_jd_fin = arr1_jd_fin
+    arr3_jd_init = 2456917.5 
+    arr3_jd_fin = 2457517.5
+    pl3 = 'pluto'
+    c3_max = 180 # km2/s2
+    vinf_max = 14.5 # km/s
+    vinf_tol = 0.1
+    rp_min = 30*r_jupiter
+
+    dep1_jd_init = 2453730.5
+    dep1_jd_fin = 2453778.5
+    arr1_jd_init = 2454145
+    arr1_jd_fin = 2454179
+    dep2_jd_init = arr1_jd_init
+    dep2_jd_fin = arr1_jd_fin
+    arr3_jd_init = 2457074
+    arr3_jd_fin = 2457517.5
+
+    # run_pcp_search(dep1_jd_init, dep1_jd_fin, dep2_jd_init, dep2_jd_fin, arr3_jd_init, arr3_jd_fin, 
+    #                 dpl=dpl, pl2=pl2, pl3=pl3, center=center, c3_max=c3_max, vinf_max=vinf_max, vinf_tol=vinf_tol, rp_min=rp_min)
+
+    req1 = get_JD(2006, 1, 9, 12, 0, 0)
+    dep1_jd_init = req1-4
+    dep1_jd_fin = req1+4
+    arr1_jd_init = 2454145
+    arr1_jd_fin = 2454179
+    dep2_jd_init = arr1_jd_init
+    dep2_jd_fin = arr1_jd_fin
+    arr3_jd_init = 2457074
+    arr3_jd_fin = 2457517.5
+    vinf_tol = 0.05
+
+    c3_max = 180 # km2/s2
+    vinf_max = 14.5 # km/s
+    vinf_tol = 0.1
+    rp_min = 30*r_jupiter
+    fine_search = True
+
+    dfs = run_pcp_search(dep1_jd_init, dep1_jd_fin, dep2_jd_init, dep2_jd_fin, arr3_jd_init, arr3_jd_fin, 
+                    dpl=dpl, pl2=pl2, pl3=pl3, center=center, c3_max=c3_max, vinf_max=vinf_max, vinf_tol=vinf_tol, rp_min=rp_min, fine_search=fine_search)

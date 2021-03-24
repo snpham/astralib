@@ -238,7 +238,10 @@ def test_patched_conics():
     r2 = r_mars + 400
     rt1 = sma_earth # assuming rp is earth's sma
     rt2 = sma_mars # assuming ra is mars' sma
-    vt1, vt2, dv_inj, dv_ins, TOF = man.patched_conics(r1, r2, rt1, rt2)
+    pl1 = 'earth'
+    pl2 = 'mars'
+    vt1, vt2, dv_inj, dv_ins, TOF = \
+        man.patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun')
     vt1_truth = 32.72935928
     vt2_truth = 21.480499013
     dv_inj_truth = 3.56908882
