@@ -241,12 +241,12 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
         ax.clabel(CS_c3, inline=0.2, fmt="%.1f", fontsize=10)
         h2,_ = CS_c3.legend_elements()
         ax.legend([h1[0], h2[0], h3[0]], ['TOF, days', 'c3, km2/s2', 'v_inf_arrival, km/s'], 
-                loc=2, facecolor='white')
+                loc=2, facecolor='white', framealpha=1)
     elif plot_vinf_out:
         ax.clabel(CS_vinf_dep, inline=0.2, fmt="%.1f", fontsize=10)   
         h2,_ = CS_vinf_dep.legend_elements()
         ax.legend([h1[0], h2[0], h3[0]], ['TOF, days', 'vinf_departure, km2/s2', 'v_inf_arrival, km/s'], 
-                loc=2, facecolor='white')
+                loc=2, facecolor='white', framealpha=1)
 
     if plot_tar:
         plt.scatter(tar_dep-dep_jd_init, tar_arr-arr_jd_init, linewidths=18, color='orange')
@@ -260,7 +260,7 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
         CS_tof = ax.contourf(departure_window-departure_window[0], 
                              arrival_window-arrival_window[0], df_tof, 
                              colors=('black'), levels=shade_tof_range, alpha=0.3)
-
+    
     plt.savefig(f'porkschops_{dp}_{ap}.png')
     plt.show()
 

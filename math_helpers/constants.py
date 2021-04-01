@@ -10,9 +10,12 @@ mu_uranus = 5.7939513e6
 mu_neptune = 6.835100e6
 mu_pluto = 8.71e2
 
+# universal gravitational constant
+G_univ = 6.67408e-20 # km3/(kg)
+
 # conversion
 P_earth = 365.242189
-AU = 1.49597870700e8 # km
+AU = 1.49597870691e8 # km
 
 # planetary radii, km
 r_venus = 6051.8
@@ -103,7 +106,7 @@ def get_sma(center='earth'):
     elif center.lower() == 'neptune':
         return sma_neptune
     elif center.lower() == 'pluto':
-        return mu_pluto
+        return sma_pluto
     else:
         print('Using earth as center object\n')
         return sma_earth
