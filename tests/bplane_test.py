@@ -2,7 +2,7 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
-from traj.bplane import bplane_vinf, get_rp
+from traj.bplane import bplane_vinf, get_rp, BPlane
 from traj.meeus_alg import meeus
 from traj.lambert import lambert_univ
 from math_helpers.vectors import vdotv
@@ -17,9 +17,12 @@ def test_bplane_vinf():
     vinf_in = [-5.19425, 5.19424, -5.19425]
     vinf_out = [-8.58481, 1.17067, -2.42304]
     psi, rp, BT, BR, B, theta = bplane_vinf(vinf_in, vinf_out, center='earth')
-    assert np.allclose([r2d(psi), rp, BT, BR, B, r2d(theta)], 
-                       [38.59824158881, 9975.867571918981, 13135.930533043453, 
-                        5021.9192396867, 14063.1555427250, 20.922056964])
+    values_truth = [38.59824158881, 9975.867571918981, 13135.930533043453, 
+                        5021.9192396867, 14063.1555427250, 20.922056964]
+    assert np.allclose([r2d(psi), rp, BT, BR, B, r2d(theta)], values_truth)
+    BP = BPlane(vinf_in=vinf_in, vinf_out=vinf_out, center='earth')
+    assert np.allclose([r2d(BP.psi), BP.rp, BP.BdotT, BP.BdotR, 
+                        BP.B_mag, r2d(BP.theta)], values_truth)
 
 
 def test_bplane_flyby():
@@ -83,7 +86,10 @@ def test_bplane_flyby():
 
     # get rp's
     print("computing rp's") # get altitude not radius!
+    BP = BPlane(vinf_in=vinf_venusflyby1_in, vinf_out=vinf_venusflyby1_out, center='venus')
+    assert np.allclose(psi_venus, BP.psi)
     rp_venus = get_rp(vinfmag_venusflyby1_in, psi_venus, mu_venus)
+    assert np.allclose(rp_venus, BP.rp)
     assert rp_venus > r_venus
 
     print('altitude of closest approach (km) =', rp_venus-r_venus, 'rp_venus', rp_venus)

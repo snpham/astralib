@@ -146,7 +146,7 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
     TOF = -10.0
     y = 0
     
-    while np.abs(TOF - TOF0) > 1e-4:
+    while np.abs(TOF - TOF0) > 1e-5:
 
         y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
 

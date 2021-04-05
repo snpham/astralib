@@ -316,34 +316,34 @@ def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun'):
     vc2 = sqrt(mu_pl2/r_orbit2)
     vt1 = sqrt(2*mu_center/rt1 - mu_center/atrans) # heliocentric, departure
     vt2 = sqrt(2*mu_center/rt2 - mu_center/atrans) # heliocentric, arrival
-    # print(f'vc1 {vc1}; A1: vt1 {vt1}')
-    # print(f'vc2 {vc2}; A2: vt2 {vt2}')
+    print(f'vc1 {vc1}; A1: vt1 {vt1}')
+    print(f'vc2 {vc2}; A2: vt2 {vt2}')
 
     dv1 = vt1 - vc1
     dv2 = vc2 - vt2
-    # print(f'dv1 {dv1}; dv2 {dv2}')
+    print(f'dv1 {dv1}; dv2 {dv2}')
 
     # velocity of earth and mars rel. to sun
-    v_es = sqrt(mu_center/sma_pl1)
-    v_ms = sqrt(mu_center/sma_pl2)
-    # print(f'v_es {v_es}; v_ms {v_ms}')
+    v_pl1 = sqrt(mu_center/sma_pl1)
+    v_pl2 = sqrt(mu_center/sma_pl2)
+    print(f'v_pl1 {v_pl1}; v_pl2 {v_pl2}')
 
     # hyperbolic excess velocity
-    v_hyp1 = vt1 - v_es # wrt earth
-    v_hyp2 = vt2 - v_ms # wrt mars
+    v_hyp1 = vt1 - v_pl1 # wrt earth
+    v_hyp2 = vt2 - v_pl2 # wrt mars
     print(f'v_hyp1 {v_hyp1}; v_hyp2 {v_hyp2}')
 
     # departure
     vp1 = sqrt(2*mu_pl1/r_orbit1 + v_hyp1**2) # earth departure
-    # print(f'vp1 {vp1}')
+    print(f'vp1 {vp1}')
     dv_inj = vp1 - vc1 # v_inf
     print(f'B: dv_inj {dv_inj}')
 
     # arrival
     vp2 = sqrt(2*mu_pl2/r_orbit2 + v_hyp2**2) # mars arrival
-    # print(f'vp2 {vp2}')
+    print(f'vp2 {vp2}')
     dv_ins = vc2 - vp2
-    # print(f'C: dv_ins {dv_ins}')
+    print(f'C: dv_ins {dv_ins}')
 
     # # testing with existing code
     # vsatd, vsata, tt = hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=True, center='sun')
@@ -362,9 +362,10 @@ if __name__ == '__main__':
     
 
     r1 = r_earth + 300
-    r2 = r_jupiter + 20000
+    r2 = r_jupiter + 286000 
     rt1 = sma_earth
     rt2 = sma_jupiter
     pl1 = 'earth'
     pl2 = 'jupiter'
     patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun')
+
