@@ -284,20 +284,23 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth', get_pay
     return dva, dvb, dii, dif
 
 
-def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun'):
+def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', 
+                   elliptical1=False, period1=None,
+                   elliptical2=False, period2=None):
     """compute a patched conics orbit transfer from an inner planet to 
     outer planet.
-    :param r1: orbital radius around inner planet (km)
-    :param r2: orbital radius around outer planet (km)
-    :param rt1: radius to inner planet from center of transfer orbit (km)
-    :param rt2: radius to outer planet from center of transfer orbi (km)
+    :param r1: orbital radius about planet 1 (km)
+    :param r2: orbital radius about planet 2 (km)
+    :param rt1: radius to planet 1 from center of transfer orbit (km)
+    :param rt2: radius to planet 2 from center of transfer orbi (km)
     :param pl1: departing planet
     :param pl2: arrival planet
-    :return vt1: departure velocity from inner planet (km/s)
-    :return vt2: arrival velocity to outer planer (km/s)
-    :return dv_inj: injection velocity to transfer orbit (km/s)
-    :return dv_ins: insertion velocity from transfer orbit (km/s)
+    :return vt1: heliocentric departure velocity at planet 1 (km/s)
+    :return vt2: heliocentric arrival velocity at planet 2 (km/s)
+    :return dv_inj: [injection] departure delta-v (km/s) (km/s)
+    :return dv_ins: [insertion] arrival delta-v (km/s) (km/s)
     :return TOF: transfer time of flight (s)
+    in work
     """
     mu_center = get_mu(center=center)
     mu_pl1 = get_mu(pl1)
@@ -309,63 +312,67 @@ def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun'):
     r_orbit2 = r2
     atrans = (rt1 + rt2) / 2 # transfer sma
     TOF = pi*sqrt(atrans**3/mu_center) # period of hohmann transfer
-    print(f'D: TOF (days): {TOF/(3600*24)}')
+    print(f'time of flight (days): {TOF/(3600*24)}')
 
-    # velocities
-    vc1 = sqrt(mu_pl1/r_orbit1)
-    vc2 = sqrt(mu_pl2/r_orbit2)
-    vt1 = sqrt(2*mu_center/rt1 - mu_center/atrans) # heliocentric, departure
-    vt2 = sqrt(2*mu_center/rt2 - mu_center/atrans) # heliocentric, arrival
-    print(f'vc1 {vc1}; A1: vt1 {vt1}')
-    print(f'vc2 {vc2}; A2: vt2 {vt2}')
+    # spacecraft orbital velocities relative to planet 1, 2
+    if elliptical1:
+        P = period1
+        a = (mu_pl1*(P/(2*pi))**2)**(1/3)
+        vc1 = sqrt(2*mu_pl1/r_orbit1 - mu_pl1/a)
+        print(f'elliptical orbit velocity at planet 1 (km/s): {vc1}')
+    else:
+        vc1 = sqrt(mu_pl1/r_orbit1)
+        print(f'circular orbit velocity at planet 1 (km/s): {vc1}')
+    if elliptical2:
+        P = period2
+        a = (mu_pl2*(P/(2*pi))**2)**(1/3)
+        vc2 = sqrt(2*mu_pl2/r_orbit2 - mu_pl2/a)
+        print(f'elliptical orbit velocity at planet 2 (km/s): {vc2}')
+    else:
+        vc2 = sqrt(mu_pl2/r_orbit2)
+        print(f'circular orbit velocity at planet 2 (km/s): {vc2}')
 
-    dv1 = vt1 - vc1
-    dv2 = vc2 - vt2
-    print(f'dv1 {dv1}; dv2 {dv2}')
+    # heliocentric departure and arrival velocities
+    vt1 = sqrt(2*mu_center/rt1 - mu_center/atrans)
+    vt2 = sqrt(2*mu_center/rt2 - mu_center/atrans)
+    print(f'heliocentric departure velocity at planet 1 (km/s): {vt1}')
+    print(f'heliocentric arrival velocity at planet 2 (km/s): {vt2}')
 
-    # velocity of earth and mars rel. to sun
+    # heliocentric velocities of planet 1 and 2
     v_pl1 = sqrt(mu_center/sma_pl1)
     v_pl2 = sqrt(mu_center/sma_pl2)
-    print(f'v_pl1 {v_pl1}; v_pl2 {v_pl2}')
+    print(f'planet 1 velocity, heliocentric (km/s): {v_pl1}')
+    print(f'planet 2 velocity, heliocentric (km/s): {v_pl2}')
 
-    # hyperbolic excess velocity
-    v_hyp1 = vt1 - v_pl1 # wrt earth
-    v_hyp2 = vt2 - v_pl2 # wrt mars
-    print(f'v_hyp1 {v_hyp1}; v_hyp2 {v_hyp2}')
+    # hyperbolic excess velocities
+    v_hyp1 = vt1 - v_pl1
+    v_hyp2 = vt2 - v_pl2
+    print(f'hyperbolic excess velocity, wrt planet 1 (km/s): {v_hyp1}')
+    print(f'hyperbolic excess velocity, wrt planet 2 (km/s): {v_hyp2}')
 
     # departure
-    vp1 = sqrt(2*mu_pl1/r_orbit1 + v_hyp1**2) # earth departure
-    print(f'vp1 {vp1}')
+    vp1 = sqrt(2*mu_pl1/r_orbit1 + v_hyp1**2)
+    # print(f'vp1 {vp1}')
     dv_inj = vp1 - vc1 # v_inf
-    print(f'B: dv_inj {dv_inj}')
+    print(f'[injection] departure delta-v (km/s): {dv_inj}')
 
     # arrival
-    vp2 = sqrt(2*mu_pl2/r_orbit2 + v_hyp2**2) # mars arrival
-    print(f'vp2 {vp2}')
-    dv_ins = vc2 - vp2
-    print(f'C: dv_ins {dv_ins}')
-
-    # # testing with existing code
-    # vsatd, vsata, tt = hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=True, center='sun')
-    # print(vsatd, vsata, tt)
-
-    # print(f"A1 (km/s): {vt1}")
-    # print(f"A2 (km/s): {vt2}")
-    # print(f"B (km/s): {dv_inj}")
-    # print(f"C (km/s): {dv_ins}")
-    # print(f"D (days): {TOF/(3600*24)}")
+    vp2 = sqrt(2*mu_pl2/r_orbit2 + v_hyp2**2)
+    # print(f'vp2 {vp2}')
+    dv_ins = vc2 - vp2 # v_inf
+    print(f'[insertion] arrival delta-v (km/s) {dv_ins}')
 
     return vt1, vt2, dv_inj, dv_ins, TOF
 
 
 if __name__ == '__main__':
     
-
+    # not verified
     r1 = r_earth + 300
     r2 = r_jupiter + 286000 
     rt1 = sma_earth
     rt2 = sma_jupiter
     pl1 = 'earth'
     pl2 = 'jupiter'
-    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun')
+    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
 

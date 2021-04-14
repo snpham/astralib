@@ -145,10 +145,14 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
     psi_low = -4*np.pi
     TOF = -10.0
     y = 0
-    
+    y_prev = -1
+
     while np.abs(TOF - TOF0) > 1e-5:
 
         y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
+
+        if y_prev == y:
+            raise ValueError('failed interation in lambert, ending..')
 
         if A > 0 and y < 0:
             while y < 0:
@@ -168,6 +172,8 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
 
         psi = (psi_up+psi_low) / 2
         c2, c3 = get_c2c3(psi)
+
+        y_prev = y
 
     if return_psi:
         return psi

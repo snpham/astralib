@@ -28,8 +28,6 @@ def launchwindows(departure_planet, departure_date, arrival_planet,
     :param run_test: run unit tests with lower days and bypass plots
     """
     
-    spice.furnsh(['spice/kernels/solarsystem/naif0012.tls'])
-
     # reinitializing
     dep_date = departure_date
     dp = departure_planet
@@ -66,9 +64,6 @@ def launchwindows(departure_planet, departure_date, arrival_planet,
         # get state of arrival planet at the current arrival date
         arrival_jdate = get_JD(date.year, date.month, date.day, \
                                date.hour, date.minute, date.second)
-        et = spice.utc2et(str(date))
-        jd = float(spice.et2utc(et, 'J', 10)[3:])
-        assert np.allclose(arrival_jdate, jd)
 
         arr_elements = meeus(arrival_jdate, planet=ap)
         s_arrival = get_rv_frm_elements2(arr_elements, center=center)
@@ -380,171 +375,107 @@ def run_pcp_search(dep_jd_init, dep_jd_fin, pl2_jd_init, pl2_jd_fin, pl3_jd_init
 
 if __name__ == '__main__':
     
-    # # HW 2
 
-    # # problem 1
-    # departure_date = '2018-05-01 12:00'
-    # arrival_window = ['2018-09-01', '2018-12-20'] # 6-8 months form launch
-    # departure_planet = 'earth'
-    # arrival_planet = 'mars'
-    # launchwindows(departure_planet, departure_date,
-    #                     arrival_planet, arrival_window,
-    #                     dm=None, center='sun')
+    pass
 
-    # # problem 1.2
-    # departure_date = '2018-05-01 12:00'
-    # arrival_window = ['2019-01-05', '2019-09-01'] # 6-8 months form launch
-    # departure_planet = 'earth'
-    # arrival_planet = 'mars'
-    # launchwindows(departure_planet, departure_date,
-    #                     arrival_planet, arrival_window,
-    #                     dm=None, center='sun')
-                        
+    # # hw6 p1
+    # # pcp from launch to jupiter gravity assist
+    # dep_jd_init = 2453714.5
+    # dep_jd_fin = 2453794.5
+    # arr_jd_init = 2454129.5
+    # arr_jd_fin = 2454239.5
+    # dp = 'earth'
+    # ap = 'jupiter'
+    # center = 'sun'
+    # contour_tof = np.arange(100,600,50)
+    # contour_c3 = np.arange(100,300,10)
+    # contour_vinf = np.arange(1,30,0.5)
+    # plot_tar = True
+    # tar_dep = 2453755.29167
+    # tar_arr = 2454159.73681
 
-    # # Lecture 4b, slides 4
-    # departure_date = '2005-06-04'
-    # arrival_window = ['2005-07-04', '2005-12-04'] # 6-8 months form launch
-    # departure_planet = 'earth'
-    # arrival_planet = 'mars'
-    # dm = None
-    # launchwindows(departure_planet, departure_date,
-    #                     arrival_planet, arrival_window,
-    #                     dm=dm, center='sun')
+    # # get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin, 
+    # #               dp=dp, ap=ap, center=center, 
+    # #               contour_tof=contour_tof, contour_c3=contour_c3,
+    # #               contour_vinf=contour_vinf, contour_vinf_out=None,
+    # #               plot_tar=plot_tar, 
+    # #               tar_dep=tar_dep, tar_arr=tar_arr,
+    # #               shade_c3=False, shade_tof=False, shade_vinf=False,
+    # #               shade_vinf_range=None, shade_tof_range=None)
 
-    # # Lecture 4b, slides 5
-    # departure_date = '2005-06-04'
-    # arrival_window = ['2006-03-20', '2006-11-04'] # 6-8 months form launch
-    # departure_planet = 'earth'
-    # arrival_planet = 'mars'
-    # dm = -1
-    # launchwindows(departure_planet, departure_date,
-    #                     arrival_planet, arrival_window,
-    #                     dm=dm, center='sun')
+    # # pcp from  jupiter gravity assist to PCE
+    # dep_jd_init = 2454129.5
+    # dep_jd_fin = 2454239.5
+    # arr_jd_init = 2456917.5 
+    # arr_jd_fin = 2457517.5
+    # dp = 'jupiter'
+    # ap = 'pluto'
+    # center = 'sun'
+    # contour_tof = np.arange(2500,3500,100)
+    # contour_vinf_arr = np.arange(1,20,0.3)
+    # contour_vinf_dep = np.arange(10,30,0.3)
+    # plot_tar = True
+    # tar_dep = 2454159.73681
+    # tar_arr = 2457217.99931
 
-    # # Lecture 4b, slides 6
-    # departure_date = '2005-06-04'
-    # arrival_window = ['2005-09-14', '2006-11-04'] # 6-8 months form launch
-    # departure_planet = 'earth'
-    # arrival_planet = 'mars'
-    # dm = None
-    # launchwindows(departure_planet, departure_date,
-    #                     arrival_planet, arrival_window,
-    #                     dm=dm, center='sun')
+    # # get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin, 
+    # #               dp=dp, ap=ap, center=center, 
+    # #               contour_tof=contour_tof, contour_c3=None,
+    # #               contour_vinf=contour_vinf, contour_vinf_out=contour_vinf_dep,
+    # #               plot_tar=plot_tar, 
+    # #               tar_dep=tar_dep, tar_arr=tar_arr,
+    # #               shade_c3=False, shade_tof=False, shade_vinf=False,
+    # #               shade_vinf_range=None, shade_tof_range=None)
 
-    # # # Lecture 4b, slides 9
-    # departure_date = '2018-05-01'
-    # arrival_window = ['2018-07-01', '2019-11-20'] # 6-8 months form launch
-    # departure_planet = 'earth'
-    # arrival_planet = 'mars'
-    # dm = None
-    # launchwindows(departure_planet, departure_date,
-    #                     arrival_planet, arrival_window,
-    #                     dm=dm, center='sun')
+    # dep1_jd_init = 2453714.5
+    # dep1_jd_fin = 2453794.5
+    # arr1_jd_init = 2454129.5
+    # arr1_jd_fin = 2454239.5
+    # dpl = 'earth'
+    # pl2 = 'jupiter'
+    # center = 'sun'
+    # dep2_jd_init = arr1_jd_init
+    # dep2_jd_fin = arr1_jd_fin
+    # arr3_jd_init = 2456917.5 
+    # arr3_jd_fin = 2457517.5
+    # pl3 = 'pluto'
+    # c3_max = 180 # km2/s2
+    # vinf_max = 14.5 # km/s
+    # vinf_tol = 0.1
+    # rp_min = 30*r_jupiter
 
+    # dep1_jd_init = 2453730.5
+    # dep1_jd_fin = 2453778.5
+    # arr1_jd_init = 2454145
+    # arr1_jd_fin = 2454179
+    # dep2_jd_init = arr1_jd_init
+    # dep2_jd_fin = arr1_jd_fin
+    # arr3_jd_init = 2457074
+    # arr3_jd_fin = 2457517.5
 
-    # Hw2, p2
-    # prob2_dawn()
+    # # run_pcp_search(dep1_jd_init, dep1_jd_fin, dep2_jd_init, dep2_jd_fin, arr3_jd_init, arr3_jd_fin, 
+    # #                 dpl=dpl, pl2=pl2, pl3=pl3, center=center, c3_max=c3_max, vinf_max=vinf_max, vinf_tol=vinf_tol, rp_min=rp_min)
 
+    # req1 = get_JD(2006, 1, 9, 12, 0, 0)
+    # dep1_jd_init = req1-4
+    # dep1_jd_fin = req1+4
+    # arr1_jd_init = 2454145
+    # arr1_jd_fin = 2454179
+    # dep2_jd_init = arr1_jd_init
+    # dep2_jd_fin = arr1_jd_fin
+    # arr3_jd_init = 2457074
+    # arr3_jd_fin = 2457517.5
+    # vinf_tol = 0.05
 
-    # hw6 p1
-    # pcp from launch to jupiter gravity assist
-    dep_jd_init = 2453714.5
-    dep_jd_fin = 2453794.5
-    arr_jd_init = 2454129.5
-    arr_jd_fin = 2454239.5
-    dp = 'earth'
-    ap = 'jupiter'
-    center = 'sun'
-    contour_tof = np.arange(100,600,50)
-    contour_c3 = np.arange(100,300,10)
-    contour_vinf = np.arange(1,30,0.5)
-    plot_tar = True
-    tar_dep = 2453755.29167
-    tar_arr = 2454159.73681
+    # c3_max = 180 # km2/s2
+    # vinf_max = 14.5 # km/s
+    # vinf_tol = 0.1
+    # rp_min = 30*r_jupiter
+    # fine_search = True
 
-    # get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin, 
-    #               dp=dp, ap=ap, center=center, 
-    #               contour_tof=contour_tof, contour_c3=contour_c3,
-    #               contour_vinf=contour_vinf, contour_vinf_out=None,
-    #               plot_tar=plot_tar, 
-    #               tar_dep=tar_dep, tar_arr=tar_arr,
-    #               shade_c3=False, shade_tof=False, shade_vinf=False,
-    #               shade_vinf_range=None, shade_tof_range=None)
+    # dfs = run_pcp_search(dep1_jd_init, dep1_jd_fin, dep2_jd_init,
+    #                      dep2_jd_fin, arr3_jd_init, arr3_jd_fin, 
+    #                      dpl=dpl, pl2=pl2, pl3=pl3, center=center, 
+    #                      c3_max=c3_max, vinf_max=vinf_max, vinf_tol=vinf_tol, 
+    #                      rp_min=rp_min, fine_search=fine_search)
 
-    # pcp from  jupiter gravity assist to PCE
-    dep_jd_init = 2454129.5
-    dep_jd_fin = 2454239.5
-    arr_jd_init = 2456917.5 
-    arr_jd_fin = 2457517.5
-    dp = 'jupiter'
-    ap = 'pluto'
-    center = 'sun'
-    contour_tof = np.arange(2500,3500,100)
-    contour_vinf_arr = np.arange(1,20,0.3)
-    contour_vinf_dep = np.arange(10,30,0.3)
-    plot_tar = True
-    tar_dep = 2454159.73681
-    tar_arr = 2457217.99931
-
-    # get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin, 
-    #               dp=dp, ap=ap, center=center, 
-    #               contour_tof=contour_tof, contour_c3=None,
-    #               contour_vinf=contour_vinf, contour_vinf_out=contour_vinf_dep,
-    #               plot_tar=plot_tar, 
-    #               tar_dep=tar_dep, tar_arr=tar_arr,
-    #               shade_c3=False, shade_tof=False, shade_vinf=False,
-    #               shade_vinf_range=None, shade_tof_range=None)
-
-    dep1_jd_init = 2453714.5
-    dep1_jd_fin = 2453794.5
-    arr1_jd_init = 2454129.5
-    arr1_jd_fin = 2454239.5
-    dpl = 'earth'
-    pl2 = 'jupiter'
-    center = 'sun'
-    dep2_jd_init = arr1_jd_init
-    dep2_jd_fin = arr1_jd_fin
-    arr3_jd_init = 2456917.5 
-    arr3_jd_fin = 2457517.5
-    pl3 = 'pluto'
-    c3_max = 180 # km2/s2
-    vinf_max = 14.5 # km/s
-    vinf_tol = 0.1
-    rp_min = 30*r_jupiter
-
-    dep1_jd_init = 2453730.5
-    dep1_jd_fin = 2453778.5
-    arr1_jd_init = 2454145
-    arr1_jd_fin = 2454179
-    dep2_jd_init = arr1_jd_init
-    dep2_jd_fin = arr1_jd_fin
-    arr3_jd_init = 2457074
-    arr3_jd_fin = 2457517.5
-
-    # run_pcp_search(dep1_jd_init, dep1_jd_fin, dep2_jd_init, dep2_jd_fin, arr3_jd_init, arr3_jd_fin, 
-    #                 dpl=dpl, pl2=pl2, pl3=pl3, center=center, c3_max=c3_max, vinf_max=vinf_max, vinf_tol=vinf_tol, rp_min=rp_min)
-
-    req1 = get_JD(2006, 1, 9, 12, 0, 0)
-    dep1_jd_init = req1-4
-    dep1_jd_fin = req1+4
-    arr1_jd_init = 2454145
-    arr1_jd_fin = 2454179
-    dep2_jd_init = arr1_jd_init
-    dep2_jd_fin = arr1_jd_fin
-    arr3_jd_init = 2457074
-    arr3_jd_fin = 2457517.5
-    vinf_tol = 0.05
-
-    c3_max = 180 # km2/s2
-    vinf_max = 14.5 # km/s
-    vinf_tol = 0.1
-    rp_min = 30*r_jupiter
-    fine_search = True
-
-    dfs = run_pcp_search(dep1_jd_init, dep1_jd_fin, dep2_jd_init,
-                         dep2_jd_fin, arr3_jd_init, arr3_jd_fin, 
-                         dpl=dpl, pl2=pl2, pl3=pl3, center=center, 
-                         c3_max=c3_max, vinf_max=vinf_max, vinf_tol=vinf_tol, 
-                         rp_min=rp_min, fine_search=fine_search)
-
-    
