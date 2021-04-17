@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys, os
 import numpy as np
+from numpy.core.numeric import count_nonzero
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
 from math_helpers.vectors import vdotv
@@ -146,13 +147,17 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
     TOF = -10.0
     y = 0
     y_prev = -1
+    tol = 1e-5
+    counter = 0
 
-    while np.abs(TOF - TOF0) > 1e-5:
+    while np.abs(TOF - TOF0) > tol:
 
         y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)
 
         if y_prev == y:
-            raise ValueError('failed interation in lambert, ending..')
+            counter += 1
+            if counter == 5:
+                raise ValueError('failed interation in lambert, ending..')
 
         if A > 0 and y < 0:
             while y < 0:

@@ -1,5 +1,6 @@
 import sys
 import os
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
 import spiceypy as spice
@@ -318,7 +319,6 @@ def run_pcp_search(dep_jd_init, dep_jd_fin, pl2_jd_init, pl2_jd_fin, pl3_jd_init
     dfpl3_vinf_in = pd.DataFrame(index=pl3_window, columns=pl2_window)
     dfpl3_rp = pd.DataFrame(index=pl3_window, columns=pl2_window)
 
-    count = 0
     # loop through launch dates
     for dep_JD in dep_window:
 
@@ -370,11 +370,226 @@ def run_pcp_search(dep_jd_init, dep_jd_fin, pl2_jd_init, pl2_jd_fin, pl3_jd_init
     return [dfpl1_c3, dfpl2_tof, dfpl2_vinf_in, dfpl2_vinf_out, dfpl3_tof, dfpl3_vinf_in, dfpl3_rp]
 
 
+def search_script_multi(dep_windows, planets, center, constraints, fine_search=False):
+
+    dep_windows_cal = []
+    arr_windows_cal = []
+    # departure and arrival dates
+    for window in dep_windows:
+        dep_windows_cal.append([pd.to_datetime(cal_from_jd(jd, rtn='string')) for jd in window])
+
+    # time windows
+    windows = []
+    searchint = 3
+    if fine_search:
+        searchint = 0.8
+    delta_deps = [depf - depi for depi, depf in dep_windows]
+    for delta, window in zip(delta_deps, dep_windows):
+        windows.append(np.linspace(window[0], window[1], int(delta/searchint)))
+
+    dfs = []
+    # generate dataframes for c3, time of flight, and dep/arrival v_inf
+    dfpl1_c3 = pd.DataFrame(index=windows[1], columns=windows[0])
+    dfpl2_tof = pd.DataFrame(index=windows[1], columns=windows[0])
+    dfpl2_vinf_in = pd.DataFrame(index=windows[1], columns=windows[0])
+    dfs = [dfpl1_c3, dfpl2_tof, dfpl2_vinf_in]
+
+    if len(planets) >= 3:
+        dfpl2_vinf_out = pd.DataFrame(index=windows[1], columns=windows[0])
+        dfpl2_rp = pd.DataFrame(index=windows[1], columns=windows[0])
+        dfpl3_tof = pd.DataFrame(index=windows[2], columns=windows[1])
+        dfpl3_vinf_in = pd.DataFrame(index=windows[2], columns=windows[1])
+
+        dfs = [dfpl1_c3, dfpl2_tof, dfpl2_vinf_in, dfpl2_vinf_out, dfpl2_rp,
+               dfpl3_tof, dfpl3_vinf_in]
+
+    if len(planets) >= 4:
+        dfpl3_vinf_out = pd.DataFrame(index=windows[2], columns=windows[1])
+        dfpl3_rp = pd.DataFrame(index=windows[2], columns=windows[1])
+        dfpl4_tof = pd.DataFrame(index=windows[3], columns=windows[2])
+        dfpl4_vinf_in = pd.DataFrame(index=windows[3], columns=windows[2])
+
+        dfs = [dfpl1_c3, dfpl2_tof, dfpl2_vinf_in, dfpl2_vinf_out, dfpl2_rp,
+               dfpl3_tof, dfpl3_vinf_in, dfpl3_vinf_out, dfpl3_rp,
+               dfpl4_tof, dfpl4_vinf_in]
+
+    if len(planets) >= 5:
+        dfpl4_vinf_out = pd.DataFrame(index=windows[3], columns=windows[2])
+        dfpl4_rp = pd.DataFrame(index=windows[3], columns=windows[2])
+        dfpl5_tof = pd.DataFrame(index=windows[4], columns=windows[3])
+        dfpl5_vinf_in = pd.DataFrame(index=windows[4], columns=windows[3])
+
+        dfs = [dfpl1_c3, dfpl2_tof, dfpl2_vinf_in, dfpl2_vinf_out, dfpl2_rp,
+               dfpl3_tof, dfpl3_vinf_in, dfpl3_vinf_out, dfpl3_rp,
+               dfpl4_tof, dfpl4_vinf_in, dfpl4_vinf_out, dfpl4_rp,
+               dfpl5_tof, dfpl5_vinf_in]
+               
+    if len(planets) == 6:
+        dfpl5_vinf_out = pd.DataFrame(index=windows[4], columns=windows[3])
+        dfpl5_rp = pd.DataFrame(index=windows[4], columns=windows[3])
+        dfpl6_tof = pd.DataFrame(index=windows[5], columns=windows[4])
+        dfpl6_vinf_in = pd.DataFrame(index=windows[5], columns=windows[4])
+
+        dfs = [dfpl1_c3, dfpl2_tof, dfpl2_vinf_in, dfpl2_vinf_out, dfpl2_rp,
+               dfpl3_tof, dfpl3_vinf_in, dfpl3_vinf_out, dfpl3_rp,
+               dfpl4_tof, dfpl4_vinf_in, dfpl4_vinf_out, dfpl4_rp,
+               dfpl5_tof, dfpl5_vinf_in, dfpl5_vinf_out, dfpl5_rp,
+               dfpl6_tof, dfpl6_vinf_in]
+
+    # loop through launch dates
+    for dep_JD in windows[0]:
+
+        for arr_JD in windows[1]:
+            # segment 1 - planet 1 (launch) to planet 2
+            tof12_s = (arr_JD-dep_JD)*3600*24
+            s_planet1 = meeus(dep_JD, planet=planets[0], rtn='states', ref_rtn=center)
+            s_planet2 = meeus(arr_JD, planet=planets[1], rtn='states', ref_rtn=center)
+            vi_seg1, vf_seg1 = lambert.lambert_univ(s_planet1[:3], s_planet2[:3], tof12_s, 
+                                  center=center, dep_planet=planets[0], arr_planet=planets[1])
+            
+            c3 = norm(vi_seg1-s_planet1[3:6])**2
+            
+            if c3 < constraints['c3max1']:
+
+                # print('c3', c3)
+                for arr2_JD in windows[2]:
+                    # segment 2 - planet 2 to planet 3
+
+                    tof23_s = (arr2_JD-arr_JD)*3600*24
+                    s_planet3 = meeus(arr2_JD, planet=planets[2], rtn='states', ref_rtn=center)
+                    vi_seg2, vf_seg2 = lambert.lambert_univ(s_planet2[:3], s_planet3[:3], tof23_s, 
+                                        center=center, dep_planet=planets[1], arr_planet=planets[2])
+
+                    vinf_pl2_in = norm(vf_seg1 - s_planet2[3:6])
+                    vinf_pl2_out = norm(vi_seg2 - s_planet2[3:6])
+
+                    if abs(vinf_pl2_in-vinf_pl2_out) < constraints['vinf_tol2']:
+                        
+                        # print(abs(vinf_pl2_in-vinf_pl2_out))
+
+                        rp2 = bplane_vinf(vf_seg1, vi_seg2, center=planets[1], rtn_rp=True)
+
+                        if rp2 > constraints['rp_min2']:
+
+                            vinf_pl3_in = norm(vf_seg2 - s_planet3[3:6])
+
+                            if len(planets) == 3:
+                                if vinf_pl3_in < constraints['vinf_in_max']:
+
+                                    dfpl1_c3[dep_JD][arr_JD] = c3
+                                    dfpl2_tof[dep_JD][arr_JD] = arr_JD-dep_JD
+                                    dfpl2_vinf_in[dep_JD][arr_JD] = vinf_pl2_in
+                                    dfpl2_vinf_out[dep_JD][arr_JD] = vinf_pl2_out
+                                    dfpl2_rp[dep_JD][arr_JD] = rp2
+                                    dfpl3_tof[arr_JD][arr2_JD] = arr2_JD-arr_JD
+                                    dfpl3_vinf_in[arr_JD][arr2_JD] = vinf_pl3_in
+
+                            elif len(planets) >= 4:
+                                # segment 3 - planet 3 to planet 4
+
+                                for arr3_JD in windows[3]:
+                                    tof34_s = (arr3_JD-arr2_JD)*3600*24
+                                    s_planet4 = meeus(arr3_JD, planet=planets[3], rtn='states', ref_rtn=center)
+                                    vi_seg3, vf_seg3 = lambert.lambert_univ(s_planet3[:3], s_planet4[:3], tof34_s, 
+                                                        center=center, dep_planet=planets[2], arr_planet=planets[3])
+
+                                    vinf_pl3_out = norm(vi_seg3 - s_planet3[3:6])
+
+                                    if abs(vinf_pl3_in-vinf_pl3_out) < constraints['vinf_tol3']:
+                                        
+                                        # print(abs(vinf_pl3_in-vinf_pl3_out))
+
+                                        rp3 = bplane_vinf(vf_seg2, vi_seg3, center=planets[2], rtn_rp=True)
+
+                                        if rp3 > constraints['rp_min3']:
+
+                                            vinf_pl4_in = norm(vf_seg3 - s_planet4[3:6])
+
+                                            if len(planets) == 4:
+                                                if vinf_pl4_in < constraints['vinf_in_max']:
+
+                                                    dfpl1_c3[dep_JD][arr_JD] = c3
+                                                    dfpl2_tof[dep_JD][arr_JD] = arr_JD-dep_JD
+                                                    dfpl2_vinf_in[dep_JD][arr_JD] = vinf_pl2_in
+                                                    dfpl2_vinf_out[dep_JD][arr_JD] = vinf_pl2_out
+                                                    dfpl2_rp[dep_JD][arr_JD] = rp2
+
+                                                    dfpl3_tof[arr_JD][arr2_JD] = arr2_JD-arr_JD
+                                                    dfpl3_vinf_in[arr_JD][arr2_JD] = vinf_pl3_in
+                                                    dfpl3_vinf_out[arr_JD][arr2_JD] = vinf_pl3_out
+                                                    dfpl3_rp[arr_JD][arr2_JD] = rp3
+
+                                                    dfpl4_tof[arr2_JD][arr3_JD] = arr3_JD-arr2_JD
+                                                    dfpl4_vinf_in[arr2_JD][arr3_JD] = vinf_pl4_in
+
+                                            elif len(planets) >= 5:
+                                                # segment 4 - planet 4 to planet 5
+
+                                                for arr4_JD in windows[3]:
+                                                    tof45_s = (arr4_JD-arr3_JD)*3600*24
+                                                    s_planet5 = meeus(arr4_JD, planet=planets[4], rtn='states', ref_rtn=center)
+                                                    vi_seg4, vf_seg4 = lambert.lambert_univ(s_planet4[:3], s_planet5[:3], tof45_s, 
+                                                                        center=center, dep_planet=planets[3], arr_planet=planets[4])
+
+                                                    vinf_pl4_out = norm(vi_seg4 - s_planet4[3:6])
+
+                                                    if abs(vinf_pl4_in-vinf_pl4_out) < constraints['vinf_tol4']:
+                                                        
+                                                        # print(abs(vinf_pl4_in-vinf_pl4_out))
+
+                                                        rp4 = bplane_vinf(vf_seg3, vi_seg4, center=planets[3], rtn_rp=True)
+
+                                                        if rp4 > constraints['rp_min4']:
+
+                                                            vinf_pl5_in = norm(vf_seg4 - s_planet5[3:6])
+
+                                                            if len(planets) == 5:
+                                                                if vinf_pl5_in < constraints['vinf_in_max']:
+
+                                                                    dfpl1_c3[dep_JD][arr_JD] = c3
+                                                                    dfpl2_tof[dep_JD][arr_JD] = arr_JD-dep_JD
+                                                                    dfpl2_vinf_in[dep_JD][arr_JD] = vinf_pl2_in
+                                                                    dfpl2_vinf_out[dep_JD][arr_JD] = vinf_pl2_out
+                                                                    dfpl2_rp[dep_JD][arr_JD] = rp2
+
+                                                                    dfpl3_tof[arr_JD][arr2_JD] = arr2_JD-arr_JD
+                                                                    dfpl3_vinf_in[arr_JD][arr2_JD] = vinf_pl3_in
+                                                                    dfpl3_vinf_out[arr_JD][arr2_JD] = vinf_pl3_out
+                                                                    dfpl3_rp[arr_JD][arr2_JD] = rp3
+
+                                                                    dfpl4_tof[arr2_JD][arr3_JD] = arr3_JD-arr2_JD
+                                                                    dfpl4_vinf_in[arr2_JD][arr3_JD] = vinf_pl4_in
+                                                                    dfpl4_vinf_out[arr2_JD][arr3_JD] = vinf_pl4_out
+                                                                    dfpl4_rp[arr2_JD][arr3_JD] = rp4
+
+                                                                    dfpl5_tof[arr3_JD][arr4_JD] = arr4_JD-arr3_JD
+                                                                    dfpl5_vinf_in[arr3_JD][arr4_JD] = vinf_pl5_in     
+                                                    
+    return dfs
+
+
+
+
+
+
 
 
 
 if __name__ == '__main__':
     
+    dep_windows = [[2453114.5, 2453214.5], [2454114.5, 2454414.5], [2456114.5, 2456214.5]]
+    planets = ['earth', 'venus', 'earth']
+    center = 'sun'
+    constraints = {'c3max1':40, 
+                   'vinf_tol2': 0.1, 'rp_min2': r_venus+300, 
+                   'vinf_tol3': 0.1, 'rp_min3': r_earth+300, 
+                   'vinf_tol4': 0.1, 'rp_min4': r_earth+300, 
+    
+                   'vinf_in_max': 30}
+
+    search_script_multi(dep_windows, planets, center, constraints, fine_search=False)
+
+
 
     pass
 
