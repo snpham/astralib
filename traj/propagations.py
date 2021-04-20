@@ -6,7 +6,7 @@ from math_helpers.constants import *
 from traj import conics
 from traj.maneuvers import patched_conics
 from traj.meeus_alg import meeus
-
+from math_helpers.time_systems import get_JD, cal_from_jd
 
 def prop_nop(t, Y):
     """2-body orbit propagator with no perturbation
@@ -249,6 +249,52 @@ if __name__ == '__main__':
     # list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus', 'pluto']
     # # ax = genorbit_solarsystem(epoch, TOF, list_planets, tof_sc=tof_sc, state_sc=s_sc, tof2_sc=tof2_sc, state2_sc=s2_sc)
     
+    #### final project #####
 
-    # epoch = '2024-01-19 19:00:00' 
-    # ax = genorbit_solarsystem(epoch, TOF, list_planets, tof_sc=None, state_sc=None, tof2_sc=None, state2_sc=None)
+    # # segment 1
+    # epoch_jd = 2460777.0
+    # epoch = cal_from_jd(epoch_jd, rtn='string')
+    # TOF = 365*3600*24
+    # # list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus']
+    # list_planets = ['mercury', 'venus', 'earth', 'mars']
+    # tof_sc = 161.0*3600*24
+    # state_sc = meeus(epoch_jd, planet='earth', rtn='states', ref_rtn='sun')
+    # v_helio_sc = [9.82397287, -22.99559138, -0.82621124]
+    # state_sc = np.hstack([state_sc[:3], v_helio_sc])
+    # ax = genorbit_solarsystem(epoch, TOF, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
+
+    # # segment 2
+    epoch_jd = 2460938.0
+    epoch = cal_from_jd(epoch_jd, rtn='string')
+    print(epoch)
+    # TOF = 365*3600*24
+    # # list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus']
+    # list_planets = ['mercury', 'venus', 'earth', 'mars']
+    # tof_sc = 449.4019999*3600*24
+    # state_sc = meeus(epoch_jd, planet='venus', rtn='states', ref_rtn='sun')
+    # v_helio_sc = [-40.63481563, -6.29903045,  -2.23790423]
+    # state_sc = np.hstack([state_sc[:3], v_helio_sc])
+    # ax = genorbit_solarsystem(epoch, TOF, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
+
+    # # segment 4
+    # epoch_jd = 2461662.402
+    # epoch = cal_from_jd(epoch_jd, rtn='string')
+    # TOF = 365*3600*24
+    # # list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus']
+    # list_planets = ['mercury', 'venus', 'earth', 'mars']
+    # tof_sc = 730.484377*3600*24
+    # state_sc = meeus(epoch_jd, planet='venus', rtn='states', ref_rtn='sun')
+    # v_helio_sc = [-1.16391099, 34.68576047, 0.25691886]
+    # state_sc = np.hstack([state_sc[:3], v_helio_sc])
+    # ax = genorbit_solarsystem(epoch, TOF, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
+
+    # segment 5
+    epoch_jd = 2463242.8863779996
+    epoch = cal_from_jd(epoch_jd, rtn='string')
+    TOF = 365*3600*24
+    list_planets = ['venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
+    tof_sc = 4450.00*3600*24
+    state_sc = meeus(epoch_jd, planet='jupiter', rtn='states', ref_rtn='sun')
+    v_helio_sc = [12.76173331, 10.87258849, -0.27608178]
+    state_sc = np.hstack([state_sc[:3], v_helio_sc])
+    # ax = genorbit_solarsystem(epoch, TOF, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)

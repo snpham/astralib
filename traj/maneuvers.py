@@ -77,6 +77,11 @@ def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, center='earth'):
     # total deltav and transfer time
     dv_tot = np.abs(dv1) + np.abs(dv2)
     transfer_time = np.pi * sqrt(a_trans**3/mu)
+    print('v1_trans (km/s):', v1_trans)
+    print('v2_trans (km/s):', v2_trans)
+    print('dv1 (km/s):', dv1)
+    print('dv2 (km/s):', dv2)
+    print('transfer_time (days):', transfer_time/24/3600)
 
     if get_vtrans:
         return v1_trans, v2_trans, transfer_time
@@ -374,5 +379,24 @@ if __name__ == '__main__':
     rt2 = sma_jupiter
     pl1 = 'earth'
     pl2 = 'jupiter'
-    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
+    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
 
+    # not verified
+    r1 = r_earth + 300
+    r2 = r_jupiter + 286000 
+    rt1 = sma_earth
+    rt2 = sma_jupiter
+    pl1 = 'earth'
+    pl2 = 'jupiter'
+    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
+    hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+
+    # not verified
+    r1 = r_jupiter + 300
+    r2 = r_uranus + 286000 
+    rt1 = sma_jupiter
+    rt2 = sma_uranus
+    pl1 = 'jupiter'
+    pl2 = 'uranus'
+    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
+    hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')

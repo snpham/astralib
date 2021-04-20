@@ -142,7 +142,7 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
                   contour_vinf=None, contour_vinf_out=None,
                   plot_tar=False, tar_dep=None, tar_arr=None,
                   shade_c3=False, shade_tof=False, shade_vinf_arr=False,
-                  shade_vinf_range=None, shade_tof_range=None):
+                  shade_vinf_range=None, shade_tof_range=None, fine_search=True):
     """generates a porkchop plot for a given launch and arrival window.
     :param dep_jd_init: initial departure date (JD)
     :param dep_jd_fin: final departure date (JD)
@@ -174,6 +174,10 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
     if contour_vinf_out is None:
         plot_vinf_out = False
 
+    print('segment 1 tof (days):',tar_arr-tar_dep)
+    print('target1 departure (cal):', cal_from_jd(tar_dep, rtn='string'), '(jd)', tar_dep)
+    print('target1 arrival (cal):', cal_from_jd(tar_arr, rtn='string'), '(jd)', tar_arr)
+
     # departure and arrival dates
     dep_date_initial_cal = cal_from_jd(dep_jd_init, rtn='string')
     arr_date_initial_cal = cal_from_jd(arr_jd_init, rtn='string')
@@ -183,8 +187,13 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
     # time windows
     delta_dep = dep_jd_fin - dep_jd_init
     delta_arr = arr_jd_fin - arr_jd_init
-    departure_window = np.linspace(dep_jd_init, dep_jd_fin, int(delta_dep))
-    arrival_window = np.linspace(arr_jd_init, arr_jd_fin, int(delta_arr))
+    if fine_search:
+        delta = 1
+    else:
+        delta = 5
+
+    departure_window = np.linspace(dep_jd_init, dep_jd_fin, int(delta_dep/delta))
+    arrival_window = np.linspace(arr_jd_init, arr_jd_fin, int(delta_arr/delta))
 
     # generate dataframes for c3, time of flight, and dep/arrival v_inf
     df_c3 = pd.DataFrame(index=arrival_window, columns=departure_window)

@@ -14,7 +14,8 @@ mu_pluto = 8.71e2
 G_univ = 6.67408e-20 # km3/(kg)
 
 # conversion
-P_earth = 365.242189
+P_earth = 365.242189 # days
+P_venus = 224.701 # days
 AU = 1.49597870691e8 # km
 
 # planetary radii, km
@@ -111,6 +112,53 @@ def get_sma(center='earth'):
         print('Using earth as center object\n')
         return sma_earth
 
+def get_period(center='earth'):
+    # determine which planet center to compute
+    if center.lower() == 'earth':
+        return P_earth
+    elif center.lower() == 'mercury':
+        return None
+    elif center.lower() == 'mars':
+        return None
+    elif center.lower() == 'venus':
+        return P_venus
+    elif center.lower() == 'jupiter':
+        return None
+    elif center.lower() == 'saturn':
+        return None
+    elif center.lower() == 'uranus':
+        return None
+    elif center.lower() == 'neptune':
+        return None
+    elif center.lower() == 'pluto':
+        return None
+    else:
+        print('Using earth as center object\n')
+        return P_earth
+
+def get_radius(center='earth'):
+    # determine which planet center to compute
+    if center.lower() == 'earth':
+        return r_earth
+    elif center.lower() == 'mercury':
+        return None
+    elif center.lower() == 'mars':
+        return r_mars
+    elif center.lower() == 'venus':
+        return r_venus
+    elif center.lower() == 'jupiter':
+        return r_jupiter
+    elif center.lower() == 'saturn':
+        return r_saturn
+    elif center.lower() == 'uranus':
+        return r_uranus
+    elif center.lower() == 'neptune':
+        return r_neptune
+    elif center.lower() == 'pluto':
+        return r_pluto
+    else:
+        print('Using earth as center object\n')
+        return r_earth
 
 
 if __name__ == '__main__':
