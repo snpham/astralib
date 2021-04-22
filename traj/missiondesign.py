@@ -10,6 +10,8 @@ from traj.conics import get_rv_frm_elements2
 from traj.bplane import bplane_vinf
 import pandas as pd
 from math_helpers.time_systems import get_JD, cal_from_jd
+from math_helpers import matrices as mat
+from math_helpers.vectors import vcrossv
 
 
 def launchwindows(departure_planet, departure_date, arrival_planet, 
@@ -174,9 +176,9 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
     if contour_vinf_out is None:
         plot_vinf_out = False
 
-    print('segment 1 tof (days):',tar_arr-tar_dep)
-    print('target1 departure (cal):', cal_from_jd(tar_dep, rtn='string'), '(jd)', tar_dep)
-    print('target1 arrival (cal):', cal_from_jd(tar_arr, rtn='string'), '(jd)', tar_arr)
+    print('segment tof (days):',tar_arr-tar_dep)
+    print('target departure (cal):', cal_from_jd(tar_dep, rtn='string'), '(jd)', tar_dep)
+    print('target arrival (cal):', cal_from_jd(tar_arr, rtn='string'), '(jd)', tar_arr)
 
     # departure and arrival dates
     dep_date_initial_cal = cal_from_jd(dep_jd_init, rtn='string')
@@ -222,6 +224,7 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
 
     # generate contour plots
     fig, ax = plt.subplots(figsize=(10,8))
+    plt.style.use('default')
     CS_tof = ax.contour(departure_window-departure_window[0], arrival_window-arrival_window[0], 
                         df_tof, linewidths=0.5, colors=('gray'), levels=contour_tof)
     CS_vinf_arr = ax.contour(departure_window-departure_window[0], arrival_window-arrival_window[0], 
@@ -250,7 +253,7 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
     elif plot_vinf_out:
         ax.clabel(CS_vinf_dep, inline=0.2, fmt="%.1f", fontsize=10)   
         h2,_ = CS_vinf_dep.legend_elements()
-        ax.legend([h1[0], h2[0], h3[0]], ['TOF, days', 'vinf_departure, km2/s2', 'v_inf_arrival, km/s'], 
+        ax.legend([h1[0], h2[0], h3[0]], ['TOF, days', 'vinf_departure, km/s', 'v_inf_arrival, km/s'], 
                 loc=2, facecolor='white', framealpha=1)
 
     if plot_tar:
@@ -577,15 +580,219 @@ def search_script_multi(dep_windows, planets, center, constraints, fine_search=F
     return dfs
 
 
+def get_launch_params(target_departure_jd, target_arrival_jd, departure_planet, arrival_planet, center, printout=False):
+    
+    if target_departure_jd == 0:
+        print('No target launch dates, setting parameters to zero')
+        return 0, 0, 0, 0, 0, 0, 0, 0, 0
+    
+    # get states
+    s_launch = meeus(target_departure_jd, planet=departure_planet, rtn='states', ref_rtn=center)
+    r_launch = s_launch[0:3]
+    v_launch = s_launch[3:6]
+    s_ga = meeus(target_arrival_jd, planet=arrival_planet, rtn='states', ref_rtn=center)
+    r_ga = s_ga[0:3]
+    v_ga = s_ga[3:6]
+    
+    tof_to_ga = (target_arrival_jd - target_departure_jd) *3600*24
+    vhelio_out_launch, vhelio_in_ga = lambert.lambert_univ(r_launch, r_ga, tof_to_ga, center=center, 
+                                                   dep_planet=target_departure_jd, arr_planet=target_arrival_jd)
+    vinf_out_launch = vhelio_out_launch - v_launch
+    vinfmag_out_launch = norm(vinf_out_launch)
+
+    rla = arctan2(vinf_out_launch[1], vinf_out_launch[0])
+    dla = arcsin(vinf_out_launch[2]/vinfmag_out_launch)
+
+    vinf_in_ga = vhelio_in_ga - v_ga
+    vinfmag_in_ga = norm(vinf_in_ga)
+    c3 = vinfmag_out_launch**2
+    sc_state = np.hstack((r_launch, vhelio_out_launch))
+    
+    if printout:
+        print(f'total flight time to ga: {tof_to_ga/3600/24:.2f} days')
+        print(f'{departure_planet} to {arrival_planet}')
+        print('Departure date (jd)     ', target_departure_jd)
+        print('c3 at launch (km2/s2)   ', f'{c3:.8f}')
+        print('rla (deg)               ', f'{r2d(rla):.8f}')
+        print('dla (deg)               ', f'{r2d(dla):.8f}')
+        print('vhelio_out_launch (km/s)', vhelio_out_launch)
+        print('vinfmag_launch (km/s)   ', f'{vinfmag_out_launch:.8f}', 'vector (km/s)', vinf_out_launch)
+        print('vinfmag_in_ga (km/s)    ', f'{vinfmag_in_ga:.8f}', 'vector (km/s)', vinf_in_ga)
+        print('sc_state (km/s)         ', sc_state)
+    
+    return s_launch, s_ga, tof_to_ga, vinf_in_ga, vinfmag_in_ga, c3, rla, dla, sc_state
 
 
+def get_segment_params(target_departure_jd, target_arrival_jd, departure_planet, arrival_planet, center, printout=False):
+
+    if target_departure_jd == 0:
+        print('No target departure/separation dates, setting parameters to zero')
+        return 0, 0, 0, 0, 0, 0, 0, 0
+
+    if target_departure_jd < 0 or target_arrival_jd < 0:
+        raise ValueError('Negative julian dates, ending..')
+
+    if target_departure_jd > target_arrival_jd:
+        raise ValueError('Outbound date is greater than Inbound date, ending..')
+
+    # get states
+    s_departure = meeus(target_departure_jd, planet=departure_planet, rtn='states', ref_rtn=center)
+    r_departure = s_departure[0:3]
+    v_departure = s_departure[3:6]
+
+    s_arrival = meeus(target_arrival_jd, planet=arrival_planet, rtn='states', ref_rtn=center)
+    r_arrival = s_arrival[0:3]
+    v_arrival = s_arrival[3:6]
+
+    tof_segment = (target_arrival_jd - target_departure_jd) *3600*24
+
+    if tof_segment < 0:
+        print(tof_segment)
+        raise ValueError("Negative time of flight, ending..")
+
+    vhelio_out_departure, vhelio_in_arrival = lambert.lambert_univ(r_departure, r_arrival, tof_segment, center=center, 
+                                                          dep_planet=departure_planet, arr_planet=arrival_planet)
+    vinf_out_departure = vhelio_out_departure - v_departure
+    vinfmag_out_departure = norm(vinf_out_departure)
+
+    vinf_in_arrival = vhelio_in_arrival - v_arrival
+    vinfmag_in_arrival = norm(vinf_in_arrival)
+    sc_state = np.hstack((r_departure, vhelio_out_departure))
+
+    if printout:
+        print(f'total flight time to ga: {tof_segment/3600/24:.2f} days')
+        print('vhelio_out_departure (km/s)  ', vhelio_out_departure, '  date', target_departure_jd)
+        print('vinfmag_out_departure (km/s) ', vinfmag_out_departure, '   vinf_out_departure (km/s)', vinf_out_departure)
+        print('vinfmag_in_arrival (km/s)    ', vinfmag_in_arrival, '   vinf_in_arrival (km/s)', vinf_in_arrival)
+        print('sc_state', sc_state)
+    
+    return s_departure, s_arrival, tof_segment, vinf_out_departure, \
+        vinfmag_out_departure, vinf_in_arrival, vinfmag_in_arrival, sc_state
 
 
+def get_resonant_period(s_ga1, jd_arr, jd_dep, planet):
+
+    P_planet = get_period(planet)
+
+    # get magnitude of sc velocity after vga1, sun centered 
+    n_revs = (jd_dep-jd_arr) / P_planet
+
+    P_resonant = P_planet*24*3600 * n_revs / 1
+    a_resonant = ((P_resonant/(2*pi))**2 * mu_sun)**(1/3)
+    rpmag_ga = norm(s_ga1[0:3])
+    vmag_sc_sun = sqrt( mu_sun*(2/rpmag_ga - 1/a_resonant) )
+    
+    return vmag_sc_sun, P_resonant
+
+
+def T_vnc2eclip(r_ga1, v_ga1):
+    # transform from VNC to ecliptic frame
+    V_hat = v_ga1/norm(v_ga1)
+    N_hat = vcrossv(r_ga1, v_ga1)/ norm(vcrossv(r_ga1, v_ga1))
+    C_hat = vcrossv(V_hat, N_hat)
+    T_vnc2ecl = np.array([V_hat, N_hat, C_hat]).T
+    return T_vnc2ecl
+
+
+def get_resonant_orbit(s_ga1, s_ga2, ga1_jd, ga2_jd, vinfmag_in_ga1, vinfmag_out_ga2, vinf_in_ga1, vinf_out_ga2, planet, plot=True):
+    # iterating through psi for computing vinf_out_ega1 and vinf_in_ega2 and 
+    # rp's for both
+
+    if ga1_jd > ga2_jd:
+        raise ValueError('Flyby 1 date is greater than Flyby 2 date, ending..')
+
+
+    r_planet = get_radius(planet)
+
+    r_ga1 = s_ga1[0:3]
+    v_ga1 = s_ga1[3:6]
+    r_ga2 = s_ga2[0:3]
+    v_ga2 = s_ga2[3:6]
+    
+    # compute frame rotation from VNC to ecliptic
+    T_vnc2ecl = T_vnc2eclip(r_ga1, v_ga1)
+    
+    # find theta from law of cosine
+    vmag_sc_sun, _ = get_resonant_period(s_ga1, ga1_jd, ga2_jd, planet)
+    costheta = ( vinfmag_in_ga1**2 + norm(v_ga1)**2 - vmag_sc_sun**2 ) / ( 2 * vinfmag_in_ga1 * norm(v_ga1) )
+    # print(vinfmag_in_ga1, norm(v_ga1), vmag_sc_sun, costheta)
+    theta = arccos(costheta)
+    
+    psis = np.arange(0, 2*pi, 0.01)
+    df_psi = pd.DataFrame(index=psis, columns=['rp_ga1', 'rp_ga2'])
+    rp1_current = 0
+    rp2_current = 0
+
+    for psi in psis:
+
+        # outgoing hyperbonic velocity at ga1 as functions of theta and psi
+        vinf_out_ga1_vnc = vinfmag_in_ga1 * np.array([cos(pi-theta), sin(pi-theta)*cos(psi), -sin(pi-theta)*sin(psi)])
+        vinf_out_ga1_ecl = mat.mxv(T_vnc2ecl, vinf_out_ga1_vnc)
+
+        # find vinf_in_ega2
+        vinf_in_ga2_ecl = vinf_out_ga1_ecl + v_ga1 - v_ga2
+
+        # rp at ega1
+        _, rp_ga1, _, _, _, _ = bplane_vinf(vinf_in_ga1, vinf_out_ga1_ecl, center=planet)
+
+        # rp at ega2
+        _, rp_ga2, _, _, _, _ = bplane_vinf(vinf_in_ga2_ecl, vinf_out_ga2, center=planet)
+
+        df_psi['rp_ga1'][psi] = rp_ga1
+        df_psi['rp_ga2'][psi] = rp_ga2
+
+        if rp_ga1 > (r_planet+100) and rp_ga2 > (r_planet+100):
+            if rp_ga1 > rp1_current and rp_ga2 > rp2_current:
+                psi_rp = psi
+                vinf_out_ga1 = vinf_out_ga1_ecl
+                vinf_in_ga2 = vinf_in_ga2_ecl
+                rp1_current = rp_ga1
+                rp2_current = rp_ga2
+
+    try:
+        vinfmag_out_ga1 = norm(vinf_out_ga1)        
+        vinfmag_in_ga2 = norm(vinf_in_ga2)   
+    except:
+        psi_rp = 0
+        vinfmag_out_ga1 = 0   
+        vinfmag_in_ga2 = 0
+        vinf_out_ga1 = 0
+        vinf_in_ga2 = 0
+
+    if plot:
+        print('vinfmag_in_resga1        (km/s)', vinfmag_in_ga1, '\tvinf_in_vga1 (km/s)', vinf_in_ga1)
+        print('vinfmag_out_resga1       (km/s)', vinfmag_out_ga1, '\tvinf_out_vga1 (km/s)', vinf_out_ga1)
+        print('vinfmag_in_resga2        (km/s)', vinfmag_in_ga2, '\tvinf_in_vga2 (km/s)', vinf_in_ga2)
+        print('vinfmag_out_resga2       (km/s)', vinfmag_out_ga2, '\t\tvinf_out_vga2 (km/s)', vinf_out_ga2)
+        print('vinfmag_helio_out_resga1 (km/s)', vinfmag_out_ga1+norm(v_ga1), '\t\tvinf_out_helio_ga1 (km/s)', vinf_out_ga1+v_ga1, 'date', ga1_jd)
+        print('rp_at_resga1               (km)', rp1_current, '\taltitude (km)', rp1_current-r_planet)
+        print('rp_at_resga2               (km)', rp2_current, '\taltitude (km)', rp2_current-r_planet)
+        print('psi value                 (deg)', r2d(psi_rp))
+    df_psi.index = r2d(df_psi.index)
+
+    # rp_range = df_psi[df_psi['rp_ga2'] > r_planet+300]
+    # rp_range = df_psi[df_psi['rp_ga1'] > r_planet+300]
+
+    if plot:
+        plt.style.use('seaborn')
+        ax = df_psi.plot(y='rp_ga1', label='rp_ga1')
+        df_psi.plot(y='rp_ga2', ax=ax, label='rp_ga2')
+        plt.axhline(r_planet+300, linestyle='-.', color='red', label=f'minimum acceptable radius (r_{planet} + 300km)')
+        # plt.axvspan(rp_range.index[0], rp_range.index[-1], alpha=0.3, color='orange', label='acceptable psi region')
+        plt.xlabel('psi, deg')
+        plt.ylabel('perigee radius, km')
+        plt.title("psi angles vs perigee radii")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+    
+    return psi_rp, vinf_out_ga1, vinf_in_ga2, rp1_current, rp2_current
 
 
 
 if __name__ == '__main__':
     
+
     dep_windows = [[2453114.5, 2453214.5], [2454114.5, 2454414.5], [2456114.5, 2456214.5]]
     planets = ['earth', 'venus', 'earth']
     center = 'sun'

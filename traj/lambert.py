@@ -103,6 +103,10 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
     #     if TOF0 < 30*24*3600 or TOF0 > 500*24*3600:
     #         raise ValueError("Earth to Mars TOF out of bounds")
 
+    if TOF0 < 0:
+        raise ValueError("Negative time of flight, ending..")
+
+
     # set mu = 398600.4418 for matlab vallado test 1
     mu = get_mu(center=center)
 
@@ -149,7 +153,7 @@ def lambert_univ(ri, rf, TOF0, dm=None, center='sun',
     y_prev = -1
     tol = 1e-5
     counter = 0
-
+    
     while np.abs(TOF - TOF0) > tol:
 
         y = r0mag + rfmag + A*(psi*c3-1)/sqrt(c2)

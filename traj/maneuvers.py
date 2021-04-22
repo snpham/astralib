@@ -352,8 +352,8 @@ def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun',
     # hyperbolic excess velocities
     v_hyp1 = vt1 - v_pl1
     v_hyp2 = vt2 - v_pl2
-    print(f'hyperbolic excess velocity, wrt planet 1 (km/s): {v_hyp1}')
-    print(f'hyperbolic excess velocity, wrt planet 2 (km/s): {v_hyp2}')
+    print(f'hyperbolic excess velocity (vinf), wrt planet 1 (km/s): {v_hyp1}')
+    print(f'hyperbolic excess velocity (vinf), wrt planet 2 (km/s): {v_hyp2}')
 
     # departure
     vp1 = sqrt(2*mu_pl1/r_orbit1 + v_hyp1**2)
@@ -389,7 +389,7 @@ if __name__ == '__main__':
     pl1 = 'earth'
     pl2 = 'jupiter'
     # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
-    hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
 
     # not verified
     r1 = r_jupiter + 300
@@ -399,4 +399,14 @@ if __name__ == '__main__':
     pl1 = 'jupiter'
     pl2 = 'uranus'
     # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
-    hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+
+    # not verified
+    r1 = r_jupiter + 28600
+    r2 = r_uranus + 28600
+    rt1 = sma_jupiter
+    rt2 = sma_uranus
+    pl1 = 'jupiter'
+    pl2 = 'uranus'
+    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=False, period2=None)
+    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')

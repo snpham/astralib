@@ -156,13 +156,14 @@ def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, planet1='planet1', pla
     plt.show()
 
 
-def genorbit_solarsystem(epoch, tof, list_planets=None, tof_sc=None, state_sc=None, tof2_sc=None, state2_sc=None):
+def genorbit_solarsystem(epoch, list_planets=None, tof_sc=None, state_sc=None, tof2_sc=None, state2_sc=None, dformat='utc'):
     """propagate a spacecraft with and w/o external gravitational effects from 
     additional planetary bodies using 2-body equations of motion.
     not tested
     """
 
     # get time window for solutions
+    tof = 365*3600*24
     ets_tof = np.linspace(0, tof, 10000)
 
     if tof_sc:
@@ -174,7 +175,8 @@ def genorbit_solarsystem(epoch, tof, list_planets=None, tof_sc=None, state_sc=No
 
     states_planets = []
     for planet in list_planets:
-        state = meeus(epoch, planet=planet, dformat='utc', rtn='states', ref_rtn='sun')
+    
+        state = meeus(epoch, planet=planet, dformat=dformat, rtn='states', ref_rtn='sun')
         # print(state)
         states_planets.append(state)
 
@@ -221,6 +223,7 @@ def genorbit_solarsystem(epoch, tof, list_planets=None, tof_sc=None, state_sc=No
                 'ro', ms=10,  label=f'{planet}_final')
 
     ax.legend()
+    ax.view_init(90,90)
     fig.tight_layout()
     plt.show()
 
@@ -294,7 +297,8 @@ if __name__ == '__main__':
     TOF = 365*3600*24
     list_planets = ['venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
     tof_sc = 4450.00*3600*24
+    print(tof_sc)
     state_sc = meeus(epoch_jd, planet='jupiter', rtn='states', ref_rtn='sun')
     v_helio_sc = [12.76173331, 10.87258849, -0.27608178]
     state_sc = np.hstack([state_sc[:3], v_helio_sc])
-    # ax = genorbit_solarsystem(epoch, TOF, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
+    ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
