@@ -176,9 +176,12 @@ def get_porkchops(dep_jd_init, dep_jd_fin, arr_jd_init, arr_jd_fin,
     if contour_vinf_out is None:
         plot_vinf_out = False
 
-    print('segment tof (days):',tar_arr-tar_dep)
-    print('target departure (cal):', cal_from_jd(tar_dep, rtn='string'), '(jd)', tar_dep)
-    print('target arrival (cal):', cal_from_jd(tar_arr, rtn='string'), '(jd)', tar_arr)
+    if tar_dep is None:
+        pass
+    else:
+        print('segment tof (days):',tar_arr-tar_dep)
+        print('target departure (cal):', cal_from_jd(tar_dep, rtn='string'), '(jd)', tar_dep)
+        print('target arrival (cal):', cal_from_jd(tar_arr, rtn='string'), '(jd)', tar_arr)
 
     # departure and arrival dates
     dep_date_initial_cal = cal_from_jd(dep_jd_init, rtn='string')
@@ -718,7 +721,7 @@ def get_resonant_orbit(s_ga1, s_ga2, ga1_jd, ga2_jd, vinfmag_in_ga1, vinfmag_out
     # print(vinfmag_in_ga1, norm(v_ga1), vmag_sc_sun, costheta)
     theta = arccos(costheta)
     
-    psis = np.arange(0, 2*pi, 0.01)
+    psis = np.arange(0, 2*pi, 2*pi/360)
     df_psi = pd.DataFrame(index=psis, columns=['rp_ga1', 'rp_ga2'])
     rp1_current = 0
     rp2_current = 0
@@ -741,7 +744,8 @@ def get_resonant_orbit(s_ga1, s_ga2, ga1_jd, ga2_jd, vinfmag_in_ga1, vinfmag_out
         df_psi['rp_ga1'][psi] = rp_ga1
         df_psi['rp_ga2'][psi] = rp_ga2
 
-        if rp_ga1 > (r_planet+100) and rp_ga2 > (r_planet+100):
+        # TMP: need to add planet dependency
+        if rp_ga1 > (r_planet+300) and rp_ga2 > (r_planet+300):
             if rp_ga1 > rp1_current and rp_ga2 > rp2_current:
                 psi_rp = psi
                 vinf_out_ga1 = vinf_out_ga1_ecl

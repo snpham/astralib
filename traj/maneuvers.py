@@ -408,5 +408,25 @@ if __name__ == '__main__':
     rt2 = sma_uranus
     pl1 = 'jupiter'
     pl2 = 'uranus'
-    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=False, period2=None)
+    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=False, period2=None)
+    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+
+        # not verified
+    r1 = r_earth + 300
+    r2 = r_venus + 300
+    rt1 = sma_earth
+    rt2 = sma_venus
+    pl1 = 'earth'
+    pl2 = 'venus'
+    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=False, period2=None)
+    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+
+        # not verified
+    r1 = r_earth + 300
+    r2 = r_jupiter + 221103.53
+    rt1 = sma_earth
+    rt2 = sma_jupiter
+    pl1 = 'earth'
+    pl2 = 'jupiter'
+    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=231.48*24*3600)
     # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')

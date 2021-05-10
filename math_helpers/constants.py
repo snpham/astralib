@@ -84,8 +84,7 @@ def get_mu(center='earth'):
     elif center.lower() == 'pluto':
         return mu_pluto
     else:
-        print('Using earth as center object\n')
-        return mu_earth
+        raise ValueError("Undefined planet, ending..")
 
 
 def get_sma(center='earth'):
@@ -109,8 +108,7 @@ def get_sma(center='earth'):
     elif center.lower() == 'pluto':
         return sma_pluto
     else:
-        print('Using earth as center object\n')
-        return sma_earth
+        raise ValueError("Undefined planet, ending..")
 
 def get_period(center='earth'):
     # determine which planet center to compute
@@ -133,8 +131,7 @@ def get_period(center='earth'):
     elif center.lower() == 'pluto':
         return None
     else:
-        print('Using earth as center object\n')
-        return P_earth
+        raise ValueError("Undefined planet, ending..")
 
 def get_radius(center='earth'):
     # determine which planet center to compute
@@ -157,8 +154,7 @@ def get_radius(center='earth'):
     elif center.lower() == 'pluto':
         return r_pluto
     else:
-        print('Using earth as center object\n')
-        return r_earth
+        raise ValueError("Undefined planet, ending..")
 
 
 if __name__ == '__main__':
