@@ -8,6 +8,12 @@ from math_helpers.vectors import vcrossv, vdotv, vxs
 
 
 def get_rp(vinf, psi, mu):
+    """computes the radius for a given flyby
+    :param vinf: magnitude of hyperbolic velocity (km/s)
+    :param psi: turning angle of flyby (rad)
+    :param mu: gravitational constant (km2/s2)
+    :return rp: flyby radius (km)
+    """
     rp = mu/vinf**2 * ( 1/(cos((pi-psi)/2)) - 1 )
     return rp
 
@@ -144,14 +150,6 @@ class BPlane(object):
             H_hat = rxv / norm(rxv)
             K_hat = [0, 0, 1]
 
-            # e_vec = ((vmag**2-self.mu/rmag)*rvec - vdotv(rvec, vvec)*vvec) / self.mu
-            # assert np.allclose(e_vec, Kep.e_vec)
-            # emag = norm(e_vec)
-            # e_hat = e_vec/emag
-            # assert np.allclose(e_hat, Kep.e_hat)
-
-            # energy = vmag**2/2 - self.mu/rmag
-            # assert np.allclose(energy, Kep.energy)
             a = - self.mu/ (2*Kep.energy)
             c = a*Kep.e_mag
             # b = sqrt(c**2 - a**2)
@@ -204,10 +202,3 @@ class BPlane(object):
                 theta = 2*pi - theta
             self.theta = theta
 
-    # @property
-    # def rp(self, psi):
-    #     return self.mu/vmaginf_in**2 * ( 1/(cos((pi-psi)/2)) - 1 )
-
-    # @property
-    # def psi(self, rp):
-    #     return pi - 2 * arccos(1 / (1 + vmaginf_in**2*rp/self.mu))
