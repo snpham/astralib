@@ -1,9 +1,7 @@
 import sys
 import os
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
-import spiceypy as spice
 from traj import lambert
 from traj.meeus_alg import meeus
 from traj.conics import get_rv_frm_elements2

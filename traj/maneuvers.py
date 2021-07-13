@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import sys, os
+import sys
+import os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
@@ -40,7 +41,8 @@ def coplanar_transfer(p, e, r1, r2, center='earth'):
     return dv1, dv2
 
 
-def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, center='earth'):
+def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, printout=True, 
+                     center='earth'):
     """hohmann transfer orbit computation from smaller orbit to
     larger; can input either satellite altitude above "object" or
     radius from its center.
@@ -53,8 +55,9 @@ def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, center='earth'):
     :return dv2: delta v required to enter circular orbit two (km/s)
     """
     # add radius of planet to distance if altitude is inputt
-    if use_alts == True and center.lower() == 'earth':
-        r1, r2 = [r+r_earth for r in [r1, r2]]
+    if use_alts == True:
+        r_planet = get_radius(center=center)
+        r1, r2 = [r+r_planet for r in [r1, r2]]
 
     mu = get_mu(center=center)
 
@@ -77,11 +80,12 @@ def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, center='earth'):
     # total deltav and transfer time
     dv_tot = np.abs(dv1) + np.abs(dv2)
     transfer_time = np.pi * sqrt(a_trans**3/mu)
-    print('v1_trans (km/s):', v1_trans)
-    print('v2_trans (km/s):', v2_trans)
-    print('dv1 (km/s):', dv1)
-    print('dv2 (km/s):', dv2)
-    print('transfer_time (days):', transfer_time/24/3600)
+    if printout:
+        print('v1_trans (km/s):', v1_trans)
+        print('v2_trans (km/s):', v2_trans)
+        print('dv1 (km/s):', dv1)
+        print('dv2 (km/s):', dv2)
+        print('transfer_time (days):', transfer_time/24/3600)
 
     if get_vtrans:
         return v1_trans, v2_trans, transfer_time
@@ -100,11 +104,11 @@ def bielliptic_transfer(r1, r2, r_trans, use_alts=True, center='earth'):
     :param center: planetary center of focus; default=earth
     :return dv1: delta v required to enter transfer orbit (km/s)
     :return dv2: delta v required to enter circular orbit two (km/s)
-    not tested
     """
 
-    if use_alts == True and center.lower() == 'earth':
-        r1, r2, r_trans = [r+r_earth for r in [r1, r2, r_trans]]
+    if use_alts == True:
+        r_planet = get_radius(center=center)
+        r1, r2, r_trans = [r+r_planet for r in [r1, r2, r_trans]]
 
     if r_trans < r2:
         raise ValueError("Error: transfer orbit apogee is smaller than r2")
@@ -371,57 +375,8 @@ def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun',
 
 
 if __name__ == '__main__':
-    
-    # not verified
-    r1 = r_earth + 300
-    r2 = r_jupiter + 286000 
-    rt1 = sma_earth
-    rt2 = sma_jupiter
-    pl1 = 'earth'
-    pl2 = 'jupiter'
-    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
 
     # not verified
-    r1 = r_earth + 300
-    r2 = r_jupiter + 286000 
-    rt1 = sma_earth
-    rt2 = sma_jupiter
-    pl1 = 'earth'
-    pl2 = 'jupiter'
-    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
-    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
-
-    # not verified
-    r1 = r_jupiter + 300
-    r2 = r_uranus + 286000 
-    rt1 = sma_jupiter
-    rt2 = sma_uranus
-    pl1 = 'jupiter'
-    pl2 = 'uranus'
-    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=222*24*3600)
-    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
-
-    # not verified
-    r1 = r_jupiter + 28600
-    r2 = r_uranus + 28600
-    rt1 = sma_jupiter
-    rt2 = sma_uranus
-    pl1 = 'jupiter'
-    pl2 = 'uranus'
-    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=False, period2=None)
-    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
-
-        # not verified
-    r1 = r_earth + 300
-    r2 = r_venus + 300
-    rt1 = sma_earth
-    rt2 = sma_venus
-    pl1 = 'earth'
-    pl2 = 'venus'
-    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=False, period2=None)
-    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
-
-        # not verified
     r1 = r_earth + 300
     r2 = r_jupiter + 221103.53
     rt1 = sma_earth

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
-import sys, os
+import sys
+import os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from math_helpers.constants import *
 from math_helpers import vectors as vec
 from math_helpers import rotations as rot
 from math_helpers import matrices as mat
 from traj import conics
-from math_helpers.constants import *
 
 
 def geodet2centric(gd_angle, ref="earth"):

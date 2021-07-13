@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import numpy as np
-from math_helpers import matrices as mat
-from math_helpers import rotations as rot
 from math_helpers import vectors as vec
-from numpy.linalg import norm
+from math_helpers import rotations as rot
+from math_helpers import matrices as mat
+from math_helpers.constants import *
 
 
 def qxscalar(scalar, quat):

@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
@@ -148,8 +149,8 @@ def meeus(date, planet='earth', dformat='jd', rtn=None, ref_rtn='sun'):
 
 if __name__ == '__main__':
 
-    sp.furnsh(['math_helpers/naif0012.tls',
-            'math_helpers/de438s.bsp'])
+    sp.furnsh(['spice/kernels/solarsystem/naif0012.tls',
+            'spice/kernels/solarsystem/de438s.bsp'])
 
     # r2d = np.rad2deg
 

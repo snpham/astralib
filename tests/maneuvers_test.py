@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from math_helpers import rotations, vectors, quaternions, matrices
 from math_helpers.constants import *
 from traj import conics as con
 from traj import maneuvers as man
@@ -9,6 +8,7 @@ from traj import lambert as lam
 from traj.meeus_alg import meeus
 from traj.conics import get_rv_frm_elements2
 from math_helpers.time_systems import cal_from_jd, get_JD
+
 
 def test_coplanar_transfer():
     """tests general coplanar orbit transfer
@@ -32,21 +32,14 @@ def test_hohmann_transfer():
                                         center='earth')
     tt = tt/60.
     dv_tot = np.abs(dv1) + np.abs(dv2)
-    dv_tot_truth = 3.935224 # km/s
-    dt_truth = 315.403 # min 
-    assert np.allclose(dv_tot, dv_tot_truth)
-    assert np.allclose(tt, dt_truth)
+    assert np.allclose([dv_tot, tt], [3.935224, 315.403])
 
     # given radii of two orbits
     r1 = 400
     r2 = 800
     # compute and test delta v required for a hohmann transfer
-    dv1, dv2, trans_time = man.hohmann_transfer(r1, r2, use_alts=True, 
-                                                center='earth')
-    dv1_truth = 0.1091 # km/s
-    dv2_truth = 0.1076 # km/s
-    assert np.allclose(dv1, dv1_truth,rtol=0, atol=1e-04)
-    assert np.allclose(dv2, dv2_truth,rtol=0, atol=1e-04)
+    dv1, dv2, _ = man.hohmann_transfer(r1, r2, use_alts=True, center='earth')
+    assert np.allclose([dv1, dv2], [0.1091, 0.1076], rtol=1e-04, atol=1e-04)
 
 
 def test_bielliptic():
@@ -58,14 +51,9 @@ def test_bielliptic():
     dv1, dv_trans, dv2, tt = \
             man.bielliptic_transfer(alt1, alt2, altb, 
                                     use_alts=True, center='Earth')
-    dv1_truth = 3.156233389
-    dv2_truth = -0.070465937
-    dv_trans_truth = 0.677357998
-    tt_truth = 593.92000 # hrs
-    assert np.allclose(dv1, dv1_truth)
-    assert np.allclose(dv_trans, dv_trans_truth)
-    assert np.allclose(dv2, dv2_truth)
-    assert np.allclose(tt/3600, tt_truth)
+    assert np.allclose([dv1, dv_trans, dv2, tt/3600] , 
+                       [3.156233389, 0.677357998, -0.070465937, 593.92000])
+
 
 
 def test_onetangent_transfer():

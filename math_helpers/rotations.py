@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-import sys, os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from math_helpers import matrices as mat
-from math_helpers import vectors as vec
-from math_helpers import quaternions as quat
-from numpy.linalg import norm
+import sys
+import os
 import numpy as np
-
+from numpy.linalg import norm
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from math_helpers import vectors as vec
+from math_helpers import matrices as mat
+from math_helpers import quaternions as quat
 
 def rotate(angle, axis):
     """Coordinate rotation about a principle axis
@@ -348,5 +347,5 @@ def mrprates_frm_wvec_o2b(sigmas, wvec):
 
 
 if __name__ == "__main__":
-    
+
     pass

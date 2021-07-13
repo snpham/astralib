@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import sys, os
+import sys
+import os
 import numpy as np
-from numpy.core.numeric import count_nonzero
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
 from math_helpers.vectors import vdotv

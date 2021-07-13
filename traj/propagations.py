@@ -3,10 +3,9 @@ import os
 from scipy.integrate import solve_ivp as ivp
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
-from traj import conics
-from traj.maneuvers import patched_conics
 from traj.meeus_alg import meeus
-from math_helpers.time_systems import get_JD, cal_from_jd
+from math_helpers.time_systems import cal_from_jd
+
 
 def prop_nop(t, Y):
     """2-body orbit propagator with no perturbation

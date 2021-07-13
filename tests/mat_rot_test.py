@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-import sys, os
+import sys 
+import os
+import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers import matrices as mat
 from math_helpers import rotations as rot
 from math_helpers import quaternions as quat
-import numpy as np
+
 
 def test_mxm():
     """tests matrix transpose and multiplication

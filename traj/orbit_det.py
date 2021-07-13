@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+import sys
+import os
 import numpy as np
-import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import math_helpers.vectors as vec
 import math_helpers.matrices as mat
