@@ -189,13 +189,11 @@ def get_rv_frm_elements2(elements, center='earth'):
 
     rvec = [r*(cos(Om)*cos(w+ta) - sin(Om)*sin(w+ta)*cos(i)), 
          r*(sin(Om)*cos(w+ta) + cos(Om)*sin(w+ta)*cos(i)), 
-         r*(sin(i)*sin(w+ta))
-    ]
+         r*(sin(i)*sin(w+ta))]
 
     vvec = [rvec[0]*h*e*sin(ta)/(r*p) - h/r*(cos(Om)*sin(w+ta) + sin(Om)*cos(w+ta)*cos(i)),
          rvec[1]*h*e*sin(ta)/(r*p) - h/r*(sin(Om)*sin(w+ta) - cos(Om)*cos(w+ta)*cos(i)),
-         rvec[2]*h*e*sin(ta)/(r*p) + h/r*(sin(i)*cos(w+ta))
-    ]
+         rvec[2]*h*e*sin(ta)/(r*p) + h/r*(sin(i)*cos(w+ta))]
 
     return np.hstack([rvec, vvec])
 

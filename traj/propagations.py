@@ -48,13 +48,16 @@ def prop_perb(t, Y, rp_1, rp_2, ets):
     return np.hstack((v, vdot))
 
 
-def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, planet1='planet1', planet2='planet2'):
-    """propagate a spacecraft with and w/o external gravitational effects from 
-    additional planetary bodies using 2-body equations of motion.
+def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, 
+                   planet1='planet1', planet2='planet2'):
+    """propagate a spacecraft with and w/o external gravitational effects 
+    from additional planetary bodies using 2-body equations of motion.
     :param r_sc: initial position vector of spacecraft (km)
     :param v_sc: initial velocity vector of spacecraft (km/s)
-    :param TOF: time of flight of spacecraft for the transfer [beginning of TOF] (s)
-    :param s_planet1: initial state vector of departure planet [end of TOF] (km, km/s)
+    :param TOF: time of flight of spacecraft for the transfer 
+                [beginning of TOF] (s)
+    :param s_planet1: initial state vector of departure planet 
+                [end of TOF] (km, km/s)
     :param s_planet2: final state vector of arrival planet (km, km/s)
     :param planet1: name of departure planet
     :param planet2: name of arrival planet
@@ -83,17 +86,18 @@ def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, planet1='planet1', pla
 
     # integrate spacecraft with perturbations
     pertprop_sc = ivp(prop_perb, (0, TOF), si_sc, 
-                      args=(propstate_p1[:,:3], propstate_p2[:,:3], ets), method='RK45', 
-                      t_eval=ets, dense_output=True, rtol=1e-13, atol=1e-13)
+                      args=(propstate_p1[:,:3], propstate_p2[:,:3], ets), 
+                      method='RK45', t_eval=ets, dense_output=True, 
+                      rtol=1e-13, atol=1e-13)
     pertpropstate_sc = np.array(pertprop_sc.y).T
 
     # prop full orbit of mars and earth
     P_earth = 2*np.pi * np.sqrt(sma_earth**3/mu_sun)
     P_mars = 2*np.pi * np.sqrt(sma_mars**3/mu_sun)
-    pertprop_p1 = ivp(prop_nop, (0, P_earth), s_planet1, method='RK45', dense_output=True, 
-                      rtol=1e-13, atol=1e-13)
-    pertprop_p2 = ivp(prop_nop, (0, P_mars), s_planet2, method='RK45', dense_output=True, 
-                      rtol=1e-13, atol=1e-13)
+    pertprop_p1 = ivp(prop_nop, (0, P_earth), s_planet1, method='RK45', 
+                      dense_output=True, rtol=1e-13, atol=1e-13)
+    pertprop_p2 = ivp(prop_nop, (0, P_mars), s_planet2, method='RK45', 
+                      dense_output=True, rtol=1e-13, atol=1e-13)
     pertpropstate_p1 = np.array(pertprop_p1.y).T
     pertpropstate_p2 = np.array(pertprop_p2.y).T
     pertpropstate_p2 = np.flip(pertpropstate_p2, axis=0)
@@ -149,13 +153,15 @@ def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2, planet1='planet1', pla
     ax1.set_ylabel('r-deltas (km)')
     ax2.set_ylabel('v-deltas (km)')
     ax2.set_xlabel('time (days)')
-    ax1.set_title("x- and y- position and velocity deltas between idealized and perturbed trajectories")
+    ax1.set_title("x- and y- position and velocity deltas between idealized ",
+                  "and perturbed trajectories")
     ax1.legend()
     ax2.legend()
     plt.show()
 
 
-def genorbit_solarsystem(epoch, list_planets=None, tof_sc=None, state_sc=None, tof2_sc=None, state2_sc=None, dformat='utc'):
+def genorbit_solarsystem(epoch, list_planets=None, tof_sc=None, state_sc=None, 
+                         tof2_sc=None, state2_sc=None, dformat='utc'):
     """propagate a spacecraft with and w/o external gravitational effects from 
     additional planetary bodies using 2-body equations of motion.
     not tested
@@ -170,12 +176,14 @@ def genorbit_solarsystem(epoch, list_planets=None, tof_sc=None, state_sc=None, t
         tof = tof_sc
 
     if not list_planets:
-        list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus', 'pluto']
+        list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 
+                        'saturn', 'neptune', 'uranus', 'pluto']
 
     states_planets = []
     for planet in list_planets:
     
-        state = meeus(epoch, planet=planet, dformat=dformat, rtn='states', ref_rtn='sun')
+        state = meeus(epoch, planet=planet, dformat=dformat, 
+                      rtn='states', ref_rtn='sun')
         # print(state)
         states_planets.append(state)
 
@@ -193,29 +201,32 @@ def genorbit_solarsystem(epoch, list_planets=None, tof_sc=None, state_sc=None, t
     for ii, planet in enumerate(list_planets):
         period = 2*np.pi * np.sqrt(get_sma(planet)**3/mu_sun)
         ets = np.linspace(0, period, 10000)
-        prop_planet = ivp(prop_nop, (0, period), s_plt[ii], method='RK45', t_eval=ets, 
-                          dense_output=True, rtol=1e-13, atol=1e-13)
+        prop_planet = ivp(prop_nop, (0, period), s_plt[ii], method='RK45', 
+                          t_eval=ets, dense_output=True, 
+                          rtol=1e-13, atol=1e-13)
         propstate = np.array(prop_planet.y).T
         ax.plot(propstate[:,0],propstate[:,1], linewidth=0.6, color='k')
 
-        propseg_planet = ivp(prop_nop, (0, tof), s_plt[ii], method='RK45', t_eval=ets_tof, 
-                          dense_output=True, rtol=1e-13, atol=1e-13)
+        propseg_planet = ivp(prop_nop, (0, tof), s_plt[ii], method='RK45', 
+                             t_eval=ets_tof, dense_output=True, 
+                             rtol=1e-13, atol=1e-13)
         propsegstate = np.array(propseg_planet.y).T
-        ax.plot(propsegstate[:,0],propsegstate[:,1], label=f'{planet}', linewidth=4)
+        ax.plot(propsegstate[:,0],propsegstate[:,1], 
+                label=f'{planet}', linewidth=4)
 
     if tof_sc:
 
         ets = np.linspace(0, tof_sc, 10000)
-        prop_sc = ivp(prop_nop, (0, tof_sc), state_sc, method='RK45', t_eval=ets, 
-                          dense_output=True, rtol=1e-13, atol=1e-13)
+        prop_sc = ivp(prop_nop, (0, tof_sc), state_sc, method='RK45', 
+                      t_eval=ets, dense_output=True, rtol=1e-13, atol=1e-13)
         propstate_sc = np.array(prop_sc.y).T
         ax.plot(propstate_sc[:,0],propstate_sc[:,1], linewidth=2, color='g')
 
     if tof2_sc:
     
         ets = np.linspace(0, tof2_sc, 10000)
-        prop2_sc = ivp(prop_nop, (0, tof2_sc), state2_sc, method='RK45', t_eval=ets, 
-                          dense_output=True, rtol=1e-13, atol=1e-13)
+        prop2_sc = ivp(prop_nop, (0, tof2_sc), state2_sc, method='RK45', 
+                       t_eval=ets, dense_output=True, rtol=1e-13, atol=1e-13)
         propstate2_sc = np.array(prop2_sc.y).T
         ax.plot(propstate2_sc[:,0],propstate2_sc[:,1], linewidth=2, color='b')
         plt.plot(propstate2_sc[-1,0],propstate2_sc[-1,1],
@@ -229,70 +240,79 @@ def genorbit_solarsystem(epoch, list_planets=None, tof_sc=None, state_sc=None, t
     return ax
 
 
+def mission2uranus():
+    ### final project #####
 
-if __name__ == '__main__':
-    
-    pass
-    # # get orbit of solar system planets
-    # epoch = '2006-01-19 19:00:00'
+    # segment 1
+    epoch_jd = 2460777.0
+    epoch = cal_from_jd(epoch_jd, rtn='string')
+    list_planets = ['mercury', 'venus', 'earth', 'mars']
+    tof_sc = 161.0*3600*24
+    state_sc = meeus(epoch_jd, planet='earth', rtn='states', ref_rtn='sun')
+    v_helio_sc = [9.82397287, -22.99559138, -0.82621124]
+    state_sc = np.hstack([state_sc[:3], v_helio_sc])
+    ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, 
+                              state_sc=state_sc, tof2_sc=None, state2_sc=None)
 
-    # r_sc = meeus(epoch, planet='earth', dformat='utc', rtn='states', ref_rtn='sun')[:3]
-    # v_sc = [-37.20082701, -21.23028643,  0.67631363]
-    # s_sc = np.hstack((r_sc, v_sc))
-    # tof_sc = 404.45 * 3600*24
-
-    # epoch2 = '2007-02-28 05:41:00'
-    # r_sc = meeus(epoch2, planet='jupiter', dformat='utc', rtn='states', ref_rtn='sun')[:3]
-    # v_sc = [4.90872622, -21.54361887, 0.7236362]
-    # s2_sc = np.hstack((r_sc, v_sc))
-    # tof2_sc = 3058.26 * 3600*24
-
-    # list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus', 'pluto']
-    # # ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, state_sc=s_sc, tof2_sc=tof2_sc, state2_sc=s2_sc)
-    
-    #### final project #####
-
-    # # segment 1
-    # epoch_jd = 2460777.0
-    # epoch = cal_from_jd(epoch_jd, rtn='string')
-    # # list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus']
-    # list_planets = ['mercury', 'venus', 'earth', 'mars']
-    # tof_sc = 161.0*3600*24
-    # state_sc = meeus(epoch_jd, planet='earth', rtn='states', ref_rtn='sun')
-    # v_helio_sc = [9.82397287, -22.99559138, -0.82621124]
-    # state_sc = np.hstack([state_sc[:3], v_helio_sc])
-    # ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
-
-    # # segment 2
+    # segment 2
     epoch_jd = 2460938.0
     epoch = cal_from_jd(epoch_jd, rtn='string')
     print(epoch)
-    # # list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus']
-    # list_planets = ['mercury', 'venus', 'earth', 'mars']
-    # tof_sc = 449.4019999*3600*24
-    # state_sc = meeus(epoch_jd, planet='venus', rtn='states', ref_rtn='sun')
-    # v_helio_sc = [-40.63481563, -6.29903045,  -2.23790423]
-    # state_sc = np.hstack([state_sc[:3], v_helio_sc])
-    # ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
+    list_planets = ['mercury', 'venus', 'earth', 'mars']
+    tof_sc = 449.4019999*3600*24
+    state_sc = meeus(epoch_jd, planet='venus', rtn='states', ref_rtn='sun')
+    v_helio_sc = [-40.63481563, -6.29903045,  -2.23790423]
+    state_sc = np.hstack([state_sc[:3], v_helio_sc])
+    ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, 
+                              state_sc=state_sc, tof2_sc=None, state2_sc=None)
 
-    # # segment 4
-    # epoch_jd = 2461662.402
-    # epoch = cal_from_jd(epoch_jd, rtn='string')
-    # # list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune', 'uranus']
-    # list_planets = ['mercury', 'venus', 'earth', 'mars']
-    # tof_sc = 730.484377*3600*24
-    # state_sc = meeus(epoch_jd, planet='venus', rtn='states', ref_rtn='sun')
-    # v_helio_sc = [-1.16391099, 34.68576047, 0.25691886]
-    # state_sc = np.hstack([state_sc[:3], v_helio_sc])
-    # ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
+    # segment 4
+    epoch_jd = 2461662.402
+    epoch = cal_from_jd(epoch_jd, rtn='string')
+    list_planets = ['mercury', 'venus', 'earth', 'mars']
+    tof_sc = 730.484377*3600*24
+    state_sc = meeus(epoch_jd, planet='venus', rtn='states', ref_rtn='sun')
+    v_helio_sc = [-1.16391099, 34.68576047, 0.25691886]
+    state_sc = np.hstack([state_sc[:3], v_helio_sc])
+    ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, 
+                              state_sc=state_sc, tof2_sc=None, state2_sc=None)
 
     # segment 5
     epoch_jd = 2463242.8863779996
     epoch = cal_from_jd(epoch_jd, rtn='string')
-    list_planets = ['venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
+    list_planets = ['venus', 'earth', 'mars', 'jupiter', 'saturn', 
+                    'uranus', 'neptune']
     tof_sc = 4450.00*3600*24
     print(tof_sc)
     state_sc = meeus(epoch_jd, planet='jupiter', rtn='states', ref_rtn='sun')
     v_helio_sc = [12.76173331, 10.87258849, -0.27608178]
     state_sc = np.hstack([state_sc[:3], v_helio_sc])
-    ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, state_sc=state_sc, tof2_sc=None, state2_sc=None)
+    ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, 
+                              state_sc=state_sc, tof2_sc=None, state2_sc=None)
+
+
+if __name__ == '__main__':
+    
+    pass
+    # get orbit of solar system planets
+    epoch = '2006-01-19 19:00:00'
+
+    r_sc = meeus(epoch, planet='earth', dformat='utc', 
+                 rtn='states', ref_rtn='sun')[:3]
+    v_sc = [-37.20082701, -21.23028643,  0.67631363]
+    s_sc = np.hstack((r_sc, v_sc))
+    tof_sc = 404.45 * 3600*24
+
+    epoch2 = '2007-02-28 05:41:00'
+    r_sc = meeus(epoch2, planet='jupiter', dformat='utc', 
+                 rtn='states', ref_rtn='sun')[:3]
+    v_sc = [4.90872622, -21.54361887, 0.7236362]
+    s2_sc = np.hstack((r_sc, v_sc))
+    tof2_sc = 3058.26 * 3600*24
+
+    list_planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 
+                    'saturn', 'neptune', 'uranus', 'pluto']
+    ax = genorbit_solarsystem(epoch, list_planets, tof_sc=tof_sc, 
+                  state_sc=s_sc, tof2_sc=tof2_sc, state2_sc=s2_sc)
+    
+    # mission2uranus()
