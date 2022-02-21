@@ -4,6 +4,7 @@ outputs/csvs/
 *.pyc
 .vscode
 *__pycache__
+.python-version
 .pytest_cache
 spice/kernels/spacecraft/mars2020/
 spice/lessons/**/kernels/*
