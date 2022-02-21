@@ -263,7 +263,10 @@ def test_davenportq_method():
     # compute and test quaternion output
     qset = rot.davenportq(vset_nrtl, vset_body, weights, sensors=2)
     qset_truth = [0.94806851, -0.11720728,  0.14137123,  0.2596974]
-    assert np.allclose(qset, qset_truth)
+    try:
+        assert np.allclose(qset, qset_truth)
+    except AssertionError:
+        assert np.allclose(-qset, qset_truth)
     # truth values
     angles = np.deg2rad([30, 20, -10])
     BN_true = [[0.813798, 0.469846, -0.34202],
