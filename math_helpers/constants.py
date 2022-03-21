@@ -3,6 +3,7 @@ planetary_mu = {'sun': 1.32712440018e11,
                 'mercury': 2.2032e13,
                 'venus': 3.24858599e5,
                 'earth': 3.986004415e5,
+                'moon': 0.00490e6,
                 'mars': 4.28283100e4,
                 'jupiter': 1.266865361e8,
                 'saturn': 3.7931208e7,
@@ -13,6 +14,7 @@ planetary_mu = {'sun': 1.32712440018e11,
 mu_sun = planetary_mu['sun']
 mu_venus = planetary_mu['venus']
 mu_earth = planetary_mu['earth']
+mu_moon = planetary_mu['moon']
 mu_mars = planetary_mu['mars']
 mu_jupiter = planetary_mu['jupiter']
 
@@ -47,6 +49,7 @@ planetary_radii = {'mercury': None,
                    'pluto': 1188.3}
 r_venus = 6051.8
 r_earth = 6378.14
+r_moon = 1737.14
 r_mars = 3396.19
 r_jupiter = 71492
 
@@ -66,6 +69,7 @@ sma_earth = 149598023
 sma_mars = 227939186 # 1.523679342 AU
 sma_mars = 1.523679342 * AU
 sma_jupiter = 778.570e6 # from nssdc.gsfc.nasa.gov/planetary/factsheet/
+sma_moon =  384399
 
 # earth constants
 E_earth = 0.081819221456
