@@ -109,93 +109,75 @@ def get_orbital_elements(rvec, vvec, center='earth'):
     return np.array([sma, e, i, raan, aop, ta])
 
 
-def get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
+def get_rv_frm_elements(elements, center='earth', method='sma'):
     """computes positon/velocity vectors from Keplerian elements.
     We first compute pos/vel in the PQW system, then rotate to the
     geocentric equatorial system.
+    :param elements: for method = 'p': (p, e, i, raan, aop, ta)
+                     for method = 'sma': (a, e, i, raan, aop, ta)
+    a: semi-major axis (km); e: eccentricity
+    i: inclination (rad); raan: right ascending node (rad)
+    aop: argument of periapsis (rad); ta: true anomaly (rad)
     :param center: center object of orbit; default=earth
-    :param sma: semi-major axis (km)
-    :param e: eccentricity
-    :param i: inclination (rad)
-    :param raan: right ascending node (rad)
-    :param aop: argument of periapsis (rad)
-    :param ta: true anomaly (rad)
     :return rvec: positional vectors of spacecraft [IJK] (km)
     :return vvec: velocity vectors of spacecraft [IJK] (km/s)
     """
+    if method == 'p':
+        p, e, i, raan, aop, ta = elements
+    elif method =='sma':
+        a, e, i, raan, aop, ta = elements
+        p = a*(1-e**2)
+
     # determine which planet center to compute from
     mu = get_mu(center=center)
 
     # declaring trig functions
     s, c = sin, cos
 
-    # assigning temporary variables
-    aop_t = aop
-    raan_t = raan
-    ta_t = ta 
+    if method =='sma':
+        r = p / (1+e*c(ta))
+        h = sqrt( mu*a*(1-e**2) )
+        rvec = [r*(c(raan)*c(aop+ta) - s(raan)*s(aop+ta)*c(i)), 
+                r*(s(raan)*c(aop+ta) + c(raan)*s(aop+ta)*c(i)), 
+                r*(s(i)*s(aop+ta))]
+        vvec = [rvec[0]*h*e*s(ta)/(r*p) - h/r*(c(raan)*s(aop+ta) + s(raan)*c(aop+ta)*c(i)),
+                rvec[1]*h*e*s(ta)/(r*p) - h/r*(s(raan)*s(aop+ta) - c(raan)*c(aop+ta)*c(i)),
+                rvec[2]*h*e*s(ta)/(r*p) + h/r*(s(i)*c(aop+ta))]
+        return np.hstack([rvec, vvec])
 
-    # checking for undefined states 
-    if e == 0 and i == 0:
-        aop_t = 0.
-        raan_t = 0.
-        ta_t = aop_t + raan_t + ta
-    elif e == 0:
-        aop_t = 0.
-        ta_t = aop_t + ta
-    elif i == 0:
-        raan_t = 0.
-        aop_t = raan_t + aop
-        ta_t = ta
+    elif method == 'p':
+        # assigning temporary variables
+        aop_t = aop
+        raan_t = raan
+        ta_t = ta 
 
-    # converting elements into state vectors in PQW frame
-    r_pqw = [p*c(ta_t) / (1+e*c(ta_t)), p*s(ta_t) / (1+e*c(ta_t)), 0]
-    v_pqw = [-sqrt(mu/p)*s(ta_t), sqrt(mu/p)*(e+c(ta_t)), 0]
-    
-    # get 313 transformation matrix to geocentric-equitorial frame
-    m1 = rot.rotate(-aop, axis='z')
-    m2 = rot.rotate(-i, axis='x')
-    m3 = rot.rotate(-raan, axis='z')
-    T_ijk_pqw = mat.mxm(m2=m3, m1=mat.mxm(m2=m2, m1=m1))
+        # checking for undefined states 
+        if e == 0 and i == 0:
+            aop_t = 0.
+            raan_t = 0.
+            ta_t = aop_t + raan_t + ta
+        elif e == 0:
+            aop_t = 0.
+            ta_t = aop_t + ta
+        elif i == 0:
+            raan_t = 0.
+            aop_t = raan_t + aop
+            ta_t = ta
 
-    # state vector from PQW to ECI
-    r_ijk = mat.mxv(m1=T_ijk_pqw, v1=r_pqw)
-    v_ijk = mat.mxv(m1=T_ijk_pqw, v1=v_pqw)
-    return np.array(r_ijk), np.array(v_ijk)
+        # converting elements into state vectors in PQW frame
+        r_pqw = [p*c(ta_t) / (1+e*c(ta_t)), p*s(ta_t) / (1+e*c(ta_t)), 0]
+        v_pqw = [-sqrt(mu/p)*s(ta_t), sqrt(mu/p)*(e+c(ta_t)), 0]
+        
+        # get 313 transformation matrix to geocentric-equitorial frame
+        m1 = rot.rotate(-aop, axis='z')
+        m2 = rot.rotate(-i, axis='x')
+        m3 = rot.rotate(-raan, axis='z')
+        T_ijk_pqw = mat.mxm(m2=m3, m1=mat.mxm(m2=m2, m1=m1))
 
-
-def get_rv_frm_elements2(elements, center='earth'):
-    """computes positon/velocity vectors from Keplerian elements.
-    We first compute pos/vel in the PQW system, then rotate to the
-    geocentric equatorial system.
-    :param center: center object of orbit; default=earth
-    :param sma: semi-major axis (km)
-    :param e: eccentricity
-    :param i: inclination (rad)
-    :param Om: right ascending node (rad)
-    :param w: argument of periapsis (rad)
-    :param ta: true anomaly (rad)
-    :return rvec: positional vectors of spacecraft [IJK] (km)
-    :return vvec: velocity vectors of spacecraft [IJK] (km/s)
-    output similar answers but not completely tested
-    """
-
-    a, e, i, Om, w, ta = elements
-
-    p = a*(1-e**2)
-
-    mu = get_mu(center=center)
-    r = p / (1+e*cos(ta))
-    h = sqrt( mu*a*(1-e**2) )
-
-    rvec = [r*(cos(Om)*cos(w+ta) - sin(Om)*sin(w+ta)*cos(i)), 
-         r*(sin(Om)*cos(w+ta) + cos(Om)*sin(w+ta)*cos(i)), 
-         r*(sin(i)*sin(w+ta))]
-
-    vvec = [rvec[0]*h*e*sin(ta)/(r*p) - h/r*(cos(Om)*sin(w+ta) + sin(Om)*cos(w+ta)*cos(i)),
-         rvec[1]*h*e*sin(ta)/(r*p) - h/r*(sin(Om)*sin(w+ta) - cos(Om)*cos(w+ta)*cos(i)),
-         rvec[2]*h*e*sin(ta)/(r*p) + h/r*(sin(i)*cos(w+ta))]
-
-    return np.hstack([rvec, vvec])
+        # state vector from PQW to ECI
+        r_ijk = mat.mxv(m1=T_ijk_pqw, v1=r_pqw)
+        v_ijk = mat.mxv(m1=T_ijk_pqw, v1=v_pqw)
+        return np.hstack([r_ijk, v_ijk])
 
 
 def kepler_prop(r, v, dt, center='earth'):
@@ -242,8 +224,7 @@ def kepler_prop(r, v, dt, center='earth'):
         E = raan + aop + ta
 
     rvec, vvec = get_rv_frm_elements(p, e, i, raan, aop, ta)
-    return np.array(rvec), np.array(vvec)
-
+    return np.hstack([rvec, vvec])
 
 
 def flight_path_angle(e, ta):
@@ -382,36 +363,32 @@ def univ_anomalies(M=None, e=None, dt=None, p=None, center='earth'):
 
 def semimajor_axis(p, e):
     """returns semi-major axis for a Keplerian orbit
-    :param p:
-    :param e:
-    :return a:
+    :param p: semiparameter (km)
+    :param e: eccentricity (-)
+    :return: semi-major axis
     """
-    a = p / (1-e**2)
-
-    return a
+    return p / (1-e**2)
 
 
-def traj_equation(p, e, tanom):
+def trajectory_eqn(p, e, tanom):
     """returns trajectory equation for a Keplerian orbit
-    :param p:
-    :param e:
-    :param tanom:
-    :return r:
+    :param p: semiparameter (km)
+    :param e: eccentricity (-)
+    :param tanom: true anomaly (radians)
+    :return: orbit
     """
-    r = p / ( 1 + e*cos(tanom))
-
-    return r
+    return p / ( 1 + e*cos(tanom))
 
 
-def vel_mag(r=None, a=None, e=None, p=None, tanom=None, center='earth'):
+def vis_viva(r=None, a=None, e=None, p=None, tanom=None, center='earth'):
     """returns orbital velocity at true anomaly point
-    :param r:
-    :param a:
-    :param e:
-    :param p:
-    :param tanom:
-    :param center:
-    :return vmag:
+    :param r: radius to point from center (km)
+    :param a: semi-major axis of orbit (km)
+    :param e: eccentricity (-)
+    :param p: semiparameter (km)
+    :param tanom: true anomaly (radians)
+    :param center: center object; default='earth'
+    :return vmag: orbital velocity of orbit at point of interest
     not fully tested
     """
     mu = get_mu(center=center)
@@ -421,7 +398,7 @@ def vel_mag(r=None, a=None, e=None, p=None, tanom=None, center='earth'):
         return vmag
     elif e and p and tanom:
         a = semimajor_axis(p, e)
-        r = traj_equation(p, e, tanom)
+        r = trajectory_eqn(p, e, tanom)
         vmag = sqrt(2*mu/r - mu/a)
         return vmag
     else:
@@ -460,6 +437,7 @@ class Keplerian(object):
         self.e_vec = self.eccentricity_vector
         self.e_mag = vec.norm(self.e_vec)
         self.e_hat = self.e_vec/self.e_mag
+
 
     @property
     def eccentricity_vector(self):
@@ -511,16 +489,18 @@ class Keplerian(object):
             argp = 2*np.pi - argp
         return argp
 
+
     @property
     def semiparameter(self):
         """semi-parameter"""
         return self.h_mag**2/self.mu
 
+
     @property
     def semimajor_axis(self):
         """semi-major axis"""
-        p = self.semiparameter
-        return p/(1-self.e_mag**2)
+        return self.semiparameter/(1-self.e_mag**2)
+
 
     @property
     def energy(self):
@@ -531,7 +511,6 @@ class Keplerian(object):
 
 if __name__ == "__main__":
     
-    from pprint import pprint as pp
     # circular orbit
     r = [12756.2, 0.0, 0.0]
     v = [0.0, 7.90537, 0.0]

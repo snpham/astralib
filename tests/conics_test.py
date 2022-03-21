@@ -29,11 +29,11 @@ def test_keplerian():
     # get semi-perimeter
     p = sma*(1-e**2)
     # get back position/velocity vectors
-    r_ijk, v_ijk = conics.get_rv_frm_elements(p, e, i, raan, aop, ta)
+    state_ijk = conics.get_rv_frm_elements([p, e, i, raan, aop, ta], method='p')
     r_ijk_truth = [8773.893798, -11873.356801, -6446.706699]
     v_ijk_truth = [4.717099, 0.714936, 0.388178]
-    assert np.allclose(r_ijk, r_ijk_truth)
-    assert np.allclose(v_ijk, v_ijk_truth)
+    assert np.allclose(state_ijk[:3], r_ijk_truth)
+    assert np.allclose(state_ijk[3:], v_ijk_truth)
 
     # example from pg 114 vallado
     # orbital positon/velocity
@@ -63,11 +63,12 @@ def test_rv_from_keplerian():
     aop = np.deg2rad(53.38)
     ta = np.deg2rad(92.335)
 
-    r, v = conics.get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth')
+    state = conics.get_rv_frm_elements([p, e, i, raan, aop, ta], 
+                                      center='earth', method='p')
     r_truth = [6525.368, 6861.532, 6449.119]
     v_truth = [4.902279, 5.533140, -1.975710]
-    assert np.allclose(r, r_truth)
-    assert np.allclose(v, v_truth)
+    assert np.allclose(state[:3], r_truth)
+    assert np.allclose(state[3:], v_truth)
 
 
 def test_univ_anomalies():

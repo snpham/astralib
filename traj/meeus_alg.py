@@ -4,7 +4,7 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
 from math_helpers.time_systems import get_JD
-from traj.conics import get_rv_frm_elements2
+from traj.conics import get_rv_frm_elements
 
 
 def meeus(date, planet='earth', dformat='jd', rtn=None, ref_rtn='sun'):
@@ -152,7 +152,8 @@ def meeus(date, planet='earth', dformat='jd', rtn=None, ref_rtn='sun'):
     a = a*AU
 
     if rtn == 'states':
-        return get_rv_frm_elements2(np.array([a, e, i, Om, w, ta]), center=ref_rtn)
+        return get_rv_frm_elements(np.array([a, e, i, Om, w, ta]), 
+                                   center=ref_rtn, method='sma')
     else:
         return np.array([a, e, i, Om, w, ta])
 

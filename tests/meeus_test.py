@@ -5,7 +5,7 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from math_helpers.constants import *
 from traj.meeus_alg import meeus
-from traj.conics import get_rv_frm_elements2, get_orbital_elements
+from traj.conics import get_rv_frm_elements, get_orbital_elements
 import pytest
 
 
@@ -40,7 +40,7 @@ def test_meeus():
 
     # intertial j2000
     center = 'sun'
-    state = get_rv_frm_elements2(elements, center)
+    state = get_rv_frm_elements(elements, center, method='sma')
     assert np.allclose(state, [1.47081462e+08,-3.25372777e+07, 4.67587601e+02, 
                                5.94941002e+00, 2.89739400e+01, -7.15905071e-04], 
                                rtol=1e-3)
@@ -115,7 +115,7 @@ def test_meeus():
     r_vec = state[:3]
     v_vec = state[3:6]
     center = 'sun'
-    state = get_rv_frm_elements2(elements, center)
+    state = get_rv_frm_elements(elements, center, method='sma')
     assert np.allclose(state, [147084764.907217, -32521189.649751, 467.190091, 
                                 5.946239, 28.974641, -0.000716])
 

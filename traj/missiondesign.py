@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from math_helpers.constants import *
 from traj import lambert
 from traj.meeus_alg import meeus
-from traj.conics import get_rv_frm_elements2
+from traj.conics import get_rv_frm_elements
 from traj.bplane import bplane_vinf
 import pandas as pd
 from math_helpers.time_systems import get_JD, cal_from_jd
@@ -50,7 +50,7 @@ def launchwindows(departure_planet, departure_date, arrival_planet,
 
     # get state of departure planet
     dep_elements = meeus(dep_JD, planet=dp)
-    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    s_dep_planet = get_rv_frm_elements(dep_elements, center=center, method='sma')
     r_dep_planet = s_dep_planet[:3]
     v_dep_planet = s_dep_planet[3:6]
 
@@ -67,7 +67,7 @@ def launchwindows(departure_planet, departure_date, arrival_planet,
                                date.hour, date.minute, date.second)
 
         arr_elements = meeus(arrival_jdate, planet=ap)
-        s_arrival = get_rv_frm_elements2(arr_elements, center=center)
+        s_arrival = get_rv_frm_elements(arr_elements, center=center, method='sma')
         r_arr_planet = s_arrival[:3]
         v_arr_planet = s_arrival[3:6]
 

@@ -6,7 +6,7 @@ from traj import conics as con
 from traj import maneuvers as man
 from traj import lambert as lam
 from traj.meeus_alg import meeus
-from traj.conics import get_rv_frm_elements2
+from traj.conics import get_rv_frm_elements
 from math_helpers.time_systems import cal_from_jd, get_JD
 
 
@@ -95,7 +95,7 @@ def test_noncoplanar_transfer():
     tanom = np.deg2rad(330)
 
     # we need to find the vel mag at the point and its fpa
-    vi = con.vel_mag(e=e, tanom=tanom, p=p)
+    vi = con.vis_viva(e=e, tanom=tanom, p=p)
     phi_fpa = con.flight_path_angle(e, tanom)
     phi_fpa_deg = np.rad2deg(phi_fpa)
     vi_truth = 5.993824
@@ -109,7 +109,7 @@ def test_noncoplanar_transfer():
 
     # node check
     tanom = tanom - np.pi
-    vi = con.vel_mag(e=e, tanom=tanom, p=p)
+    vi = con.vis_viva(e=e, tanom=tanom, p=p)
     phi_fpa = con.flight_path_angle(e, tanom)
     phi_fpa_deg = np.rad2deg(phi_fpa)
     vi_truth = 3.568017 # km/s
@@ -242,7 +242,7 @@ def test_patched_conics():
 
 def test_lambert_univ():
     """tests lambert_univ 0rev function, meeus rtn 1/2, get_JD, cal_from_jd,
-    and get_rv_frm_elements2
+    and get_rv_frm_elements
     """
     # short way, 0 rev - vallado test 1 (earth)
     # initial/final positions, time of flight, and direction of motion
@@ -281,7 +281,7 @@ def test_lambert_univ():
     assert np.allclose(jd, dep_JD)
     dp = 'earth'
     dep_elements = meeus(dep_JD, planet=dp)
-    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    s_dep_planet = get_rv_frm_elements(dep_elements, center=center, method='sma')
     r_dep_planet = s_dep_planet[:3]
     v_dep_planet = s_dep_planet[3:6]
     s = meeus(dep_JD, planet=dp, rtn='states', ref_rtn=center)
@@ -297,7 +297,7 @@ def test_lambert_univ():
     assert np.allclose(jd, arr_JD)
     ap = 'venus'
     arr_elements = meeus(arr_JD, planet=ap)
-    s_arr_planet = get_rv_frm_elements2(arr_elements, center=center)
+    s_arr_planet = get_rv_frm_elements(arr_elements, center=center, method='sma')
     r_arr_planet = s_arr_planet[:3]
     v_arr_planet = s_arr_planet[3:6]
     s = meeus(arr_JD, planet=ap, rtn='states', ref_rtn=center)
@@ -325,7 +325,7 @@ def test_lambert_univ():
     assert np.allclose(jd, dep_JD)
     dp = 'mars'
     dep_elements = meeus(dep_JD, planet=dp)
-    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    s_dep_planet = get_rv_frm_elements(dep_elements, center=center, method='sma')
     r_dep_planet = s_dep_planet[:3]
     v_dep_planet = s_dep_planet[3:6]
     s = meeus(dep_JD, planet=dp, rtn='states', ref_rtn=center)
@@ -340,7 +340,7 @@ def test_lambert_univ():
     assert np.allclose(jd, arr_JD)
     ap = 'jupiter'
     arr_elements = meeus(arr_JD, planet=ap)
-    s_arr_planet = get_rv_frm_elements2(arr_elements, center=center)
+    s_arr_planet = get_rv_frm_elements(arr_elements, center=center, method='sma')
     r_arr_planet = s_arr_planet[:3]
     v_arr_planet = s_arr_planet[3:6]
     s = meeus(arr_JD, planet=ap, rtn='states', ref_rtn=center)
@@ -368,7 +368,7 @@ def test_lambert_univ():
     assert np.allclose(jd, dep_JD)
     dp = 'saturn'
     dep_elements = meeus(dep_JD, planet=dp)
-    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    s_dep_planet = get_rv_frm_elements(dep_elements, center=center, method='sma')
     r_dep_planet = s_dep_planet[:3]
     v_dep_planet = s_dep_planet[3:6]
     s = meeus(dep_JD, planet=dp, rtn='states', ref_rtn=center)
@@ -383,7 +383,7 @@ def test_lambert_univ():
     assert np.allclose(jd, arr_JD)
     ap = 'neptune'
     arr_elements = meeus(arr_JD, planet=ap)
-    s_arr_planet = get_rv_frm_elements2(arr_elements, center=center)
+    s_arr_planet = get_rv_frm_elements(arr_elements, center=center, method='sma')
     r_arr_planet = s_arr_planet[:3]
     v_arr_planet = s_arr_planet[3:6]
     s = meeus(arr_JD, planet=ap, rtn='states', ref_rtn=center)
@@ -414,8 +414,8 @@ def test_lambert_univ():
     dep_elements = meeus(departurejd, planet='earth')
     arr_elements = meeus(arrivaljd, planet='mars')
     center = 'sun'
-    state_e = get_rv_frm_elements2(dep_elements, center)
-    state_m = get_rv_frm_elements2(arr_elements, center)
+    state_e = get_rv_frm_elements(dep_elements, center, method='sma')
+    state_m = get_rv_frm_elements(arr_elements, center, method='sma')
     r0 = state_e[:3]
     rf = state_m[:3]
     tof = (2458423.5-2458239.5)*3600*24
@@ -428,7 +428,7 @@ def test_lambert_univ():
 
 
 def test_lambert_multrev():
-    """tests lambert_univ 0rev function, meeus, and get_rv_frm_elements2
+    """tests lambert_univ 0rev function, meeus, and get_rv_frm_elements
     """
     
     # Test Case #4: Earth - Venus: Multi-Rev (Type III)
@@ -437,7 +437,7 @@ def test_lambert_multrev():
     dep_JD = 2460545
     dp = 'earth'
     dep_elements = meeus(dep_JD, planet=dp)
-    s_dep_planet = get_rv_frm_elements2(dep_elements, center=center)
+    s_dep_planet = get_rv_frm_elements(dep_elements, center=center, method='sma')
     r_dep_planet = s_dep_planet[:3]
     v_dep_planet = s_dep_planet[3:6]
     s = meeus(dep_JD, planet=dp, rtn='states', ref_rtn=center)
@@ -449,7 +449,7 @@ def test_lambert_multrev():
     arr_JD = 2460919
     ap = 'venus'
     arr_elements = meeus(arr_JD, planet=ap)
-    s_arr_planet = get_rv_frm_elements2(arr_elements, center=center)
+    s_arr_planet = get_rv_frm_elements(arr_elements, center=center, method='sma')
     r_arr_planet = s_arr_planet[:3]
     v_arr_planet = s_arr_planet[3:6]
     s = meeus(arr_JD, planet=ap, rtn='states', ref_rtn=center)
