@@ -7,7 +7,7 @@ from math_helpers.constants import *
 from math_helpers.vectors import vdotv
 
 
-def coplanar_transfer(p, e, r1, r2, center='earth'):
+def coplanar(p, e, r1, r2, center='earth'):
     """general form of coplanar circular orbit transfer; an orbit 
     with a flight angle of 0 results in a hohmann transfer;
     :param p: transfer ellipse semi-latus rectum (km)
@@ -41,7 +41,7 @@ def coplanar_transfer(p, e, r1, r2, center='earth'):
     return dv1, dv2
 
 
-def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, printout=True, 
+def hohmann(r1, r2, use_alts=True, get_vtrans=False, printout=True, 
                      center='earth'):
     """hohmann transfer orbit computation from smaller orbit to
     larger; can input either satellite altitude above "object" or
@@ -93,7 +93,7 @@ def hohmann_transfer(r1, r2, use_alts=True, get_vtrans=False, printout=True,
     return dv1, dv2, transfer_time
 
 
-def bielliptic_transfer(r1, r2, r_trans, use_alts=True, center='earth'):
+def bielliptic(r1, r2, r_trans, use_alts=True, center='earth'):
     """bi-elliptic transfer (hohmann transfer variant) orbit computation 
     from smaller orbit to larger; assumes fpa to be 0
     :param r1: radius of smaller circular orbit (orbit one) (km)
@@ -134,7 +134,7 @@ def bielliptic_transfer(r1, r2, r_trans, use_alts=True, center='earth'):
     return dv1, dv_trans, dv2, trans_t
 
 
-def onetangent_transfer(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
+def onetangent(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
     """Orbit transfer with one tangential burn and one nontangential 
     burn. Must be circular or coaxially elliptic. Currently only for 
     circular orbits.
@@ -195,7 +195,7 @@ def onetangent_transfer(ri, rf, ta_transb, k=0, use_alts=True, center='earth'):
     return vtransa, vtransb, fpa_transb, TOF
 
 
-def noncoplanar_transfer(delta, vi, phi_fpa=None, incli=None, inclf=None, change='inc'):
+def noncoplanar(delta, vi, phi_fpa=None, incli=None, inclf=None, change='inc'):
     """noncoplanar transfers to change either inclination only, RAAN 
     only, or both. A dv at nodal points will only change inclination; 
     dv at a certain point in an orbit changes only the RAAN; a dv at 
@@ -293,86 +293,6 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth', get_pay
     return dva, dvb, dii, dif
 
 
-def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', 
-                   elliptical1=False, period1=None,
-                   elliptical2=False, period2=None):
-    """compute a patched conics orbit transfer from an inner planet to 
-    outer planet.
-    :param r1: orbital radius about planet 1 (km)
-    :param r2: orbital radius about planet 2 (km)
-    :param rt1: radius to planet 1 from center of transfer orbit (km)
-    :param rt2: radius to planet 2 from center of transfer orbi (km)
-    :param pl1: departing planet
-    :param pl2: arrival planet
-    :return vt1: heliocentric departure velocity at planet 1 (km/s)
-    :return vt2: heliocentric arrival velocity at planet 2 (km/s)
-    :return dv_inj: [injection] departure delta-v (km/s) (km/s)
-    :return dv_ins: [insertion] arrival delta-v (km/s) (km/s)
-    :return TOF: transfer time of flight (s)
-    in work
-    """
-    mu_center = get_mu(center=center)
-    mu_pl1 = get_mu(pl1)
-    mu_pl2 = get_mu(pl2)
-    sma_pl1 = get_sma(pl1)
-    sma_pl2 = get_sma(pl2)
-
-    r_orbit1 = r1
-    r_orbit2 = r2
-    atrans = (rt1 + rt2) / 2 # transfer sma
-    TOF = pi*sqrt(atrans**3/mu_center) # period of hohmann transfer
-    print(f'time of flight (days): {TOF/(3600*24)}')
-
-    # spacecraft orbital velocities relative to planet 1, 2
-    if elliptical1:
-        P = period1
-        a = (mu_pl1*(P/(2*pi))**2)**(1/3)
-        vc1 = sqrt(2*mu_pl1/r_orbit1 - mu_pl1/a)
-        print(f'elliptical orbit velocity at planet 1 (km/s): {vc1}')
-    else:
-        vc1 = sqrt(mu_pl1/r_orbit1)
-        print(f'circular orbit velocity at planet 1 (km/s): {vc1}')
-    if elliptical2:
-        P = period2
-        a = (mu_pl2*(P/(2*pi))**2)**(1/3)
-        vc2 = sqrt(2*mu_pl2/r_orbit2 - mu_pl2/a)
-        print(f'elliptical orbit velocity at planet 2 (km/s): {vc2}')
-    else:
-        vc2 = sqrt(mu_pl2/r_orbit2)
-        print(f'circular orbit velocity at planet 2 (km/s): {vc2}')
-
-    # heliocentric departure and arrival velocities
-    vt1 = sqrt(2*mu_center/rt1 - mu_center/atrans)
-    vt2 = sqrt(2*mu_center/rt2 - mu_center/atrans)
-    print(f'heliocentric departure velocity at planet 1 (km/s): {vt1}')
-    print(f'heliocentric arrival velocity at planet 2 (km/s): {vt2}')
-
-    # heliocentric velocities of planet 1 and 2
-    v_pl1 = sqrt(mu_center/sma_pl1)
-    v_pl2 = sqrt(mu_center/sma_pl2)
-    print(f'planet 1 velocity, heliocentric (km/s): {v_pl1}')
-    print(f'planet 2 velocity, heliocentric (km/s): {v_pl2}')
-
-    # hyperbolic excess velocities
-    v_hyp1 = vt1 - v_pl1
-    v_hyp2 = vt2 - v_pl2
-    print(f'hyperbolic excess velocity (vinf), wrt planet 1 (km/s): {v_hyp1}')
-    print(f'hyperbolic excess velocity (vinf), wrt planet 2 (km/s): {v_hyp2}')
-
-    # departure
-    vp1 = sqrt(2*mu_pl1/r_orbit1 + v_hyp1**2)
-    # print(f'vp1 {vp1}')
-    dv_inj = vp1 - vc1 # v_inf
-    print(f'[injection] departure delta-v (km/s): {dv_inj}')
-
-    # arrival
-    vp2 = sqrt(2*mu_pl2/r_orbit2 + v_hyp2**2)
-    # print(f'vp2 {vp2}')
-    dv_ins = vc2 - vp2 # v_inf
-    print(f'[insertion] arrival delta-v (km/s) {dv_ins}')
-
-    return vt1, vt2, dv_inj, dv_ins, TOF
-
 
 if __name__ == '__main__':
 
@@ -383,5 +303,4 @@ if __name__ == '__main__':
     rt2 = sma_jupiter
     pl1 = 'earth'
     pl2 = 'jupiter'
-    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=231.48*24*3600)
-    # hohmann_transfer(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+    hohmann(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')

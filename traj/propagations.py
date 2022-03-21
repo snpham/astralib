@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from math_helpers.constants import *
 from traj.meeus_alg import meeus
 from math_helpers.time_systems import cal_from_jd
-import maneuvers
+import conics
 
 
 def prop_2body(t, Y, mu):
@@ -329,8 +329,8 @@ if __name__ == '__main__':
     planet2 = 'moon'
     center = 'earth'
     vt1, vt2, dv_inj, dv_ins, TOF = \
-        maneuvers.patched_conics(r1=r_orbit1, r2=r_orbit2, rt1=r_trans1, rt2=r_trans2,
-                       pl1=planet1, pl2=planet2, center=center)
+        conics.patched_conics(r1=r_orbit1, r2=r_orbit2, rt1=r_trans1, rt2=r_trans2,
+                              pl1=planet1, pl2=planet2, center=center)
 
     r_sc = [15400, 13500, 6900]
     v_sc = [-4.60,-0.10,-0.05]

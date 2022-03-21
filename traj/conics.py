@@ -223,7 +223,7 @@ def kepler_prop(r, v, dt, center='earth'):
     else:
         E = raan + aop + ta
 
-    rvec, vvec = get_rv_frm_elements(p, e, i, raan, aop, ta)
+    rvec, vvec = get_rv_frm_elements([p, e, i, raan, aop, ta], method='p')
     return np.hstack([rvec, vvec])
 
 
@@ -266,6 +266,15 @@ def sp_energy(vel, pos, mu=mu_earth):
     else:
         phi = 0.
     return energy, ang_mo, phi
+
+
+def get_period(sma, mu):
+    """get orbital period (s)
+    :param sma: semi-major axis (km)
+    :param mu: planetary constant (km3/s2)
+    :return: orbital period (s)
+    """
+    return 2*np.pi*np.sqrt(sma**3/mu)
 
 
 def mean_anomalies(e, ta):
@@ -508,6 +517,92 @@ class Keplerian(object):
         return self.v_mag**2/2 - self.mu/self.r_mag
 
 
+    @property
+    def period(self):
+        """orbital period"""
+        return 2*np.pi*np.sqrt(self.semimajor_axis**3/self.mu)
+
+
+def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', 
+                   elliptical1=False, period1=None,
+                   elliptical2=False, period2=None):
+    """compute a patched conics orbit transfer from an inner planet to 
+    outer planet.
+    :param r1: orbital radius about planet 1 (km)
+    :param r2: orbital radius about planet 2 (km)
+    :param rt1: radius to planet 1 from center of transfer orbit (km)
+    :param rt2: radius to planet 2 from center of transfer orbi (km)
+    :param pl1: departing planet
+    :param pl2: arrival planet
+    :return vt1: heliocentric departure velocity at planet 1 (km/s)
+    :return vt2: heliocentric arrival velocity at planet 2 (km/s)
+    :return dv_inj: [injection] departure delta-v (km/s) (km/s)
+    :return dv_ins: [insertion] arrival delta-v (km/s) (km/s)
+    :return TOF: transfer time of flight (s)
+    in work
+    """
+    mu_center = get_mu(center=center)
+    mu_pl1 = get_mu(pl1)
+    mu_pl2 = get_mu(pl2)
+    sma_pl1 = get_sma(pl1)
+    sma_pl2 = get_sma(pl2)
+
+    r_orbit1 = r1
+    r_orbit2 = r2
+    atrans = (rt1 + rt2) / 2 # transfer sma
+    TOF = pi*sqrt(atrans**3/mu_center) # period of hohmann transfer
+    print(f'time of flight (days): {TOF/(3600*24)}')
+
+    # spacecraft orbital velocities relative to planet 1, 2
+    if elliptical1:
+        P = period1
+        a = (mu_pl1*(P/(2*pi))**2)**(1/3)
+        vc1 = sqrt(2*mu_pl1/r_orbit1 - mu_pl1/a)
+        print(f'elliptical orbit velocity at planet 1 (km/s): {vc1}')
+    else:
+        vc1 = sqrt(mu_pl1/r_orbit1)
+        print(f'circular orbit velocity at planet 1 (km/s): {vc1}')
+    if elliptical2:
+        P = period2
+        a = (mu_pl2*(P/(2*pi))**2)**(1/3)
+        vc2 = sqrt(2*mu_pl2/r_orbit2 - mu_pl2/a)
+        print(f'elliptical orbit velocity at planet 2 (km/s): {vc2}')
+    else:
+        vc2 = sqrt(mu_pl2/r_orbit2)
+        print(f'circular orbit velocity at planet 2 (km/s): {vc2}')
+
+    # heliocentric departure and arrival velocities
+    vt1 = sqrt(2*mu_center/rt1 - mu_center/atrans)
+    vt2 = sqrt(2*mu_center/rt2 - mu_center/atrans)
+    print(f'heliocentric departure velocity at planet 1 (km/s): {vt1}')
+    print(f'heliocentric arrival velocity at planet 2 (km/s): {vt2}')
+
+    # heliocentric velocities of planet 1 and 2
+    v_pl1 = sqrt(mu_center/sma_pl1)
+    v_pl2 = sqrt(mu_center/sma_pl2)
+    print(f'planet 1 velocity, heliocentric (km/s): {v_pl1}')
+    print(f'planet 2 velocity, heliocentric (km/s): {v_pl2}')
+
+    # hyperbolic excess velocities
+    v_hyp1 = vt1 - v_pl1
+    v_hyp2 = vt2 - v_pl2
+    print(f'hyperbolic excess velocity (vinf), wrt planet 1 (km/s): {v_hyp1}')
+    print(f'hyperbolic excess velocity (vinf), wrt planet 2 (km/s): {v_hyp2}')
+
+    # departure
+    vp1 = sqrt(2*mu_pl1/r_orbit1 + v_hyp1**2)
+    # print(f'vp1 {vp1}')
+    dv_inj = vp1 - vc1 # v_inf
+    print(f'[injection] departure delta-v (km/s): {dv_inj}')
+
+    # arrival
+    vp2 = sqrt(2*mu_pl2/r_orbit2 + v_hyp2**2)
+    # print(f'vp2 {vp2}')
+    dv_ins = vc2 - vp2 # v_inf
+    print(f'[insertion] arrival delta-v (km/s) {dv_ins}')
+
+    return vt1, vt2, dv_inj, dv_ins, TOF
+
 
 if __name__ == "__main__":
     
@@ -515,31 +610,33 @@ if __name__ == "__main__":
     r = [12756.2, 0.0, 0.0]
     v = [0.0, 7.90537, 0.0]
     elements = get_orbital_elements(rvec=r, vvec=v)
-    print(elements)
+    # print(elements)
 
     # polar orbit
     r = [8750., 5100., 0.0]
     v = [-3., 5.2, 5.9]
     elements = get_orbital_elements(rvec=r, vvec=v)
-    print(elements)
+    # print(elements)
 
     # polar orbit
     r = [0., -5100., 8750.]
     v = [0., 4.2, 5.9]
     elements = get_orbital_elements(rvec=r, vvec=v)
-    print(elements)
+    # print(elements)
 
     # get r,v from orbital elements
-    rv = get_rv_frm_elements(p=14351, e=0.5, i=np.rad2deg(45), raan=np.rad2deg(30), aop=0, ta=0)
-    print(rv) # r=[9567.2, 0], v=[0, 7.9054]
+    elements = [14351, 0.5, np.rad2deg(45), np.rad2deg(30), 0, 0]
+    rv = get_rv_frm_elements(elements, method='p')
+    # assert np.allclose(rv)
+    # print(rv) # r=[9567.2, 0], v=[0, 7.9054]
 
     # testing specifc energy function
     pos = vec.vxs(scalar=1e4, v1=[1.2756, 1.9135, 3.1891]) # km
     vel = [7.9053, 15.8106, 0.0] # km/s
     energy = sp_energy(vel=vel, pos=pos, mu=get_mu(center='earth'))
-    print(energy)
+    # print(energy)
 
-    print('\n\n')
+    # print('\n\n')
 
     r = [8773.8938, -11873.3568, -6446.7067]
     v =  [4.717099, 0.714936, 0.388178]
@@ -548,8 +645,8 @@ if __name__ == "__main__":
 
     sma, e, i, raan, aop, ta = elements
     p = sma*(1-e**2)
-    r, v = get_rv_frm_elements(p, e, i, raan, aop, ta)
-    print(r, v)
+    state = get_rv_frm_elements([p, e, i, raan, aop, ta], method='p')
+    # print(state)
 
 
     # example from pg 114 vallado
@@ -557,7 +654,7 @@ if __name__ == "__main__":
     r = [6524.834, 6862.875, 6448.296]
     v =  [4.901327, 5.533756, -1.976341]
     elements = get_orbital_elements(rvec=r, vvec=v)
-    print(elements)
+    # print(elements)
 
     # test get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth'):
     p = 11067.79
@@ -566,15 +663,20 @@ if __name__ == "__main__":
     raan = np.deg2rad(227.89)
     aop = np.deg2rad(53.38)
     ta = np.deg2rad(92.335)
-    r, v = get_rv_frm_elements(p, e, i, raan, aop, ta, center='earth')
-    print(r) # [6525.36812099 6861.5318349  6449.11861416]
-    print(v) # [ 4.90227865  5.53313957 -1.9757101 ]
+    state = get_rv_frm_elements([p, e, i, raan, aop, ta], center='earth', method='p')
+    assert np.allclose(state, [6525.36812099, 6861.5318349, 6449.11861416,
+                               4.90227865, 5.53313957, -1.9757101])
 
     E = univ_anomalies(e=0.4, M=np.deg2rad(235.4))
-    print(E) # 3.84866174509717 rad
-
     B = univ_anomalies(e=1, dt=53.7874*60, p=25512)
-    print(B) # 0.817751
-
     H = univ_anomalies(e=2.4, M=np.deg2rad(235.4))
-    print(H) # 1.6013761449
+    assert np.allclose([E, B, H], [3.84866174, 0.817751, 1.6013761449])
+
+    # not verified
+    r1 = r_earth + 300
+    r2 = r_jupiter + 221103.53
+    rt1 = sma_earth
+    rt2 = sma_jupiter
+    pl1 = 'earth'
+    pl2 = 'jupiter'
+    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=231.48*24*3600)
