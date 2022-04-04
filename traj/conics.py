@@ -370,13 +370,18 @@ def univ_anomalies(M=None, e=None, dt=None, p=None, center='earth'):
         return H
 
 
-def semimajor_axis(p, e):
+def semimajor_axis(p=None, e=None, mu=None, period=None):
     """returns semi-major axis for a Keplerian orbit
     :param p: semiparameter (km)
     :param e: eccentricity (-)
+    :param mu: planetary constant (km3/s2)
+    :param period: orbital period (s)
     :return: semi-major axis
     """
-    return p / (1-e**2)
+    if period and mu:
+        return (mu*period**2/(4*np.pi**2))**(1/3)
+    else:
+        return p / (1-e**2)
 
 
 def trajectory_eqn(p, e, tanom):
@@ -680,3 +685,9 @@ if __name__ == "__main__":
     pl1 = 'earth'
     pl2 = 'jupiter'
     patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=231.48*24*3600)
+
+
+    mu = mu_earth
+    period = 6.5/7.0*(23+56/60+4.091/3600)*3600
+    a = semimajor_axis(p=None, e=None, mu=mu, period=period)
+    print(a)

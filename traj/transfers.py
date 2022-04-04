@@ -293,6 +293,27 @@ def combined_planechange(ri, rf, delta_i, use_alts=True, center='earth', get_pay
     return dva, dvb, dii, dif
 
 
+def incl_change(v_i, dincl, fpa=0, e=None, p=None, argp=None, 
+                tanom=None, body='earth', orbit='circular'):
+    """
+    """
+    mu = get_mu(center=body)
+    if orbit == 'circular':
+        return 2*v_i*np.cos(fpa)*np.sin(dincl/2)
+    elif orbit == 'elliptical':
+        a = p / (1-e**2)
+        r_n1 = p / (1 + e*np.cos(tanom))
+        v_n1 = np.sqrt(2*mu/r_n1 - mu/a)
+        tan_fpa1 = e*np.sin(tanom) / (1 + e*np.cos(tanom))
+        dv_n1 = 2*v_i*np.cos(tan_fpa1)*np.sin(dincl/2)
+        n2 = tanom-np.pi
+        r_n2 = p / (1 + e*np.cos(n2))
+        v_n2 = np.sqrt(2*mu/r_n2 - mu/a)
+        tan_fpa2 = e*np.sin(n2) / (1 + e*np.cos(n2))
+        dv_n2 = 2*v_i*np.cos(tan_fpa2)*np.sin(dincl/2)
+        return np.array([dv_n1, dv_n2])
+
+
 
 if __name__ == '__main__':
 
@@ -304,3 +325,20 @@ if __name__ == '__main__':
     pl1 = 'earth'
     pl2 = 'jupiter'
     hohmann(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+
+    v_i = 5.892311
+    dincl = np.deg2rad(15)
+    dv = incl_change(v_i, dincl, fpa=0)
+    # print(dv)
+
+    e = 0.3
+    p = 17858.7836
+    tanom = np.deg2rad(330)
+    dvs= incl_change(v_i, dincl, fpa=0, e=e, p=p, argp=None, 
+                tanom=tanom, body='earth', orbit='elliptical')
+    print(dvs)
+
+    v_i = np.sqrt(mu_earth/42625)
+    dincl = np.deg2rad(0.8)
+    dv = incl_change(v_i, dincl, fpa=0)
+    print(dv) 
