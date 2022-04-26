@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import sys
 import os
 import numpy as np
@@ -299,18 +298,23 @@ def incl_change(v_i, dincl, fpa=0, e=None, p=None, argp=None,
     """
     mu = get_mu(center=body)
     if orbit == 'circular':
+        if tanom:
+            tan_fpa = e*np.sin(tanom) / (1 + e*np.cos(tanom))
+            fpa1 = np.arctan(tan_fpa)
         return 2*v_i*np.cos(fpa)*np.sin(dincl/2)
     elif orbit == 'elliptical':
         a = p / (1-e**2)
         r_n1 = p / (1 + e*np.cos(tanom))
         v_n1 = np.sqrt(2*mu/r_n1 - mu/a)
         tan_fpa1 = e*np.sin(tanom) / (1 + e*np.cos(tanom))
-        dv_n1 = 2*v_i*np.cos(tan_fpa1)*np.sin(dincl/2)
+        fpa1 = np.arctan(tan_fpa1)
+        dv_n1 = 2*v_i*np.cos(fpa1)*np.sin(dincl/2)
         n2 = tanom-np.pi
         r_n2 = p / (1 + e*np.cos(n2))
         v_n2 = np.sqrt(2*mu/r_n2 - mu/a)
         tan_fpa2 = e*np.sin(n2) / (1 + e*np.cos(n2))
-        dv_n2 = 2*v_i*np.cos(tan_fpa2)*np.sin(dincl/2)
+        fpa2 = np.arctan(tan_fpa2)
+        dv_n2 = 2*v_i*np.cos(fpa2)*np.sin(dincl/2)
         return np.array([dv_n1, dv_n2])
 
 
@@ -324,12 +328,12 @@ if __name__ == '__main__':
     rt2 = sma_jupiter
     pl1 = 'earth'
     pl2 = 'jupiter'
-    hohmann(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
+    # hohmann(rt1, rt2, use_alts=False, get_vtrans=False, center='sun')
 
     v_i = 5.892311
     dincl = np.deg2rad(15)
     dv = incl_change(v_i, dincl, fpa=0)
-    # print(dv)
+    print(dv)
 
     e = 0.3
     p = 17858.7836
@@ -338,7 +342,11 @@ if __name__ == '__main__':
                 tanom=tanom, body='earth', orbit='elliptical')
     print(dvs)
 
-    v_i = np.sqrt(mu_earth/42625)
+    v_i = np.sqrt(mu_earth/42164)
     dincl = np.deg2rad(0.8)
-    dv = incl_change(v_i, dincl, fpa=0)
-    print(dv) 
+    dv = incl_change(v_i, dincl, fpa=0) * 1000
+    # print(dv) 
+
+    # tanom = np.deg2rad(180)
+    # dv = incl_change(v_i, dincl, fpa=0) * 1000
+    # print(dv)

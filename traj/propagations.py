@@ -23,7 +23,7 @@ def prop_2body(t, Y, mu):
     return np.hstack((v, vdot))
 
 
-def prop_perb(t, Y, rp_1, rp_2, mu_b1, mu_b2, mu_b3, ets):
+def prop_4body(t, Y, rp_1, rp_2, mu_b1, mu_b2, mu_b3, ets):
     """2-body orbit propagator with 4 body external perturbations due to gravity
     :param t: time of propagation (s)
     :param Y: state at time of propagation (km, km/s)
@@ -90,7 +90,7 @@ def generate_orbit(r_sc, v_sc, TOF, s_planet1, s_planet2,
     propstate_sc = np.array(prop_sc.y).T
 
     # integrate spacecraft with perturbations
-    pertprop_sc = ivp(prop_perb, (0, TOF), si_sc, 
+    pertprop_sc = ivp(prop_4body, (0, TOF), si_sc, 
                       args=(propstate_p1[:,:3], propstate_p2[:,:3], mu_earth, mu_moon, mu_sun, ets), 
                       method='RK45', t_eval=ets, dense_output=True, 
                       rtol=1e-13, atol=1e-13)
@@ -347,3 +347,5 @@ if __name__ == '__main__':
     planet2 = 'sun'
     generate_orbit(r_sc=r_sc, v_sc=v_sc, TOF=TOF, s_planet1=si_moon, s_planet2=si_sun,
         planet1=planet1, planet2=planet2, center='earth')
+
+    # mission2uranus()

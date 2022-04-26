@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import sys
 import os
 import numpy as np
@@ -9,7 +8,7 @@ from math_helpers import matrices as mat
 from math_helpers.constants import *
 
 
-def get_orbital_elements(rvec, vvec, center='earth'):
+def get_orbital_elements(rvec, vvec, center='earth', printout=False):
     """computes Keplerian elements from positon/velocity vectors
     :param rvec: positional vectors of spacecraft [IJK?] (km)
     :param vvec: velocity vectors of spacecraft [IJK?] (km/s)
@@ -90,21 +89,22 @@ def get_orbital_elements(rvec, vvec, center='earth'):
                 true_lon = 2*np.pi - true_lon
     mean_lon = true_lon_peri + M  # for small incl and e
 
-    print(f'\nOrbital Elements:\n',
-          f'Semi-major axis: {sma:0.06f} km\n',
-          f'Semi-latus Rectum: {p:0.6f} km\n',
-          f'Eccentricity: {e:0.6f}\n',
-          f'Inclination: {np.rad2deg(i):0.6f} deg')
+    if printout:
+        print(f'\nOrbital Elements:\n',
+            f'Semi-major axis: {sma:0.06f} km\n',
+            f'Semi-latus Rectum: {p:0.6f} km\n',
+            f'Eccentricity: {e:0.6f}\n',
+            f'Inclination: {np.rad2deg(i):0.6f} deg')
 
-    print(f' RAAN: {np.rad2deg(raan):0.6f} deg\n',
-          f'Argument of Periapsis: {np.rad2deg(aop):0.6f} deg\n',
-          f'True Longitude of Periapsis: {np.rad2deg(true_lon_peri):0.6f} deg\n',
-          f'Mean Longitude of Periapsis: {np.rad2deg(lon_peri_mean):0.6f} deg\n',
-          f'True Anomaly: {np.rad2deg(ta):0.6f} deg\n',
-          f'Argument of Latitude: {np.rad2deg(arglat):0.6f} deg\n',
-          f'Argument of Latitude - Mean: {np.rad2deg(arglat_mean):0.6f} deg\n',
-          f'True longitude: {np.rad2deg(true_lon):0.6f} deg\n',
-          f'Mean Longitude: {np.rad2deg(mean_lon):0.6f} deg')
+        print(f' RAAN: {np.rad2deg(raan):0.6f} deg\n',
+            f'Argument of Periapsis: {np.rad2deg(aop):0.6f} deg\n',
+            f'True Longitude of Periapsis: {np.rad2deg(true_lon_peri):0.6f} deg\n',
+            f'Mean Longitude of Periapsis: {np.rad2deg(lon_peri_mean):0.6f} deg\n',
+            f'True Anomaly: {np.rad2deg(ta):0.6f} deg\n',
+            f'Argument of Latitude: {np.rad2deg(arglat):0.6f} deg\n',
+            f'Argument of Latitude - Mean: {np.rad2deg(arglat_mean):0.6f} deg\n',
+            f'True longitude: {np.rad2deg(true_lon):0.6f} deg\n',
+            f'Mean Longitude: {np.rad2deg(mean_lon):0.6f} deg')
 
     return np.array([sma, e, i, raan, aop, ta])
 
@@ -609,6 +609,14 @@ def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun',
     return vt1, vt2, dv_inj, dv_ins, TOF
 
 
+def rocket_eqn(isp, g0, m0, mf):
+    return isp*g0*np.log(m0/mf)
+
+
+def rocket_eqn_mass(dv, isp, g0):
+    return np.exp(dv / (isp*g0))
+
+
 if __name__ == "__main__":
     
     # circular orbit
@@ -684,7 +692,7 @@ if __name__ == "__main__":
     rt2 = sma_jupiter
     pl1 = 'earth'
     pl2 = 'jupiter'
-    patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=231.48*24*3600)
+    # patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', elliptical2=True, period2=231.48*24*3600)
 
 
     mu = mu_earth
