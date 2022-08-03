@@ -437,6 +437,8 @@ class Keplerian(object):
         self.vvec = vvec
         self.r_mag = vec.norm(rvec)
         self.v_mag = vec.norm(vvec)
+        self.r_hat = self.rvec / self.r_mag
+        self.v_hat = self.vvec / self.v_mag
 
         # angular momentun; orbit normal direction
         self.h_vec = vec.vcrossv(rvec, vvec)
@@ -452,6 +454,10 @@ class Keplerian(object):
         self.e_mag = vec.norm(self.e_vec)
         self.e_hat = self.e_vec/self.e_mag
 
+        # angles in degrees
+        self.oe = [self.semimajor_axis, self.eccentricity, 
+                   np.rad2deg(self.inclination), np.rad2deg(self.raan), 
+                   np.rad2deg(self.aop), np.rad2deg(self.true_anomaly)]
 
     @property
     def eccentricity_vector(self):
@@ -463,6 +469,11 @@ class Keplerian(object):
         eccentricity_vec = vec.vxadd(v1=term1, v2=term2) # points to orbit periapsis;
         # e_vec = 0 for circular orbits
         return eccentricity_vec
+
+    @property
+    def eccentricity(self):
+        """eccentricity"""
+        return self.ra/self.semimajor_axis-1
 
 
     @property
@@ -526,6 +537,20 @@ class Keplerian(object):
     def period(self):
         """orbital period"""
         return 2*np.pi*np.sqrt(self.semimajor_axis**3/self.mu)
+
+
+    @property
+    def rp(self):
+        """radius of perigee"""
+        return self.semimajor_axis*(1-self.e_mag)
+
+
+    @property
+    def ra(self):
+        """radius of apogee"""
+        return self.semimajor_axis*(1+self.e_mag)
+
+    
 
 
 def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun', 
@@ -610,10 +635,16 @@ def patched_conics(r1, r2, rt1, rt2, pl1, pl2, center='sun',
 
 
 def rocket_eqn(isp, g0, m0, mf):
+    """
+    returns dv
+    """
     return isp*g0*np.log(m0/mf)
 
 
 def rocket_eqn_mass(dv, isp, g0):
+    """
+    returns m0
+    """
     return np.exp(dv / (isp*g0))
 
 
