@@ -3,7 +3,8 @@ import os
 import pathlib
 import spiceypy as sp
 import spiceypy.utils.support_types as stypes
-
+import subprocess
+import re
 
 sp_dir = pathlib.Path(os.path.abspath(os.path.join(pathlib.Path(__file__).parent.absolute(), '..')))
 
@@ -55,16 +56,29 @@ def load_mars2020_kernels(ILS=None):
 
 def spk_coverage(kernel, id_obj=None, dir=sp_dir):
 
-    max_windows=50
-    spk_filename = f'{dir}/kernels/spacecraft/{kernel}.bsp'
-    coverage = stypes.SPICEDOUBLE_CELL(max_windows * 2)
-    sp.spkcov(spk_filename, id_obj, coverage)
+    max_windows=20
+    path = f'{dir}/kernels/spacecraft/{kernel}.bsp'
+    if os.path.exists(path):
+        spk_path = path
+    else:
+        spk_path = kernel
+
+    coverage = stypes.SPICEDOUBLE_CELL(max_windows*2)
+    sp.spkcov(spk_path, id_obj, coverage)
     UTCSTR = sp.et2utc(coverage[0], 'C', 3, 30)
     UTCSTR2 = sp.et2utc(coverage[-1], 'C', 3, 30)
-    print(f'\n###>> mission start {UTCSTR}') 
-    print(f'###>> mission end {UTCSTR2}\n')
+    # print(f'\n###>>(id {id_obj}) mission start (UTC) {UTCSTR}') 
+    # print(f'###>>(id {id_obj}) mission end (UTC) {UTCSTR2}\n')
     return sp.wnfetd(coverage, 0)  # mission start and end epoch
 
+
+def get_scid(sc_kernel):
+    """get spacecraft id
+    """
+    cmd = ['spicey/brief', sc_kernel]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE).stdout.decode('utf-8')
+    sc_id = int(re.search('Body: -[0-9]+', result)[0].split(':')[1])
+    return sc_id
 
 
 if __name__ == '__main__':
